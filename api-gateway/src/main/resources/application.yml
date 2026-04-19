@@ -1,0 +1,76 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: API-GATEWAY
+  config:
+    # Pull shared configuration from the Config Server at startup
+    import: optional:configserver:http://localhost:8888
+  cloud:
+    gateway:
+      routes:
+        - id: auth-service
+          uri: lb://auth-service
+          predicates:
+            - Path=/api/v1/auth/**
+
+        - id: resume-service
+          uri: lb://resume-service
+          predicates:
+            - Path=/api/v1/resumes/**
+
+        - id: section-service
+          uri: lb://section-service
+          predicates:
+            - Path=/api/v1/sections/**
+
+        - id: ai-service
+          uri: lb://ai-service
+          predicates:
+            - Path=/api/v1/ai/**
+
+        - id: template-service
+          uri: lb://template-service
+          predicates:
+            - Path=/api/v1/templates/**
+
+        - id: export-service
+          uri: lb://export-service
+          predicates:
+            - Path=/api/v1/exports/**
+
+        - id: jobmatch-service
+          uri: lb://jobmatch-service
+          predicates:
+            - Path=/api/v1/job-matches/**
+
+        - id: notification-service
+          uri: lb://notification-service
+          predicates:
+            - Path=/api/v1/notifications/**
+
+# Admin Server discovers this service automatically via Eureka - no admin client needed here
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+    appname: API-GATEWAY
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
+
+# Swagger-UI and OpenAPI Documentation Configuration
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
