@@ -94,3 +94,27 @@ For the business logic to function, ensure your infrastructure services (especia
    *Auth APIs Swagger UI:* [http://localhost:8081/swagger-ui.html](http://localhost:8081/swagger-ui.html)
 
 ---
+
+## 🛠 Required Updates for Frontend & Google Auth
+
+The following configurations are necessary to successfully link the Backend with the Frontend and enable Google OAuth2 functionality.
+
+### 1. Environment Configuration (`.env`)
+Create a `.env` file in the root directory to store sensitive Google and Database credentials:
+```properties
+GOOGLE_CLIENT_ID=your_id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your_secret_key
+AUTH_DB_PASSWORD=your_mysql_password
+# Other vars: AUTH_MAIL_USERNAME, AUTH_MAIL_PASSWORD, etc.
+```
+
+### 2. Google Cloud Platform Setup
+To enable **Google Sign-In**, add the following to your OAuth 2.0 Credentials in GCP:
+- **Authorized JavaScript origins:** `http://localhost:4200`
+- **Authorized redirect URIs:** `http://localhost:8081/login/oauth2/code/google`
+
+### 3. Frontend Connection (Direct Access)
+The Angular application (`localhost:4200`) currently connects directly to the Auth Service on **Port 8081** to bypass gateway routing issues during local development.
+- **Login/Register:** `http://localhost:8081/api/v1/auth`
+- **Google OAuth Initiation:** `http://localhost:8081/oauth2/authorization/google`
+
