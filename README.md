@@ -1,5 +1,5 @@
 # ResumeAI: AI-Powered Resume Builder Platform (Backend)
-**Current Branch:** `feature/UC1-infrastructure`
+**Current Branch:** `feature/UC2-Auth-Service`
 
 ## 📌 Project Overview / Introduction
 
@@ -69,5 +69,28 @@ For the smoothest startup sequence, start the services in the following order:
    mvn spring-boot:run
    ```
    *Swagger UI:* [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
+
+---
+
+## 🚀 Phase 2 (Business Logic)
+
+This phase introduces the core business and user identity layer of the ecosystem.
+
+### Auth Service
+
+| Service Name | Port | Description |
+| :--- | :--- | :--- |
+| **`auth-service`** | `8081` | **Identity Management:** Handles registration, robust JWT authentication, strict validation, and dual-OTP identity recovery. |
+
+### How to Run Phase 2
+
+For the business logic to function, ensure your infrastructure services (especially Eureka) and your MySQL database are running. 
+
+1. **Start Auth Service**
+   ```bash
+   cd auth-service
+   mvn spring-boot:run
+   ```
+   *Auth APIs Swagger UI:* [http://localhost:8081/swagger-ui.html](http://localhost:8081/swagger-ui.html)
 
 ---
