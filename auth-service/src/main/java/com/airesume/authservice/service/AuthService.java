@@ -6,10 +6,15 @@ import com.airesume.authservice.model.User;
 import com.airesume.authservice.model.VerificationOtp;
 import com.airesume.authservice.repository.RoleRepository;
 import com.airesume.authservice.repository.UserRepository;
+import com.airesume.authservice.repository.UserQuotaRepository;
+import com.airesume.authservice.model.UserQuota;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Main Service for Authentication and Identity Management logic.
@@ -24,6 +29,7 @@ public class AuthService {
     private final OtpService otpService;
     private final EmailService emailService;
     private final JwtService jwtService;
+    private final UserQuotaRepository userQuotaRepository;
 
     /**
      * Authenticates a user and returns a JWT token.
@@ -61,11 +67,17 @@ public class AuthService {
                 .email(request.getEmail())
                 .username(request.getUsername())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .enabled(true)
+                .isActive(true)
                 .build();
         
         user.getRoles().add(userRole);
-        userRepository.save(user);
+        User savedUser = userRepository.save(user);
+
+        // Initialize User Quota
+        UserQuota quota = UserQuota.builder()
+                .user(savedUser)
+                .build();
+        userQuotaRepository.save(quota);
 
         return "User registered successfully";
     }
@@ -138,5 +150,191 @@ public class AuthService {
         userRepository.save(user);
 
         return "Password updated successfully";
+    }
+
+    /**
+     * Updates the user's profile information.
+     */
+    @Transactional
+    public String updateProfile(String username, ProfileRequest request) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Username not found"));
+        
+        if (request.getFullName() != null) user.setFullName(request.getFullName());
+        if (request.getAge() != null) user.setAge(request.getAge());
+        if (request.getMobileNumber() != null) user.setMobileNumber(request.getMobileNumber());
+        
+        userRepository.save(user);
+        return "Profile updated successfully";
+    }
+
+    /**
+     * Changes the user's password using authentication.
+     */
+    @Transactional
+    public String changePassword(String username, PasswordChangeRequest request) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Username not found"));
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new RuntimeException("Incorrect current password");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+        return "Password changed successfully";
+    }
+
+    /**
+     * Updates the user's subscription plan.
+     */
+    @Transactional
+    public String updateSubscription(String username, com.airesume.authservice.model.PlanType newPlan) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Username not found"));
+                
+        user.setSubscriptionPlan(newPlan);
+        userRepository.save(user);
+        return "Subscription updated to " + newPlan.name();
+    }
+
+    /**
+     * Soft deletes (deactivates) a user account.
+     */
+    @Transactional
+    public String deactivateAccount(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Username not found"));
+        
+        user.setActive(false);
+        userRepository.save(user);
+        return "Account successfully deactivated";
+    }
+
+    /**
+     * Fetches the full profile of the authenticated user.
+     */
+    public UserProfileResponse getUserProfile(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return UserProfileResponse.builder()
+                .username(user.getUsername())
+                .fullName(user.getFullName())
+                .email(user.getEmail())
+                .mobileNumber(user.getMobileNumber())
+                .age(user.getAge())
+                .subscriptionPlan(user.getSubscriptionPlan())
+                .isActive(user.isActive())
+                .roles(user.getRoles().stream().map(Role::getName).collect(Collectors.toSet()))
+                .build();
+    }
+
+    /**
+     * Issues a fresh JWT token for the user.
+     */
+    public String refreshToken(String username) {
+        return jwtService.generateToken(username);
+    }
+
+    // --- ADMIN OPERATIONS ---
+
+    /**
+     * Admin only: Get total user list.
+     */
+    public List<UserProfileResponse> getAllUsers() {
+        return userRepository.findAll().stream()
+                .map(user -> UserProfileResponse.builder()
+                        .username(user.getUsername())
+                        .fullName(user.getFullName())
+                        .email(user.getEmail())
+                        .subscriptionPlan(user.getSubscriptionPlan())
+                        .isActive(user.isActive())
+                        .roles(user.getRoles().stream().map(Role::getName).collect(Collectors.toSet()))
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Admin only: Suspend or reactivate user accounts.
+     */
+    @Transactional
+    public String updateUserStatus(String username, boolean active) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setActive(active);
+        userRepository.save(user);
+        return "User status updated to: " + (active ? "ACTIVE" : "SUSPENDED");
+    }
+
+    /**
+     * Admin only: Promote or demote user roles.
+     */
+    @Transactional
+    public String updateUserRole(String username, String roleName) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        Role role = roleRepository.findByName(roleName)
+                .orElseThrow(() -> new RuntimeException("Role " + roleName + " not found"));
+        
+        user.getRoles().clear();
+        user.getRoles().add(role);
+        userRepository.save(user);
+        return "User role updated to: " + roleName;
+    }
+
+    /**
+     * Admin only: Filter users by their role (e.g., ROLE_USER, ROLE_ADMIN).
+     */
+    public List<UserProfileResponse> getUsersByRole(String roleName) {
+        return userRepository.findAllByRoles_Name(roleName).stream()
+                .map(user -> mapToProfileResponse(user))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Admin only: Filter users by their subscription tier.
+     */
+    public List<UserProfileResponse> getUsersByPlan(com.airesume.authservice.model.PlanType plan) {
+        return userRepository.findBySubscriptionPlan(plan).stream()
+                .map(user -> mapToProfileResponse(user))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Admin only: Permanently remove a user from the database.
+     */
+    @Transactional
+    public String deleteUserPermanently(Long userId) {
+        if (!userRepository.existsById(userId)) {
+            throw new RuntimeException("User ID " + userId + " not found");
+        }
+        userRepository.deleteById(userId);
+        return "User with ID " + userId + " permanently deleted";
+    }
+
+    /**
+     * Validates a token and returns the corresponding username.
+     * Used by other microservices via the /validate endpoint.
+     */
+    public String validateToken(String token) {
+        if (jwtService.validateToken(token)) {
+            return jwtService.extractUsername(token);
+        }
+        throw new RuntimeException("Invalid or Expired Token");
+    }
+
+    /**
+     * Helper to map User entity to UserProfileResponse DTO.
+     */
+    private UserProfileResponse mapToProfileResponse(User user) {
+        return UserProfileResponse.builder()
+                .username(user.getUsername())
+                .fullName(user.getFullName())
+                .email(user.getEmail())
+                .subscriptionPlan(user.getSubscriptionPlan())
+                .isActive(user.isActive())
+                .roles(user.getRoles().stream().map(Role::getName).collect(Collectors.toSet()))
+                .build();
     }
 }

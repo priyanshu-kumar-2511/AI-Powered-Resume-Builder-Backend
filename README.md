@@ -80,7 +80,7 @@ This phase introduces the core business and user identity layer of the ecosystem
 
 | Service Name | Port | Description |
 | :--- | :--- | :--- |
-| **`auth-service`** | `8081` | **Identity Management:** Handles registration, robust JWT authentication, strict validation, and dual-OTP identity recovery. |
+| **`auth-service`** | `8081` | **Identity Management & Admin Power:** Handles registration, robust JWT authentication, LinkedIn/Google OAuth2 integration, Profile management, and an **Admin Dashboard** for user oversight and platform security. |
 
 ### How to Run Phase 2
 
@@ -97,13 +97,16 @@ For the business logic to function, ensure your infrastructure services (especia
 
 ## 🛠 Required Updates for Frontend & Google Auth
 
-The following configurations are necessary to successfully link the Backend with the Frontend and enable Google OAuth2 functionality.
+The following configurations are necessary to link the backend with the frontend and enable Google/LinkedIn OAuth2 login.
 
 ### 1. Environment Configuration (`.env`)
 Create a `.env` file in the root directory to store sensitive Google and Database credentials:
 ```properties
 GOOGLE_CLIENT_ID=your_id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=your_secret_key
+LINKEDIN_CLIENT_ID=your_linkedin_client_id
+LINKEDIN_CLIENT_SECRET=your_linkedin_client_secret
+API_GATEWAY_URL=http://localhost:8080
 AUTH_DB_PASSWORD=your_mysql_password
 # Other vars: AUTH_MAIL_USERNAME, AUTH_MAIL_PASSWORD, etc.
 ```
@@ -111,10 +114,15 @@ AUTH_DB_PASSWORD=your_mysql_password
 ### 2. Google Cloud Platform Setup
 To enable **Google Sign-In**, add the following to your OAuth 2.0 Credentials in GCP:
 - **Authorized JavaScript origins:** `http://localhost:4200`
-- **Authorized redirect URIs:** `http://localhost:8081/login/oauth2/code/google`
+- **Authorized redirect URIs:** `http://localhost:8080/login/oauth2/code/google`
 
-### 3. Frontend Connection (Direct Access)
-The Angular application (`localhost:4200`) currently connects directly to the Auth Service on **Port 8081** to bypass gateway routing issues during local development.
-- **Login/Register:** `http://localhost:8081/api/v1/auth`
-- **Google OAuth Initiation:** `http://localhost:8081/oauth2/authorization/google`
+### 3. LinkedIn Developer Portal Setup
+To enable **LinkedIn Sign-In**, add this redirect URL in the LinkedIn app Auth settings:
+- **Authorized redirect URL:** `http://localhost:8080/login/oauth2/code/linkedin`
+
+### 4. Frontend Connection via API Gateway
+The Angular application (`localhost:4200`) should call the API Gateway:
+- **Auth Endpoint:** `http://localhost:8080/api/v1/auth`
+- **Google OAuth Initiation:** `http://localhost:8080/oauth2/authorization/google`
+- **LinkedIn OAuth Initiation:** `http://localhost:8080/oauth2/authorization/linkedin`
 

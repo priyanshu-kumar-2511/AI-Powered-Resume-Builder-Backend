@@ -6,6 +6,7 @@ import com.airesume.authservice.model.User;
 import com.airesume.authservice.model.VerificationOtp;
 import com.airesume.authservice.repository.RoleRepository;
 import com.airesume.authservice.repository.UserRepository;
+import com.airesume.authservice.repository.UserQuotaRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,6 +27,9 @@ class AuthServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private UserQuotaRepository userQuotaRepository;
 
     @Mock
     private RoleRepository roleRepository;

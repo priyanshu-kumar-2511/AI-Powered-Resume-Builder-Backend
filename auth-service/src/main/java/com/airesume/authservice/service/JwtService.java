@@ -39,6 +39,40 @@ public class JwtService {
         return generateToken(username, new HashMap<>());
     }
 
+    /**
+     * Extracts the username (subject) from a given JWT token.
+     */
+    public String extractUsername(String token) {
+        return Jwts.parser()
+                .verifyWith(getSignInKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .getSubject();
+    }
+
+    /**
+     * Checks if the token is valid and has not expired.
+     */
+    public boolean validateToken(String token) {
+        try {
+            Jwts.parser().verifyWith(getSignInKey()).build().parseSignedClaims(token);
+            return !isTokenExpired(token);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private boolean isTokenExpired(String token) {
+        Date expiration = Jwts.parser()
+                .verifyWith(getSignInKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .getExpiration();
+        return expiration.before(new Date());
+    }
+
     private SecretKey getSignInKey() {
         byte[] keyBytes = io.jsonwebtoken.io.Decoders.BASE64.decode(jwtSecret);
         return Keys.hmacShaKeyFor(keyBytes);
