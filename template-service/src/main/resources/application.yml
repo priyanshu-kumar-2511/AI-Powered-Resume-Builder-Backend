@@ -1,0 +1,70 @@
+server:
+  port: 8082
+  forward-headers-strategy: framework
+
+spring:
+  application:
+    name: TEMPLATE-SERVICE
+  
+  boot:
+    admin:
+      client:
+        url: ${ADMIN_SERVER_URL:http://localhost:9090}
+        username: ${ADMIN_USERNAME}
+        password: ${ADMIN_PASSWORD}
+        instance:
+          service-base-url: ${TEMPLATE_SERVICE_URL:http://localhost:8082}
+          name: TEMPLATE-SERVICE
+  
+  # Configuration Management
+  config:
+    import: optional:configserver:http://localhost:8888
+  
+  # Persistence Layer
+  datasource:
+    url: jdbc:mysql://${TEMPLATE_DB_HOST:localhost}:3306/${TEMPLATE_DB_NAME:airesume_template}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&autoReconnect=true
+    username: ${TEMPLATE_DB_USERNAME}
+    password: ${TEMPLATE_DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
+  
+# Service Discovery
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka/}
+  instance:
+    hostname: localhost
+    non-secure-port: 8082
+    instance-id: ${spring.application.name}:${server.port}
+    appname: TEMPLATE-SERVICE
+
+# Monitoring & Documentation
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
+
+# Swagger Documentation
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /api/v1/templates/v3/api-docs
+
+# JWT Secret (for validation)
+app:
+  jwt:
+    secret: ${JWT_SECRET}

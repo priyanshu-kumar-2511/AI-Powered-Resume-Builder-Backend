@@ -5,59 +5,80 @@ spring:
   application:
     name: API-GATEWAY
   config:
-    # Pull shared configuration from the Config Server at startup
     import: optional:configserver:http://localhost:8888
   cloud:
     gateway:
-      globalcors:
-        cors-configurations:
-          '[/**]':
-            allowedOrigins: "http://localhost:4200"
-            allowedMethods: "GET,POST,PUT,DELETE,OPTIONS"
-            allowedHeaders: "*"
-            allowCredentials: true
-      routes:
-        - id: auth-service
-          uri: http://localhost:8081
-          predicates:
-            - Path=/api/v1/auth/**, /oauth2/**, /login/**
+      server:
+        webflux:
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                allowedOrigins: "http://localhost:4200"
+                allowedMethods: "GET,POST,PUT,DELETE,OPTIONS"
+                allowedHeaders: "*"
+                allowCredentials: true
+          routes:
+            # Separate docs route so AUTH-SERVICE spec does not collide with gateway docs
+            - id: auth-swagger-route
+              uri: http://localhost:8081
+              predicates:
+                - Path=/api/v1/auth/v3/api-docs, /api/v1/auth/v3/api-docs/**
+              filters:
+                - RewritePath=/api/v1/auth/(?<segment>.*), /${segment}
 
-        - id: resume-service
-          uri: lb://resume-service
-          predicates:
-            - Path=/api/v1/resumes/**
+            # Route for Authentication APIs
+            - id: auth-api-route
+              uri: http://localhost:8081
+              predicates:
+                - Path=/api/v1/auth/**, /api/v1/admin/**
 
-        - id: section-service
-          uri: lb://section-service
-          predicates:
-            - Path=/api/v1/sections/**
+            # Route for OAuth2 Login and Callbacks
+            - id: oauth2-route
+              uri: http://localhost:8081
+              predicates:
+                - Path=/oauth2/**, /login/**
 
-        - id: ai-service
-          uri: lb://ai-service
-          predicates:
-            - Path=/api/v1/ai/**
+            # Route for Documentation
+            - id: swagger-route
+              uri: http://localhost:8081
+              predicates:
+                - Path=/swagger-ui/**, /v3/api-docs/**, /swagger-ui.html
 
-        - id: template-service
-          uri: lb://template-service
-          predicates:
-            - Path=/api/v1/templates/**
+            - id: resume-service
+              uri: lb://resume-service
+              predicates:
+                - Path=/api/v1/resumes/**
 
-        - id: export-service
-          uri: lb://export-service
-          predicates:
-            - Path=/api/v1/exports/**
+            - id: section-service
+              uri: lb://section-service
+              predicates:
+                - Path=/api/v1/sections/**
 
-        - id: jobmatch-service
-          uri: lb://jobmatch-service
-          predicates:
-            - Path=/api/v1/job-matches/**
+            - id: ai-service
+              uri: lb://ai-service
+              predicates:
+                - Path=/api/v1/ai/**
 
-        - id: notification-service
-          uri: lb://notification-service
-          predicates:
-            - Path=/api/v1/notifications/**
+            - id: template-service
+              uri: lb://template-service
+              predicates:
+                - Path=/api/v1/templates/**
 
-# Admin Server discovers this service automatically via Eureka - no admin client needed here
+            - id: export-service
+              uri: lb://export-service
+              predicates:
+                - Path=/api/v1/exports/**
+
+            - id: jobmatch-service
+              uri: lb://jobmatch-service
+              predicates:
+                - Path=/api/v1/job-matches/**
+
+            - id: notification-service
+              uri: lb://notification-service
+              predicates:
+                - Path=/api/v1/notifications/**
+
 eureka:
   client:
     service-url:
@@ -76,9 +97,25 @@ management:
     health:
       show-details: always
 
-# Swagger-UI and OpenAPI Documentation Configuration
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
+    urls:
+      - name: AUTH-SERVICE
+        url: /api/v1/auth/v3/api-docs
+      - name: TEMPLATE-SERVICE
+        url: /api/v1/templates/v3/api-docs
+      - name: RESUME-SERVICE
+        url: /api/v1/resumes/v3/api-docs
+      - name: SECTION-SERVICE
+        url: /api/v1/sections/v3/api-docs
+      - name: AI-SERVICE
+        url: /api/v1/ai/v3/api-docs
+      - name: EXPORT-SERVICE
+        url: /api/v1/exports/v3/api-docs
+      - name: JOBMATCH-SERVICE
+        url: /api/v1/job-matches/v3/api-docs
+      - name: NOTIFICATION-SERVICE
+        url: /api/v1/notifications/v3/api-docs
   api-docs:
     path: /v3/api-docs

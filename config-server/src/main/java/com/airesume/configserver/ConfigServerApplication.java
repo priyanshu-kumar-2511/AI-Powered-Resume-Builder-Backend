@@ -14,6 +14,13 @@ import org.springframework.cloud.config.server.EnableConfigServer;
 public class ConfigServerApplication {
 
 	public static void main(String[] args) {
+		io.github.cdimascio.dotenv.Dotenv dotenv = io.github.cdimascio.dotenv.Dotenv.configure()
+				.directory("../")
+				.ignoreIfMissing()
+				.load();
+
+		dotenv.entries().forEach(entry -> System.setProperty(entry.getKey(), entry.getValue()));
+
 		SpringApplication.run(ConfigServerApplication.class, args);
 	}
 

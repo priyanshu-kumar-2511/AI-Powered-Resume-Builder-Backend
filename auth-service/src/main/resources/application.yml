@@ -1,5 +1,6 @@
 server:
   port: 8081
+  forward-headers-strategy: framework
 
 spring:
   application:
@@ -11,17 +12,43 @@ spring:
           google:
             client-id: ${GOOGLE_CLIENT_ID}
             client-secret: ${GOOGLE_CLIENT_SECRET}
+            # Explicit redirect URI through the API Gateway (port 8080).
+            # Without this, Spring Boot defaults to the auth-service own port (8081).
+            # Register this URL in your Google Cloud OAuth console.
+            redirect-uri: "${API_GATEWAY_URL:http://localhost:8080}/login/oauth2/code/google"
             scope:
               - email
               - profile
+          linkedin:
+            client-id: ${LINKEDIN_CLIENT_ID}
+            client-secret: ${LINKEDIN_CLIENT_SECRET}
+            # LinkedIn expects client_id and client_secret in the form body
+            # for the authorization-code token exchange.
+            client-authentication-method: client_secret_post
+            scope:
+              - openid
+              - profile
+              - email
+            authorization-grant-type: authorization_code
+            redirect-uri: "${API_GATEWAY_URL:http://localhost:8080}/login/oauth2/code/linkedin"
+            client-name: LinkedIn
+            provider: linkedin
+
+        provider:
+          linkedin:
+            authorization-uri: https://www.linkedin.com/oauth/v2/authorization
+            token-uri: https://www.linkedin.com/oauth/v2/accessToken
+            user-info-uri: https://api.linkedin.com/v2/userinfo
+            jwk-set-uri: https://www.linkedin.com/oauth/openid/jwks
+            user-name-attribute: sub
   boot:
     admin:
       client:
-        url: http://localhost:9090
-        username: admin
-        password: admin123
+        url: ${ADMIN_SERVER_URL:http://localhost:9090}
+        username: ${ADMIN_USERNAME}
+        password: ${ADMIN_PASSWORD}
         instance:
-          service-base-url: http://localhost:8081
+          service-base-url: ${AUTH_SERVICE_URL:http://localhost:8081}
           name: AUTH-SERVICE
   
   # Configuration Management
@@ -32,37 +59,47 @@ spring:
   # Persistence Layer with Auto-DB Creation
   datasource:
     url: jdbc:mysql://${AUTH_DB_HOST:localhost}:3306/${AUTH_DB_NAME:airesume_auth}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&autoReconnect=true
-    username: ${AUTH_DB_USERNAME:root}
-    password: ${AUTH_DB_PASSWORD:}
+    username: ${AUTH_DB_USERNAME}
+    password: ${AUTH_DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
   
+  sql:
+    init:
+      mode: always
   jpa:
     hibernate:
       ddl-auto: update
+    defer-datasource-initialization: true
     show-sql: true
     properties:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.MySQLDialect
-
-  # Mail Configuration
+  
+  # Mail Configuration (Gmail SMTP with App Password)
   mail:
     host: ${AUTH_MAIL_HOST:smtp.gmail.com}
     port: ${AUTH_MAIL_PORT:587}
-    username: ${AUTH_MAIL_USERNAME:your-email@gmail.com}
-    password: ${AUTH_MAIL_PASSWORD:your-password}
+    username: ${AUTH_MAIL_USERNAME}
+    password: ${AUTH_MAIL_PASSWORD}
     properties:
       mail:
         smtp:
           auth: true
           starttls:
             enable: true
+            required: true
+          ssl:
+            trust: smtp.gmail.com
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
 
 # Service Discovery
 eureka:
   client:
     service-url:
-      defaultZone: http://${EUREKA_HOST:localhost}:8761/eureka/
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka/}
   instance:
     hostname: localhost
     non-secure-port: 8081
@@ -89,5 +126,5 @@ springdoc:
 # Security Secret
 app:
   jwt:
-    secret: ${AUTH_JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
-    expiration: ${AUTH_JWT_EXPIRATION:86400000} # 24 hours
+    secret: ${JWT_SECRET}
+    expiration: ${JWT_EXPIRATION:86400000} # 24 hours

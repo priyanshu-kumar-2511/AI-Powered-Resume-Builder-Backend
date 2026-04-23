@@ -41,7 +41,21 @@ public class User {
     private String password;
 
     @Builder.Default
+    private boolean isActive = true;
+
+    @Column(nullable = false)
+    @Builder.Default
     private boolean enabled = true;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private PlanType subscriptionPlan = PlanType.FREE;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private ProviderType provider = ProviderType.LOCAL;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
@@ -57,12 +71,14 @@ public class User {
 
     @PrePersist
     protected void onCreate() {
+        enabled = isActive;
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
     }
 
     @PreUpdate
     protected void onUpdate() {
+        enabled = isActive;
         updatedAt = LocalDateTime.now();
     }
 }

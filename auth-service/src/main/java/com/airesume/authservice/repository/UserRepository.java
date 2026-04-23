@@ -13,4 +13,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByUsernameOrEmail(String username, String email);
     boolean existsByUsername(String username);
     boolean existsByEmail(String email);
+    
+    // Additional methods from PDF Requirements
+    java.util.List<User> findBySubscriptionPlan(com.airesume.authservice.model.PlanType plan);
+    java.util.List<User> findByIsActive(boolean isActive);
+    java.util.List<User> findAllByRoles_Name(String roleName);
+    void deleteById(Long userId);
 }

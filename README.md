@@ -1,5 +1,5 @@
 # ResumeAI: AI-Powered Resume Builder Platform (Backend)
-**Current Branch:** `feature/UC2-Auth-Service`
+**Current Branch:** `feature/UC4-Resume-Service`
 
 ## 📌 Project Overview / Introduction
 
@@ -80,7 +80,7 @@ This phase introduces the core business and user identity layer of the ecosystem
 
 | Service Name | Port | Description |
 | :--- | :--- | :--- |
-| **`auth-service`** | `8081` | **Identity Management:** Handles registration, robust JWT authentication, strict validation, and dual-OTP identity recovery. |
+| **`auth-service`** | `8081` | **Identity Management & Admin Power:** Handles registration, robust JWT authentication, LinkedIn/Google OAuth2 integration, Profile management, and an **Admin Dashboard** for user oversight and platform security. |
 
 ### How to Run Phase 2
 
@@ -97,13 +97,16 @@ For the business logic to function, ensure your infrastructure services (especia
 
 ## 🛠 Required Updates for Frontend & Google Auth
 
-The following configurations are necessary to successfully link the Backend with the Frontend and enable Google OAuth2 functionality.
+The following configurations are necessary to link the backend with the frontend and enable Google/LinkedIn OAuth2 login.
 
 ### 1. Environment Configuration (`.env`)
 Create a `.env` file in the root directory to store sensitive Google and Database credentials:
 ```properties
 GOOGLE_CLIENT_ID=your_id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=your_secret_key
+LINKEDIN_CLIENT_ID=your_linkedin_client_id
+LINKEDIN_CLIENT_SECRET=your_linkedin_client_secret
+API_GATEWAY_URL=http://localhost:8080
 AUTH_DB_PASSWORD=your_mysql_password
 # Other vars: AUTH_MAIL_USERNAME, AUTH_MAIL_PASSWORD, etc.
 ```
@@ -111,10 +114,68 @@ AUTH_DB_PASSWORD=your_mysql_password
 ### 2. Google Cloud Platform Setup
 To enable **Google Sign-In**, add the following to your OAuth 2.0 Credentials in GCP:
 - **Authorized JavaScript origins:** `http://localhost:4200`
-- **Authorized redirect URIs:** `http://localhost:8081/login/oauth2/code/google`
+- **Authorized redirect URIs:** `http://localhost:8080/login/oauth2/code/google`
 
-### 3. Frontend Connection (Direct Access)
-The Angular application (`localhost:4200`) currently connects directly to the Auth Service on **Port 8081** to bypass gateway routing issues during local development.
-- **Login/Register:** `http://localhost:8081/api/v1/auth`
-- **Google OAuth Initiation:** `http://localhost:8081/oauth2/authorization/google`
+### 3. LinkedIn Developer Portal Setup
+To enable **LinkedIn Sign-In**, add this redirect URL in the LinkedIn app Auth settings:
+- **Authorized redirect URL:** `http://localhost:8080/login/oauth2/code/linkedin`
 
+### 4. Frontend Connection via API Gateway
+The Angular application (`localhost:4200`) should call the API Gateway:
+- **Auth Endpoint:** `http://localhost:8080/api/v1/auth`
+- **Google OAuth Initiation:** `http://localhost:8080/oauth2/authorization/google`
+- **LinkedIn OAuth Initiation:** `http://localhost:8080/oauth2/authorization/linkedin`
+
+---
+
+## 🎨 Phase 3 (Template Management)
+
+This phase introduces the visual templating engine of the ecosystem.
+
+### Template Service
+
+| Service Name | Port | Description |
+| :--- | :--- | :--- |
+| **`template-service`** | `8082` | **Resume Template Management:** Handles CRUD operations, rendering, and fetching of professional resume templates. Includes comprehensive Javadoc, standardized JUnit 5/Mockito testing with H2, and global stateless security refactoring. |
+
+### How to Run Template Service
+
+1. **Start Template Service**
+   ```bash
+   cd template-service
+   mvn spring-boot:run
+   ```
+   *Template APIs Swagger UI:* [http://localhost:8082/swagger-ui.html](http://localhost:8082/swagger-ui.html)
+
+---
+
+## 📄 Phase 4 (Resume Management)
+
+This phase focuses on the creation and lifecycle management of user resumes.
+
+### Resume Service
+
+| Service Name | Port | Description |
+| :--- | :--- | :--- |
+| **`resume-service`** | `8083` | **Resume Lifecycle Management:** Handles creating, updating, duplicating, and publishing resumes. Includes integration for ATS scoring and links to templates. |
+
+### How to Run Resume Service
+
+1. **Start Resume Service**
+   ```bash
+   cd resume-service
+   mvn spring-boot:run
+   ```
+   *Resume APIs Swagger UI:* [http://localhost:8083/swagger-ui.html](http://localhost:8083/swagger-ui.html)
+
+---
+
+## 📊 Database Seeding
+
+The microservices are pre-configured to seed the database with professional data on the first run.
+
+- **`auth-service`**: Seeds default `ROLE_USER`, `ROLE_ADMIN`, and a sample user `johndoe` (password: `password123`).
+- **`template-service`**: Seeds 5 high-quality resume templates (Professional, Creative, Minimalist, etc.) with real HTML/CSS structures.
+- **`resume-service`**: Seeds a sample "Software Engineer" resume for the demo user.
+
+> **Note:** Ensure `spring.sql.init.mode=always` and `spring.jpa.defer-datasource-initialization=true` are active in `application.yml` to ensure data is inserted after schema creation.
