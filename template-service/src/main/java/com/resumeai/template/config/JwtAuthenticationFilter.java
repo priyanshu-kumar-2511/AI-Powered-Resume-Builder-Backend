@@ -1,6 +1,6 @@
-package com.airesume.authservice.config;
+package com.resumeai.template.config;
 
-import com.airesume.authservice.service.JwtService;
+import com.resumeai.template.service.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -20,8 +20,6 @@ import java.util.stream.Collectors;
 /**
  * Filter that intercepts incoming HTTP requests to validate JWT tokens.
  * Populates the Spring Security Context with user details and roles if a valid token is found.
- * 
- * Logic: Extracts roles directly from the JWT claims to enable stateless authorization.
  */
 @Component
 @RequiredArgsConstructor
@@ -45,17 +43,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = authHeader.substring(7);
         if (SecurityContextHolder.getContext().getAuthentication() == null && jwtService.validateToken(token)) {
             String username = jwtService.extractUsername(token);
+            List<String> roles = jwtService.extractRoles(token);
 
-            // Extract roles from JWT — may be null for OAuth-generated tokens
-            List<String> roles = jwtService.extractClaim(token, claims -> claims.get("roles", List.class));
+            if (username != null && roles != null) {
+                // 3. Convert roles to GrantedAuthorities
+                List<SimpleGrantedAuthority> authorities = roles.stream()
+                        .map(SimpleGrantedAuthority::new)
+                        .collect(Collectors.toList());
 
-            // FIX: Allow authentication even if roles claim is absent (OAuth tokens).
-            // Tokens without roles get empty authorities; method-level @PreAuthorize still applies.
-            if (username != null) {
-                List<SimpleGrantedAuthority> authorities = (roles != null)
-                        ? roles.stream().map(SimpleGrantedAuthority::new).collect(Collectors.toList())
-                        : List.of();
-
+                // 4. Set Authentication in SecurityContext
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(username, null, authorities);
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));

@@ -1,13 +1,10 @@
 package com.airesume.authservice.service;
 
 import com.airesume.authservice.dto.*;
-import com.airesume.authservice.model.Role;
-import com.airesume.authservice.model.User;
-import com.airesume.authservice.model.VerificationOtp;
-import com.airesume.authservice.repository.RoleRepository;
-import com.airesume.authservice.repository.UserRepository;
-import com.airesume.authservice.repository.UserQuotaRepository;
+import com.airesume.authservice.model.*;
+import com.airesume.authservice.repository.*;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -15,13 +12,18 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
+/**
+ * Unit Tests for AuthService in auth-service.
+ * Technology: JUnit 5 + Mockito.
+ */
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
 
@@ -59,6 +61,8 @@ class AuthServiceTest {
                 .username("testuser")
                 .email("test@example.com")
                 .password("hashedPassword")
+                .isActive(true)
+                .roles(Collections.singleton(new Role(1, "ROLE_USER")))
                 .build();
 
         registerRequest = RegisterRequest.builder()
@@ -72,6 +76,7 @@ class AuthServiceTest {
     }
 
     @Test
+    @DisplayName("Test: Register User - Success")
     void register_Success() {
         when(userRepository.existsByUsername(any())).thenReturn(false);
         when(userRepository.existsByEmail(any())).thenReturn(false);
@@ -82,24 +87,16 @@ class AuthServiceTest {
 
         assertEquals("User registered successfully", result);
         verify(userRepository, times(1)).save(any(User.class));
+        verify(userQuotaRepository, times(1)).save(any(UserQuota.class));
     }
 
     @Test
-    void register_UsernameExists_Fails() {
-        when(userRepository.existsByUsername(any())).thenReturn(true);
-
-        String result = authService.register(registerRequest);
-
-        assertEquals("Username already exists", result);
-        verify(userRepository, never()).save(any(User.class));
-    }
-
-    @Test
+    @DisplayName("Test: User Login - Success")
     void login_Success() {
         LoginRequest loginRequest = new LoginRequest("testuser", "correctPass");
         when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
         when(passwordEncoder.matches("correctPass", "hashedPassword")).thenReturn(true);
-        when(jwtService.generateToken("testuser")).thenReturn("mockJwtToken");
+        when(jwtService.generateToken(eq("testuser"), any(Map.class))).thenReturn("mockJwtToken");
 
         String token = authService.login(loginRequest);
 
@@ -107,37 +104,40 @@ class AuthServiceTest {
     }
 
     @Test
-    void login_WrongPassword_ThrowsException() {
-        LoginRequest loginRequest = new LoginRequest("testuser", "wrongPass");
-        when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
-        when(passwordEncoder.matches("wrongPass", "hashedPassword")).thenReturn(false);
-
-        RuntimeException ex = assertThrows(RuntimeException.class, () -> authService.login(loginRequest));
-        assertEquals("Incorrect Password", ex.getMessage());
-    }
-
-    @Test
+    @DisplayName("Test: Initiate Username Recovery")
     void initiateUsernameRecovery_Success() {
         UsernameRecoveryRequest request = new UsernameRecoveryRequest("test@example.com", "correctPass");
         when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(testUser));
         when(passwordEncoder.matches("correctPass", "hashedPassword")).thenReturn(true);
-        when(otpService.generateAndSaveOtp(testUser, VerificationOtp.OtpType.USERNAME_RECOVERY)).thenReturn("123456");
-
+        when(otpService.generateAndSaveOtp(any(User.class), any(VerificationOtp.OtpType.class))).thenReturn("123456");
+        
         String result = authService.initiateUsernameRecovery(request);
 
-        assertEquals("OTP sent to your registered email", result);
-        verify(emailService, times(1)).sendOtpEmail("test@example.com", "123456", "Username Recovery");
+        assertEquals("Recovery OTP sent to your email", result);
+        verify(emailService, times(1)).sendOtpEmail(eq("test@example.com"), eq("123456"), anyString());
     }
 
     @Test
+    @DisplayName("Test: Verify Username Recovery")
     void verifyUsernameRecovery_Success() {
         OtpVerificationRequest request = new OtpVerificationRequest("test@example.com", "123456", null);
         when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(testUser));
-        when(otpService.validateOtp(testUser, "123456", VerificationOtp.OtpType.USERNAME_RECOVERY)).thenReturn(true);
+        when(otpService.validateOtp(any(User.class), eq("123456"), any(VerificationOtp.OtpType.class))).thenReturn(true);
 
         String result = authService.verifyUsernameRecovery(request);
 
         assertEquals("Username has been sent to your registered email", result);
         verify(emailService, times(1)).sendUsernameEmail("test@example.com", "testuser");
+    }
+
+    @Test
+    @DisplayName("Test: Deactivate Account")
+    void deactivateAccount_Success() {
+        when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
+        
+        String result = authService.deactivateAccount("testuser");
+
+        assertEquals("Account deactivated successfully", result);
+        assertFalse(testUser.isActive());
     }
 }

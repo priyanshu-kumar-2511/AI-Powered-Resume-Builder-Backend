@@ -12,6 +12,11 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Controller handling administrative operations for user management.
+ * Exposes endpoints for managing user roles, statuses, and retrieving user lists.
+ * Requires ROLE_ADMIN authority.
+ */
 @RestController
 @RequestMapping("/api/v1/admin")
 @RequiredArgsConstructor

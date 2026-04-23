@@ -1,17 +1,17 @@
-package com.airesume.apigateway;
+package com.resumeai.template;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 
 /**
- * Main Entry point for the API Gateway.
- * Routes external traffic to various microservices (auth, template, etc.).
- * Handles cross-cutting concerns like global routing and discovery registration.
+ * Main Entry Point for the Template Service.
+ * This service manages resume templates, including their HTML/CSS layouts, 
+ * categories, and tiers. It integrates with Eureka for discovery.
  */
 @SpringBootApplication
 @EnableDiscoveryClient
-public class ApiGatewayApplication {
+public class TemplateServiceApplication {
 
 	public static void main(String[] args) {
 		io.github.cdimascio.dotenv.Dotenv dotenv = io.github.cdimascio.dotenv.Dotenv.configure()
@@ -21,7 +21,7 @@ public class ApiGatewayApplication {
 
 		dotenv.entries().forEach(entry -> System.setProperty(entry.getKey(), entry.getValue()));
 
-		SpringApplication.run(ApiGatewayApplication.class, args);
+		SpringApplication.run(TemplateServiceApplication.class, args);
 	}
 
 }

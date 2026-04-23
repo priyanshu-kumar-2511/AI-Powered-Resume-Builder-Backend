@@ -1,23 +1,18 @@
 package com.airesume.authservice.service;
 
 import com.airesume.authservice.dto.*;
-import com.airesume.authservice.model.Role;
-import com.airesume.authservice.model.User;
-import com.airesume.authservice.model.VerificationOtp;
-import com.airesume.authservice.repository.RoleRepository;
-import com.airesume.authservice.repository.UserRepository;
-import com.airesume.authservice.repository.UserQuotaRepository;
-import com.airesume.authservice.model.UserQuota;
+import com.airesume.authservice.model.*;
+import com.airesume.authservice.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Main Service for Authentication and Identity Management logic.
+ * Service class handling core authentication, registration, and account recovery.
  */
 @Service
 @RequiredArgsConstructor
@@ -25,15 +20,49 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
-    private final PasswordEncoder passwordEncoder;
     private final OtpService otpService;
     private final EmailService emailService;
     private final JwtService jwtService;
-    private final UserQuotaRepository userQuotaRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final UserQuotaRepository quotaRepository;
 
-    /**
-     * Authenticates a user and returns a JWT token.
-     */
+    @Transactional
+    public String register(RegisterRequest request) {
+        if (userRepository.existsByUsername(request.getUsername())) {
+            throw new RuntimeException("Username is already taken");
+        }
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new RuntimeException("Email is already registered");
+        }
+
+        Role userRole = roleRepository.findByName("ROLE_USER")
+                .orElseThrow(() -> new RuntimeException("Default Role not found"));
+
+        User user = User.builder()
+                .username(request.getUsername())
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .fullName(request.getFullName())
+                .age(request.getAge())
+                .mobileNumber(request.getMobileNumber())
+                .roles(Collections.singleton(userRole))
+                .provider(ProviderType.LOCAL)
+                .isActive(true)
+                .subscriptionPlan(PlanType.FREE)
+                .build();
+
+        userRepository.save(user);
+
+        UserQuota quota = UserQuota.builder()
+                .user(user)
+                .aiCallsUsed(0)
+                .atsChecksUsed(0)
+                .build();
+        quotaRepository.save(quota);
+
+        return "User registered successfully";
+    }
+
     public String login(LoginRequest request) {
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new RuntimeException("Username not found"));
@@ -42,142 +71,89 @@ public class AuthService {
             throw new RuntimeException("Incorrect Password");
         }
 
-        return jwtService.generateToken(user.getUsername());
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("roles", user.getRoles().stream().map(Role::getName).collect(Collectors.toList()));
+        String token = jwtService.generateToken(user.getUsername(), claims);
+
+        // Send a welcome/thank-you login notification email (non-blocking)
+        emailService.sendWelcomeLoginEmail(user.getEmail(), user.getFullName());
+
+        return token;
     }
 
-    /**
-     * Registers a new user with strict validation and default roles.
-     */
-    @Transactional
-    public String register(RegisterRequest request) {
-        if (userRepository.existsByUsername(request.getUsername())) {
-            return "Username already exists";
-        }
-        if (userRepository.existsByEmail(request.getEmail())) {
-            return "Email already registered";
-        }
-
-        Role userRole = roleRepository.findByName("ROLE_USER")
-                .orElseGet(() -> roleRepository.save(new Role(null, "ROLE_USER")));
-
-        User user = User.builder()
-                .fullName(request.getFullName())
-                .age(request.getAge())
-                .mobileNumber(request.getMobileNumber())
-                .email(request.getEmail())
-                .username(request.getUsername())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .isActive(true)
-                .build();
-        
-        user.getRoles().add(userRole);
-        User savedUser = userRepository.save(user);
-
-        // Initialize User Quota
-        UserQuota quota = UserQuota.builder()
-                .user(savedUser)
-                .build();
-        userQuotaRepository.save(quota);
-
-        return "User registered successfully";
-    }
-
-    /**
-     * Initiates Username Recovery by validating email/password and sending OTP.
-     */
-    @Transactional
     public String initiateUsernameRecovery(UsernameRecoveryRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("Email not registered"));
+                .orElseThrow(() -> new RuntimeException("No account found with this email"));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Incorrect Password");
+            throw new RuntimeException("Incorrect password");
         }
 
         String otp = otpService.generateAndSaveOtp(user, VerificationOtp.OtpType.USERNAME_RECOVERY);
         emailService.sendOtpEmail(user.getEmail(), otp, "Username Recovery");
-
-        return "OTP sent to your registered email";
+        return "Recovery OTP sent to your email";
     }
 
-    /**
-     * Verifies OTP and sends the recovered username via email.
-     */
-    @Transactional
     public String verifyUsernameRecovery(OtpVerificationRequest request) {
         User user = userRepository.findByEmail(request.getIdentifier())
-                .orElseThrow(() -> new RuntimeException("Email not registered"));
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        if (!otpService.validateOtp(user, request.getOtp(), VerificationOtp.OtpType.USERNAME_RECOVERY)) {
-            throw new RuntimeException("Invalid or Expired OTP");
+        if (otpService.validateOtp(user, request.getOtp(), VerificationOtp.OtpType.USERNAME_RECOVERY)) {
+            emailService.sendUsernameEmail(user.getEmail(), user.getUsername());
+            return "Username has been sent to your registered email";
         }
-
-        emailService.sendUsernameEmail(user.getEmail(), user.getUsername());
-        return "Username has been sent to your registered email";
+        throw new RuntimeException("Invalid or expired OTP");
     }
 
     /**
-     * Initiates Password Reset by validating username/email and sending OTP.
+     * FIX: Now accepts a single `identifier` (email or username) via the
+     * simplified PasswordResetInitiateRequest DTO, and calls
+     * findByUsernameOrEmail() to find the user by either field.
      */
-    @Transactional
     public String initiatePasswordReset(PasswordResetInitiateRequest request) {
-        User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new RuntimeException("Username not found"));
-
-        if (!user.getEmail().equalsIgnoreCase(request.getEmail())) {
-            throw new RuntimeException("Username and Email do not match");
-        }
+        String identifier = request.getIdentifier();
+        User user = userRepository.findByUsernameOrEmail(identifier, identifier)
+                .orElseThrow(() -> new RuntimeException("No account found with this email or username"));
 
         String otp = otpService.generateAndSaveOtp(user, VerificationOtp.OtpType.PASSWORD_RESET);
         emailService.sendOtpEmail(user.getEmail(), otp, "Password Reset");
-
-        return "OTP sent to your registered email";
+        return "Password reset OTP sent to " + user.getEmail();
     }
 
-    /**
-     * Verifies OTP and resets the password.
-     */
     @Transactional
     public String resetPassword(OtpVerificationRequest request) {
-        User user = userRepository.findByUsername(request.getIdentifier())
-                .orElseThrow(() -> new RuntimeException("Username not found"));
+        // FIX: `identifier` is an email (sent from frontend)
+        User user = userRepository.findByEmail(request.getIdentifier())
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        if (!otpService.validateOtp(user, request.getOtp(), VerificationOtp.OtpType.PASSWORD_RESET)) {
-            throw new RuntimeException("Invalid or Expired OTP");
+        if (otpService.validateOtp(user, request.getOtp(), VerificationOtp.OtpType.PASSWORD_RESET)) {
+            user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+            userRepository.save(user);
+            return "Password reset successful";
         }
-
-        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
-        userRepository.save(user);
-
-        return "Password updated successfully";
+        throw new RuntimeException("Invalid or expired OTP");
     }
 
-    /**
-     * Updates the user's profile information.
-     */
     @Transactional
     public String updateProfile(String username, ProfileRequest request) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Username not found"));
-        
-        if (request.getFullName() != null) user.setFullName(request.getFullName());
-        if (request.getAge() != null) user.setAge(request.getAge());
-        if (request.getMobileNumber() != null) user.setMobileNumber(request.getMobileNumber());
-        
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        user.setFullName(request.getFullName());
+        user.setMobileNumber(request.getMobileNumber());
+        user.setAge(request.getAge());
+
         userRepository.save(user);
         return "Profile updated successfully";
     }
 
-    /**
-     * Changes the user's password using authentication.
-     */
     @Transactional
     public String changePassword(String username, PasswordChangeRequest request) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Username not found"));
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
-            throw new RuntimeException("Incorrect current password");
+            throw new RuntimeException("Old password does not match");
         }
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
@@ -185,156 +161,134 @@ public class AuthService {
         return "Password changed successfully";
     }
 
-    /**
-     * Updates the user's subscription plan.
-     */
     @Transactional
-    public String updateSubscription(String username, com.airesume.authservice.model.PlanType newPlan) {
+    public String updateSubscription(String username, PlanType plan) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Username not found"));
-                
-        user.setSubscriptionPlan(newPlan);
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        user.setSubscriptionPlan(plan);
         userRepository.save(user);
-        return "Subscription updated to " + newPlan.name();
+        return "Subscription updated to " + plan;
     }
 
-    /**
-     * Soft deletes (deactivates) a user account.
-     */
     @Transactional
     public String deactivateAccount(String username) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Username not found"));
-        
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
         user.setActive(false);
         userRepository.save(user);
-        return "Account successfully deactivated";
+        return "Account deactivated successfully";
     }
 
-    /**
-     * Fetches the full profile of the authenticated user.
-     */
     public UserProfileResponse getUserProfile(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         return UserProfileResponse.builder()
                 .username(user.getUsername())
-                .fullName(user.getFullName())
                 .email(user.getEmail())
+                .fullName(user.getFullName())
                 .mobileNumber(user.getMobileNumber())
                 .age(user.getAge())
+                .roles(user.getRoles().stream().map(Role::getName).collect(Collectors.toSet()))
                 .subscriptionPlan(user.getSubscriptionPlan())
                 .isActive(user.isActive())
-                .roles(user.getRoles().stream().map(Role::getName).collect(Collectors.toSet()))
                 .build();
     }
 
-    /**
-     * Issues a fresh JWT token for the user.
-     */
-    public String refreshToken(String username) {
-        return jwtService.generateToken(username);
+    public String validateToken(String token) {
+        if (jwtService.validateToken(token)) {
+            return jwtService.extractUsername(token);
+        }
+        throw new RuntimeException("Invalid token");
     }
 
-    // --- ADMIN OPERATIONS ---
+    public String refreshToken(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-    /**
-     * Admin only: Get total user list.
-     */
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("roles", user.getRoles().stream().map(Role::getName).collect(Collectors.toList()));
+        return jwtService.generateToken(username, claims);
+    }
+
+    // ── Admin Methods ─────────────────────────────────────────────────────────
+
     public List<UserProfileResponse> getAllUsers() {
         return userRepository.findAll().stream()
                 .map(user -> UserProfileResponse.builder()
                         .username(user.getUsername())
-                        .fullName(user.getFullName())
                         .email(user.getEmail())
+                        .fullName(user.getFullName())
+                        .mobileNumber(user.getMobileNumber())
+                        .age(user.getAge())
+                        .roles(user.getRoles().stream().map(Role::getName).collect(Collectors.toSet()))
                         .subscriptionPlan(user.getSubscriptionPlan())
                         .isActive(user.isActive())
-                        .roles(user.getRoles().stream().map(Role::getName).collect(Collectors.toSet()))
                         .build())
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Admin only: Suspend or reactivate user accounts.
-     */
     @Transactional
     public String updateUserStatus(String username, boolean active) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         user.setActive(active);
         userRepository.save(user);
-        return "User status updated to: " + (active ? "ACTIVE" : "SUSPENDED");
+        return "User status updated successfully";
     }
 
-    /**
-     * Admin only: Promote or demote user roles.
-     */
     @Transactional
     public String updateUserRole(String username, String roleName) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         Role role = roleRepository.findByName(roleName)
-                .orElseThrow(() -> new RuntimeException("Role " + roleName + " not found"));
-        
+                .orElseThrow(() -> new RuntimeException("Role not found"));
+
         user.getRoles().clear();
         user.getRoles().add(role);
         userRepository.save(user);
-        return "User role updated to: " + roleName;
+        return "User role updated successfully";
     }
 
-    /**
-     * Admin only: Filter users by their role (e.g., ROLE_USER, ROLE_ADMIN).
-     */
     public List<UserProfileResponse> getUsersByRole(String roleName) {
         return userRepository.findAllByRoles_Name(roleName).stream()
-                .map(user -> mapToProfileResponse(user))
+                .map(user -> UserProfileResponse.builder()
+                        .username(user.getUsername())
+                        .email(user.getEmail())
+                        .fullName(user.getFullName())
+                        .mobileNumber(user.getMobileNumber())
+                        .age(user.getAge())
+                        .roles(user.getRoles().stream().map(Role::getName).collect(Collectors.toSet()))
+                        .subscriptionPlan(user.getSubscriptionPlan())
+                        .isActive(user.isActive())
+                        .build())
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Admin only: Filter users by their subscription tier.
-     */
-    public List<UserProfileResponse> getUsersByPlan(com.airesume.authservice.model.PlanType plan) {
+    public List<UserProfileResponse> getUsersByPlan(PlanType plan) {
         return userRepository.findBySubscriptionPlan(plan).stream()
-                .map(user -> mapToProfileResponse(user))
+                .map(user -> UserProfileResponse.builder()
+                        .username(user.getUsername())
+                        .email(user.getEmail())
+                        .fullName(user.getFullName())
+                        .mobileNumber(user.getMobileNumber())
+                        .age(user.getAge())
+                        .roles(user.getRoles().stream().map(Role::getName).collect(Collectors.toSet()))
+                        .subscriptionPlan(user.getSubscriptionPlan())
+                        .isActive(user.isActive())
+                        .build())
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Admin only: Permanently remove a user from the database.
-     */
     @Transactional
     public String deleteUserPermanently(Long userId) {
-        if (!userRepository.existsById(userId)) {
-            throw new RuntimeException("User ID " + userId + " not found");
-        }
-        userRepository.deleteById(userId);
-        return "User with ID " + userId + " permanently deleted";
-    }
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-    /**
-     * Validates a token and returns the corresponding username.
-     * Used by other microservices via the /validate endpoint.
-     */
-    public String validateToken(String token) {
-        if (jwtService.validateToken(token)) {
-            return jwtService.extractUsername(token);
-        }
-        throw new RuntimeException("Invalid or Expired Token");
-    }
-
-    /**
-     * Helper to map User entity to UserProfileResponse DTO.
-     */
-    private UserProfileResponse mapToProfileResponse(User user) {
-        return UserProfileResponse.builder()
-                .username(user.getUsername())
-                .fullName(user.getFullName())
-                .email(user.getEmail())
-                .subscriptionPlan(user.getSubscriptionPlan())
-                .isActive(user.isActive())
-                .roles(user.getRoles().stream().map(Role::getName).collect(Collectors.toSet()))
-                .build();
+        quotaRepository.findByUserId(userId).ifPresent(quotaRepository::delete);
+        userRepository.delete(user);
+        return "User permanently deleted";
     }
 }

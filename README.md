@@ -1,5 +1,5 @@
 # ResumeAI: AI-Powered Resume Builder Platform (Backend)
-**Current Branch:** `feature/UC2-Auth-Service`
+**Current Branch:** `feature/UC3-template-service`
 
 ## 📌 Project Overview / Introduction
 
@@ -125,4 +125,25 @@ The Angular application (`localhost:4200`) should call the API Gateway:
 - **Auth Endpoint:** `http://localhost:8080/api/v1/auth`
 - **Google OAuth Initiation:** `http://localhost:8080/oauth2/authorization/google`
 - **LinkedIn OAuth Initiation:** `http://localhost:8080/oauth2/authorization/linkedin`
+
+---
+
+## 🎨 Phase 3 (Template Management)
+
+This phase introduces the visual templating engine of the ecosystem.
+
+### Template Service
+
+| Service Name | Port | Description |
+| :--- | :--- | :--- |
+| **`template-service`** | `8082` | **Resume Template Management:** Handles CRUD operations, rendering, and fetching of professional resume templates. Includes comprehensive Javadoc, standardized JUnit 5/Mockito testing with H2, and global stateless security refactoring. |
+
+### How to Run Template Service
+
+1. **Start Template Service**
+   ```bash
+   cd template-service
+   mvn spring-boot:run
+   ```
+   *Template APIs Swagger UI:* [http://localhost:8082/swagger-ui.html](http://localhost:8082/swagger-ui.html)
 
