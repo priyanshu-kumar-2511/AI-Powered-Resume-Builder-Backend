@@ -6,6 +6,8 @@ import com.airesume.templateservice.model.Tier;
 import com.airesume.templateservice.repository.TemplateRepository;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +25,7 @@ public class TemplateServiceImpl implements TemplateService {
 
     @Override
     @Transactional
+    @CacheEvict(value = {"templates", "template"}, allEntries = true)
     public Template createTemplate(Template template) {
         template.setIsActive(true);
         template.setUsageCount(0L);
@@ -30,33 +33,39 @@ public class TemplateServiceImpl implements TemplateService {
     }
 
     @Override
+    @Cacheable(value = "templates", key = "'all_active'")
     public List<Template> getAllActiveTemplates() {
         return templateRepository.findByIsActiveTrue();
     }
 
     @Override
+    @Cacheable(value = "templates", key = "'tier_' + #tier")
     public List<Template> getTemplatesByTier(Tier tier) {
         return templateRepository.findByIsActiveTrueAndTier(tier);
     }
 
     @Override
+    @Cacheable(value = "template", key = "#templateId")
     public Template getTemplateById(Long templateId) {
         return templateRepository.findById(templateId)
                 .orElseThrow(() -> new RuntimeException("Template not found with ID: " + templateId));
     }
 
     @Override
+    @Cacheable(value = "templates", key = "'category_' + #category")
     public List<Template> getTemplatesByCategory(Category category) {
         return templateRepository.findByIsActiveTrueAndCategory(category);
     }
 
     @Override
+    @Cacheable(value = "templates", key = "'popular'")
     public List<Template> getPopularTemplates() {
         return templateRepository.findByIsActiveTrueOrderByUsageCountDesc();
     }
 
     @Override
     @Transactional
+    @CacheEvict(value = {"templates", "template"}, allEntries = true)
     public Template updateTemplate(Long templateId, Template templateDetails) {
         Template template = getTemplateById(templateId);
         template.setName(templateDetails.getName());
@@ -71,6 +80,7 @@ public class TemplateServiceImpl implements TemplateService {
 
     @Override
     @Transactional
+    @CacheEvict(value = {"templates", "template"}, allEntries = true)
     public void deactivateTemplate(Long templateId) {
         Template template = getTemplateById(templateId);
         template.setIsActive(false);
@@ -79,6 +89,7 @@ public class TemplateServiceImpl implements TemplateService {
 
     @Override
     @Transactional
+    @CacheEvict(value = {"templates", "template"}, allEntries = true)
     public void incrementUsage(Long templateId) {
         templateRepository.incrementUsageCount(templateId);
     }

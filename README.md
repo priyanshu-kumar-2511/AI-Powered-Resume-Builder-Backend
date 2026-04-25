@@ -1,5 +1,5 @@
 # ResumeAI: AI-Powered Resume Builder Platform (Backend)
-**Current Branch:** `feature/UC4-Resume-Service`
+**Current Branch:** `feature/UC5-Section-Service`
 
 ## 📌 Project Overview / Introduction
 
@@ -22,7 +22,7 @@ This repository holds the backend microservices ecosystem powering these platfor
 
 ## 🏗 Phase 1 (Infrastructure Layer)
 
-Currently, the **feature/UC1-infrastructure** branch of this repository represents **Phase 1** of the architecture. Phase 1 focuses exclusively on the core IT structural foundation that routes, monitors, and configures the future business logic deployments.
+Phase 1 focuses exclusively on the core IT structural foundation that routes, monitors, and configures the future business logic deployments.
 
 ## Architecture Overview
 
@@ -179,3 +179,22 @@ The microservices are pre-configured to seed the database with professional data
 - **`resume-service`**: Seeds a sample "Software Engineer" resume for the demo user.
 
 > **Note:** Ensure `spring.sql.init.mode=always` and `spring.jpa.defer-datasource-initialization=true` are active in `application.yml` to ensure data is inserted after schema creation.
+
+---
+
+## 📑 Phase 5 (Modular Content Management)
+
+Currently, the **feature/UC5-section-service** branch of this repository represents **Phase 5** of the architecture. This phase introduces the `section-service` for modular resume data management.
+
+### Section Service
+
+| Service Name | Port | Description |
+| :--- | :--- | :--- |
+| **`section-service`** | `8084` | **Modular Resume Sections:** Manages individual resume blocks (Experience, Education, Projects). Optimized with Redis caching for high performance. |
+
+### How to Run All Services (Fast Way)
+
+Use the automated launcher script to start all services in the correct sequence:
+```bash
+start_all_services.bat
+```

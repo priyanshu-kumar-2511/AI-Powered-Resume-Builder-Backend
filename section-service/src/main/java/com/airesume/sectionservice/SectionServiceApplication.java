@@ -1,4 +1,4 @@
-package com.airesume.templateservice;
+package com.airesume.sectionservice;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -6,25 +6,21 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 
 import org.springframework.cache.annotation.EnableCaching;
 
-/**
- * Main Entry Point for the Template Service.
- * This service manages resume templates, including their HTML/CSS layouts, 
- * categories, and tiers. It integrates with Eureka for discovery.
- */
 @SpringBootApplication
 @EnableDiscoveryClient
 @EnableCaching
-public class TemplateServiceApplication {
+public class SectionServiceApplication {
 
 	public static void main(String[] args) {
+		// Load .env file from the project root
 		io.github.cdimascio.dotenv.Dotenv dotenv = io.github.cdimascio.dotenv.Dotenv.configure()
-				.directory("../")
+				.directory("../") // Look at the root folder
 				.ignoreIfMissing()
 				.load();
 
 		dotenv.entries().forEach(entry -> System.setProperty(entry.getKey(), entry.getValue()));
 
-		SpringApplication.run(TemplateServiceApplication.class, args);
+		SpringApplication.run(SectionServiceApplication.class, args);
 	}
 
 }

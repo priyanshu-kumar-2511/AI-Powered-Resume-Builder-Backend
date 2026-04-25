@@ -23,18 +23,28 @@ spring:
   # Persistence Layer
   datasource:
     url: jdbc:mysql://${TEMPLATE_DB_HOST:localhost}:3306/${TEMPLATE_DB_NAME:airesume_template}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&autoReconnect=true
-    username: ${TEMPLATE_DB_USERNAME}
+    username: ${TEMPLATE_DB_USERNAME:root}
     password: ${TEMPLATE_DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
   
+  sql:
+    init:
+      mode: always
   jpa:
     hibernate:
       ddl-auto: update
+    defer-datasource-initialization: true
     show-sql: true
     properties:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.MySQLDialect
+        
+  # Redis Caching
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
   
 # Service Discovery
 eureka:

@@ -8,6 +8,8 @@ import com.airesume.resumeservice.model.Resume;
 import com.airesume.resumeservice.repository.ResumeRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +29,7 @@ public class ResumeServiceImpl implements ResumeService {
 
     @Override
     @Transactional
+    @CacheEvict(value = {"resumes_user", "public_resumes"}, allEntries = true)
     public ResumeResponse createResume(ResumeCreateRequest request) {
         // Evaluate user quota logic based on user tier if applicable.
         long currentCount = resumeRepository.countByUserId(request.getUserId());
@@ -51,6 +54,7 @@ public class ResumeServiceImpl implements ResumeService {
     }
 
     @Override
+    @Cacheable(value = "resume", key = "#resumeId")
     public ResumeResponse getResumeById(Long resumeId) {
         Resume resume = resumeRepository.findById(resumeId)
                 .orElseThrow(() -> new RuntimeException("Resume not found with ID: " + resumeId));
@@ -58,6 +62,7 @@ public class ResumeServiceImpl implements ResumeService {
     }
 
     @Override
+    @Cacheable(value = "resumes_user", key = "#userId")
     public List<ResumeResponse> getResumesByUser(Long userId) {
         return resumeRepository.findByUserId(userId).stream()
                 .map(ResumeResponse::new)
@@ -65,6 +70,7 @@ public class ResumeServiceImpl implements ResumeService {
     }
 
     @Override
+    @Cacheable(value = "resumes_template", key = "#templateId")
     public List<ResumeResponse> getResumesByTemplate(Long templateId) {
         return resumeRepository.findByTemplateId(templateId).stream()
                 .map(ResumeResponse::new)
@@ -72,6 +78,7 @@ public class ResumeServiceImpl implements ResumeService {
     }
 
     @Override
+    @Cacheable(value = "public_resumes", key = "'all'")
     public List<ResumeResponse> getPublicResumes() {
         return resumeRepository.findByIsPublic(true).stream()
                 .map(ResumeResponse::new)
@@ -80,6 +87,7 @@ public class ResumeServiceImpl implements ResumeService {
 
     @Override
     @Transactional
+    @CacheEvict(value = {"resume", "resumes_user", "resumes_template", "public_resumes"}, allEntries = true)
     public ResumeResponse updateResume(Long resumeId, ResumeUpdateRequest request) {
         Resume resume = resumeRepository.findById(resumeId)
                 .orElseThrow(() -> new RuntimeException("Resume not found with ID: " + resumeId));
@@ -95,6 +103,7 @@ public class ResumeServiceImpl implements ResumeService {
 
     @Override
     @Transactional
+    @CacheEvict(value = {"resume", "resumes_user", "resumes_template", "public_resumes"}, allEntries = true)
     public ResumeResponse updateAtsScore(Long resumeId, AtsUpdateDTO request) {
         Resume resume = resumeRepository.findById(resumeId)
                 .orElseThrow(() -> new RuntimeException("Resume not found with ID: " + resumeId));
@@ -106,6 +115,7 @@ public class ResumeServiceImpl implements ResumeService {
 
     @Override
     @Transactional
+    @CacheEvict(value = {"resumes_user"}, allEntries = true)
     public ResumeResponse duplicateResume(Long resumeId) {
         Resume original = resumeRepository.findById(resumeId)
                 .orElseThrow(() -> new RuntimeException("Resume not found with ID: " + resumeId));
@@ -131,6 +141,7 @@ public class ResumeServiceImpl implements ResumeService {
 
     @Override
     @Transactional
+    @CacheEvict(value = {"resume", "resumes_user", "public_resumes"}, allEntries = true)
     public ResumeResponse publishResume(Long resumeId) {
         Resume resume = resumeRepository.findById(resumeId)
                 .orElseThrow(() -> new RuntimeException("Resume not found with ID: " + resumeId));
@@ -142,6 +153,7 @@ public class ResumeServiceImpl implements ResumeService {
 
     @Override
     @Transactional
+    @CacheEvict(value = {"resume", "resumes_user", "public_resumes"}, allEntries = true)
     public ResumeResponse unpublishResume(Long resumeId) {
         Resume resume = resumeRepository.findById(resumeId)
                 .orElseThrow(() -> new RuntimeException("Resume not found with ID: " + resumeId));
@@ -152,6 +164,7 @@ public class ResumeServiceImpl implements ResumeService {
 
     @Override
     @Transactional
+    @CacheEvict(value = {"resume", "resumes_user", "public_resumes"}, allEntries = true)
     public void incrementViewCount(Long resumeId) {
         Resume resume = resumeRepository.findById(resumeId)
                 .orElseThrow(() -> new RuntimeException("Resume not found with ID: " + resumeId));
@@ -161,6 +174,7 @@ public class ResumeServiceImpl implements ResumeService {
 
     @Override
     @Transactional
+    @CacheEvict(value = {"resume", "resumes_user", "resumes_template", "public_resumes"}, allEntries = true)
     public void deleteResume(Long resumeId) {
         if (!resumeRepository.existsById(resumeId)) {
             throw new RuntimeException("Resume not found with ID: " + resumeId);
@@ -178,6 +192,7 @@ public class ResumeServiceImpl implements ResumeService {
 
     @Override
     @Transactional
+    @CacheEvict(value = {"resume", "resumes_user", "resumes_template", "public_resumes"}, allEntries = true)
     public void forceDeleteResume(Long resumeId) {
         if (!resumeRepository.existsById(resumeId)) {
             throw new RuntimeException("Resume not found with ID: " + resumeId);
