@@ -53,8 +53,10 @@ spring:
   
   # Configuration Management
   config:
-    # Pull infrastructure config from Config Server
-    import: optional:configserver:http://localhost:8888
+    # Pull config from .env file and Config Server
+    import: 
+      - optional:configserver:http://localhost:8888
+      - optional:file:../.env
   
   # Persistence Layer with Auto-DB Creation
   datasource:

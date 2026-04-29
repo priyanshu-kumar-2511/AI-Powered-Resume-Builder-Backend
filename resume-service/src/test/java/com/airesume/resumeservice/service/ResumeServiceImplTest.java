@@ -4,18 +4,23 @@ import com.airesume.resumeservice.dto.AtsUpdateDTO;
 import com.airesume.resumeservice.dto.ResumeCreateRequest;
 import com.airesume.resumeservice.dto.ResumeResponse;
 import com.airesume.resumeservice.dto.ResumeUpdateRequest;
+import com.airesume.resumeservice.client.dto.SectionPayload;
 import com.airesume.resumeservice.model.Resume;
 import com.airesume.resumeservice.repository.ResumeRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import com.airesume.resumeservice.security.CurrentUserService;
+import com.airesume.resumeservice.client.SectionServiceClient;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -31,6 +36,12 @@ class ResumeServiceImplTest {
     @Mock
     private ResumeRepository resumeRepository;
 
+    @Mock
+    private SectionServiceClient sectionServiceClient;
+
+    @Mock
+    private CurrentUserService currentUserService;
+
     @InjectMocks
     private ResumeServiceImpl resumeService;
 
@@ -38,6 +49,9 @@ class ResumeServiceImplTest {
 
     @BeforeEach
     void setUp() {
+        lenient().when(currentUserService.requireUserId()).thenReturn(100L);
+        lenient().when(currentUserService.isAdmin()).thenReturn(false);
+        lenient().when(currentUserService.isPremium()).thenReturn(false);
         sampleResume = Resume.builder()
                 .resumeId(1L)
                 .userId(100L)
@@ -67,6 +81,31 @@ class ResumeServiceImplTest {
         assertNotNull(response);
         assertEquals("Software Engineer", response.getTitle());
         verify(resumeRepository, times(1)).save(any(Resume.class));
+        verify(sectionServiceClient, times(4)).addSection(any(SectionPayload.class));
+    }
+
+    @Test
+    void testCreateResume_InitializesSupportedDefaultSectionsWithExpectedContent() {
+        ResumeCreateRequest request = new ResumeCreateRequest(100L, "Software Engineer", 10L, "Backend Developer", "en");
+
+        when(resumeRepository.countByUserId(100L)).thenReturn(1L);
+        when(resumeRepository.save(any(Resume.class))).thenReturn(sampleResume);
+
+        resumeService.createResume(request);
+
+        ArgumentCaptor<SectionPayload> captor = ArgumentCaptor.forClass(SectionPayload.class);
+        verify(sectionServiceClient, times(4)).addSection(captor.capture());
+
+        List<SectionPayload> sections = captor.getAllValues();
+        List<String> types = sections.stream()
+                .map(SectionPayload::getSectionType)
+                .collect(Collectors.toList());
+
+        assertEquals(List.of("SUMMARY", "EXPERIENCE", "EDUCATION", "SKILLS"), types);
+        assertEquals("{\"text\":\"\"}", sections.get(0).getContent());
+        assertEquals("[]", sections.get(1).getContent());
+        assertEquals("[]", sections.get(2).getContent());
+        assertEquals("[]", sections.get(3).getContent());
     }
 
     /**
@@ -90,11 +129,11 @@ class ResumeServiceImplTest {
     void testGetResumeById_NotFound() {
         when(resumeRepository.findById(99L)).thenReturn(Optional.empty());
 
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+        org.springframework.web.server.ResponseStatusException exception = assertThrows(org.springframework.web.server.ResponseStatusException.class, () -> {
             resumeService.getResumeById(99L);
         });
 
-        assertEquals("Resume not found with ID: 99", exception.getMessage());
+        assertEquals("Resume not found with ID: 99", exception.getReason());
     }
 
     /**
@@ -148,7 +187,8 @@ class ResumeServiceImplTest {
      */
     @Test
     void testDeleteResume_Success() {
-        when(resumeRepository.existsById(1L)).thenReturn(true);
+        when(resumeRepository.findById(1L)).thenReturn(Optional.of(sampleResume));
+        doNothing().when(sectionServiceClient).deleteAllSectionsByResume(1L);
         doNothing().when(resumeRepository).deleteById(1L);
 
         assertDoesNotThrow(() -> resumeService.deleteResume(1L));

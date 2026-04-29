@@ -1,45 +1,48 @@
 package com.airesume.resumeservice.service;
 
+import com.airesume.resumeservice.client.SectionServiceClient;
+import com.airesume.resumeservice.client.dto.SectionPayload;
 import com.airesume.resumeservice.dto.AtsUpdateDTO;
 import com.airesume.resumeservice.dto.ResumeCreateRequest;
 import com.airesume.resumeservice.dto.ResumeResponse;
 import com.airesume.resumeservice.dto.ResumeUpdateRequest;
 import com.airesume.resumeservice.model.Resume;
 import com.airesume.resumeservice.repository.ResumeRepository;
+import com.airesume.resumeservice.security.CurrentUserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Implementation of the ResumeService interface.
- * Contains the core business logic for resume container management.
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class ResumeServiceImpl implements ResumeService {
 
+    private static final long FREE_RESUME_LIMIT = 3L;
+
     private final ResumeRepository resumeRepository;
+    private final SectionServiceClient sectionServiceClient;
+    private final CurrentUserService currentUserService;
 
     @Override
-    @Transactional
     @CacheEvict(value = {"resumes_user", "public_resumes"}, allEntries = true)
     public ResumeResponse createResume(ResumeCreateRequest request) {
-        // Evaluate user quota logic based on user tier if applicable.
-        long currentCount = resumeRepository.countByUserId(request.getUserId());
-        if(currentCount >= 3) {
-            log.warn("User {} has reached the limit of 3 resumes (Free tier logic)", request.getUserId());
-            // Limit enforcement logic can be uncommented or handled at an API Gateway/User Service level.
-        }
+        Long currentUserId = currentUserService.requireUserId();
+        request.setUserId(currentUserId);
+
+        long currentCount = resumeRepository.countByUserId(currentUserId);
+        enforceFreePlanLimit(currentCount);
 
         Resume resume = Resume.builder()
-                .userId(request.getUserId())
+                .userId(currentUserId)
                 .title(request.getTitle())
                 .templateId(request.getTemplateId())
                 .targetJobTitle(request.getTargetJobTitle())
@@ -49,21 +52,32 @@ public class ResumeServiceImpl implements ResumeService {
                 .build();
 
         resume = resumeRepository.save(resume);
-        log.info("Created new resume with ID {} for user {}", resume.getResumeId(), request.getUserId());
+
+        // Call synchronously. Since we removed @Transactional from this method,
+        // the resume is already committed to the DB. When section-service calls
+        // back to verify ownership, it will find the resume successfully.
+        try {
+            initializeDefaultSections(resume.getResumeId());
+        } catch (Exception e) {
+            log.error("Failed to initialize default sections for resume: {}. Cleaning up.", resume.getResumeId(), e);
+            resumeRepository.deleteById(resume.getResumeId());
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to initialize sections");
+        }
+
+        log.info("Created new resume with ID {} for user {}", resume.getResumeId(), currentUserId);
         return new ResumeResponse(resume);
     }
 
     @Override
     @Cacheable(value = "resume", key = "#resumeId")
     public ResumeResponse getResumeById(Long resumeId) {
-        Resume resume = resumeRepository.findById(resumeId)
-                .orElseThrow(() -> new RuntimeException("Resume not found with ID: " + resumeId));
-        return new ResumeResponse(resume);
+        return new ResumeResponse(requireOwnedOrAdminResume(resumeId));
     }
 
     @Override
     @Cacheable(value = "resumes_user", key = "#userId")
     public List<ResumeResponse> getResumesByUser(Long userId) {
+        validateUserAccess(userId);
         return resumeRepository.findByUserId(userId).stream()
                 .map(ResumeResponse::new)
                 .collect(Collectors.toList());
@@ -72,6 +86,7 @@ public class ResumeServiceImpl implements ResumeService {
     @Override
     @Cacheable(value = "resumes_template", key = "#templateId")
     public List<ResumeResponse> getResumesByTemplate(Long templateId) {
+        currentUserService.requireAdmin();
         return resumeRepository.findByTemplateId(templateId).stream()
                 .map(ResumeResponse::new)
                 .collect(Collectors.toList());
@@ -89,13 +104,20 @@ public class ResumeServiceImpl implements ResumeService {
     @Transactional
     @CacheEvict(value = {"resume", "resumes_user", "resumes_template", "public_resumes"}, allEntries = true)
     public ResumeResponse updateResume(Long resumeId, ResumeUpdateRequest request) {
-        Resume resume = resumeRepository.findById(resumeId)
-                .orElseThrow(() -> new RuntimeException("Resume not found with ID: " + resumeId));
+        Resume resume = requireOwnedOrAdminResume(resumeId);
 
-        if (request.getTitle() != null) resume.setTitle(request.getTitle());
-        if (request.getTargetJobTitle() != null) resume.setTargetJobTitle(request.getTargetJobTitle());
-        if (request.getLanguage() != null) resume.setLanguage(request.getLanguage());
-        if (request.getStatus() != null) resume.setStatus(request.getStatus());
+        if (request.getTitle() != null) {
+            resume.setTitle(request.getTitle());
+        }
+        if (request.getTargetJobTitle() != null) {
+            resume.setTargetJobTitle(request.getTargetJobTitle());
+        }
+        if (request.getLanguage() != null) {
+            resume.setLanguage(request.getLanguage());
+        }
+        if (request.getStatus() != null) {
+            resume.setStatus(request.getStatus());
+        }
 
         log.info("Updated resume with ID {}", resumeId);
         return new ResumeResponse(resumeRepository.save(resume));
@@ -105,20 +127,18 @@ public class ResumeServiceImpl implements ResumeService {
     @Transactional
     @CacheEvict(value = {"resume", "resumes_user", "resumes_template", "public_resumes"}, allEntries = true)
     public ResumeResponse updateAtsScore(Long resumeId, AtsUpdateDTO request) {
-        Resume resume = resumeRepository.findById(resumeId)
-                .orElseThrow(() -> new RuntimeException("Resume not found with ID: " + resumeId));
-
+        Resume resume = requireOwnedOrAdminResume(resumeId);
         resume.setAtsScore(request.getAtsScore());
         log.info("Updated ATS score for resume {} to {}", resumeId, request.getAtsScore());
         return new ResumeResponse(resumeRepository.save(resume));
     }
 
     @Override
-    @Transactional
     @CacheEvict(value = {"resumes_user"}, allEntries = true)
     public ResumeResponse duplicateResume(Long resumeId) {
-        Resume original = resumeRepository.findById(resumeId)
-                .orElseThrow(() -> new RuntimeException("Resume not found with ID: " + resumeId));
+        Resume original = requireOwnedOrAdminResume(resumeId);
+        long currentCount = resumeRepository.countByUserId(original.getUserId());
+        enforceFreePlanLimit(currentCount);
 
         Resume duplicate = Resume.builder()
                 .userId(original.getUserId())
@@ -131,11 +151,16 @@ public class ResumeServiceImpl implements ResumeService {
                 .build();
 
         duplicate = resumeRepository.save(duplicate);
+        
+        try {
+            duplicateSections(resumeId, duplicate.getResumeId());
+        } catch (Exception e) {
+            log.error("Failed to duplicate sections for resume: {}. Cleaning up.", duplicate.getResumeId(), e);
+            resumeRepository.deleteById(duplicate.getResumeId());
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to duplicate sections");
+        }
+
         log.info("Duplicated resume {} into new resume {}", resumeId, duplicate.getResumeId());
-        
-        // Note: Section data duplication should happen here via inter-service communication
-        // or an event-driven mechanism triggering Section-Service.
-        
         return new ResumeResponse(duplicate);
     }
 
@@ -143,8 +168,7 @@ public class ResumeServiceImpl implements ResumeService {
     @Transactional
     @CacheEvict(value = {"resume", "resumes_user", "public_resumes"}, allEntries = true)
     public ResumeResponse publishResume(Long resumeId) {
-        Resume resume = resumeRepository.findById(resumeId)
-                .orElseThrow(() -> new RuntimeException("Resume not found with ID: " + resumeId));
+        Resume resume = requireOwnedOrAdminResume(resumeId);
         resume.setPublic(true);
         resume.setStatus("COMPLETE");
         log.info("Published resume {}", resumeId);
@@ -155,8 +179,7 @@ public class ResumeServiceImpl implements ResumeService {
     @Transactional
     @CacheEvict(value = {"resume", "resumes_user", "public_resumes"}, allEntries = true)
     public ResumeResponse unpublishResume(Long resumeId) {
-        Resume resume = resumeRepository.findById(resumeId)
-                .orElseThrow(() -> new RuntimeException("Resume not found with ID: " + resumeId));
+        Resume resume = requireOwnedOrAdminResume(resumeId);
         resume.setPublic(false);
         log.info("Unpublished resume {}", resumeId);
         return new ResumeResponse(resumeRepository.save(resume));
@@ -167,7 +190,10 @@ public class ResumeServiceImpl implements ResumeService {
     @CacheEvict(value = {"resume", "resumes_user", "public_resumes"}, allEntries = true)
     public void incrementViewCount(Long resumeId) {
         Resume resume = resumeRepository.findById(resumeId)
-                .orElseThrow(() -> new RuntimeException("Resume not found with ID: " + resumeId));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Resume not found with ID: " + resumeId));
+        if (!resume.isPublic()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Resume not found with ID: " + resumeId);
+        }
         resume.setViewCount(resume.getViewCount() + 1);
         resumeRepository.save(resume);
     }
@@ -176,15 +202,15 @@ public class ResumeServiceImpl implements ResumeService {
     @Transactional
     @CacheEvict(value = {"resume", "resumes_user", "resumes_template", "public_resumes"}, allEntries = true)
     public void deleteResume(Long resumeId) {
-        if (!resumeRepository.existsById(resumeId)) {
-            throw new RuntimeException("Resume not found with ID: " + resumeId);
-        }
-        resumeRepository.deleteById(resumeId);
+        Resume resume = requireOwnedOrAdminResume(resumeId);
+        sectionServiceClient.deleteAllSectionsByResume(resumeId);
+        resumeRepository.deleteById(resume.getResumeId());
         log.info("Deleted resume {}", resumeId);
     }
 
     @Override
     public List<ResumeResponse> getAllResumes() {
+        currentUserService.requireAdmin();
         return resumeRepository.findAll().stream()
                 .map(ResumeResponse::new)
                 .collect(Collectors.toList());
@@ -194,15 +220,105 @@ public class ResumeServiceImpl implements ResumeService {
     @Transactional
     @CacheEvict(value = {"resume", "resumes_user", "resumes_template", "public_resumes"}, allEntries = true)
     public void forceDeleteResume(Long resumeId) {
+        currentUserService.requireAdmin();
         if (!resumeRepository.existsById(resumeId)) {
-            throw new RuntimeException("Resume not found with ID: " + resumeId);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Resume not found with ID: " + resumeId);
         }
+        sectionServiceClient.deleteAllSectionsByResume(resumeId);
         resumeRepository.deleteById(resumeId);
         log.info("Admin forcefully deleted resume {}", resumeId);
     }
 
     @Override
     public Long countUserResumes(Long userId) {
+        validateUserAccess(userId);
         return resumeRepository.countByUserId(userId);
+    }
+
+    private void enforceFreePlanLimit(long currentCount) {
+        if (!currentUserService.isPremium() && currentCount >= FREE_RESUME_LIMIT) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Free plan users can keep up to 3 resumes. Upgrade to create more."
+            );
+        }
+    }
+
+    private Resume requireOwnedOrAdminResume(Long resumeId) {
+        Resume resume = resumeRepository.findById(resumeId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Resume not found with ID: " + resumeId));
+
+        if (currentUserService.isAdmin()) {
+            return resume;
+        }
+
+        Long currentUserId = currentUserService.requireUserId();
+        if (!resume.getUserId().equals(currentUserId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You do not have access to this resume.");
+        }
+
+        return resume;
+    }
+
+    private void validateUserAccess(Long userId) {
+        if (currentUserService.isAdmin()) {
+            return;
+        }
+
+        Long currentUserId = currentUserService.requireUserId();
+        if (!currentUserId.equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You do not have access to this user's resumes.");
+        }
+    }
+
+    private void duplicateSections(Long sourceResumeId, Long targetResumeId) {
+        List<SectionPayload> sections = sectionServiceClient.getSectionsByResume(sourceResumeId);
+        for (SectionPayload section : sections) {
+            sectionServiceClient.addSection(SectionPayload.builder()
+                    .resumeId(targetResumeId)
+                    .sectionType(section.getSectionType())
+                    .title(section.getTitle())
+                    .content(section.getContent())
+                    .displayOrder(section.getDisplayOrder())
+                    .isVisible(section.getIsVisible())
+                    .aiGenerated(section.getAiGenerated())
+                    .build());
+        }
+    }
+
+    private void initializeDefaultSections(Long resumeId) {
+        String[] defaultTypes = {"SUMMARY", "EXPERIENCE", "EDUCATION", "SKILLS"};
+        int order = 1;
+        for (String type : defaultTypes) {
+            String title = defaultSectionTitle(type);
+
+            sectionServiceClient.addSection(SectionPayload.builder()
+                    .resumeId(resumeId)
+                    .sectionType(type)
+                    .title(title)
+                    .content(defaultSectionContent(type))
+                    .displayOrder(order++)
+                    .isVisible(true)
+                    .aiGenerated(false)
+                    .build());
+        }
+    }
+
+    private String defaultSectionTitle(String type) {
+        return switch (type) {
+            case "SUMMARY" -> "Professional Summary";
+            case "EXPERIENCE" -> "Work Experience";
+            case "EDUCATION" -> "Education";
+            case "SKILLS" -> "Skills";
+            default -> type.substring(0, 1).toUpperCase() + type.substring(1).toLowerCase();
+        };
+    }
+
+    private String defaultSectionContent(String type) {
+        return switch (type) {
+            case "SUMMARY" -> "{\"text\":\"\"}";
+            case "EXPERIENCE", "EDUCATION", "SKILLS" -> "[]";
+            default -> "{}";
+        };
     }
 }

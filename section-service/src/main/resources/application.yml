@@ -1,12 +1,15 @@
 server:
   port: 8084
+  forward-headers-strategy: framework
 
 spring:
   application:
     name: section-service
   
   config:
-    import: optional:configserver:http://localhost:8888
+    import:
+      - optional:configserver:http://localhost:8888
+      - optional:file:../.env
   
   datasource:
     url: jdbc:mysql://${SECTION_DB_HOST:localhost}:3306/${SECTION_DB_NAME:airesume_section}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&autoReconnect=true
@@ -39,8 +42,10 @@ eureka:
     service-url:
       defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka/}
   instance:
-    prefer-ip-address: true
+    hostname: localhost
+    non-secure-port: 8084
     instance-id: ${spring.application.name}:${server.port}
+    appname: SECTION-SERVICE
 
 management:
   endpoints:
@@ -54,5 +59,11 @@ management:
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
+    custom-css-url: /swagger-custom.css
   api-docs:
     path: /v3/api-docs
+
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration: ${JWT_EXPIRATION:86400000}

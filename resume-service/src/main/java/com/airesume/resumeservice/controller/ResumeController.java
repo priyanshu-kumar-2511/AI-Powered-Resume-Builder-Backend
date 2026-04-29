@@ -18,7 +18,7 @@ import java.util.List;
  * Contains endpoints for Free/Premium users and Administrative tasks.
  */
 @RestController
-@RequestMapping("/api/v1/resumes")
+@RequestMapping("")
 @RequiredArgsConstructor
 public class ResumeController {
 

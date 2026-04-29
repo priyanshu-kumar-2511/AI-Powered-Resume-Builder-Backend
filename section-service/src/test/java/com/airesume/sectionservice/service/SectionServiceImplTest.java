@@ -11,6 +11,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.airesume.sectionservice.client.ResumeServiceClient;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -24,6 +25,9 @@ public class SectionServiceImplTest {
 
     @Mock
     private SectionRepository sectionRepository;
+
+    @Mock
+    private ResumeServiceClient resumeServiceClient;
 
     @InjectMocks
     private SectionServiceImpl sectionService;
@@ -41,6 +45,7 @@ public class SectionServiceImplTest {
         sampleSection.setDisplayOrder(1);
         sampleSection.setIsVisible(true);
         sampleSection.setAiGenerated(false);
+        lenient().when(resumeServiceClient.getResumeById(anyLong())).thenReturn(null);
     }
 
     @Test

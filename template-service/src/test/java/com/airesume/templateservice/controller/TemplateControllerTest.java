@@ -67,7 +67,7 @@ public class TemplateControllerTest {
         when(templateService.getAllActiveTemplates()).thenReturn(Arrays.asList(template));
 
         // WHEN & THEN: Perform request and verify JSON output
-        mockMvc.perform(get("/api/v1/templates"))
+        mockMvc.perform(get("/"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].name").value("Modern"))
                 .andExpect(jsonPath("$[0].category").value("MODERN"));
@@ -85,7 +85,7 @@ public class TemplateControllerTest {
 
         when(templateService.createTemplate(any(Template.class))).thenReturn(template);
 
-        mockMvc.perform(post("/api/v1/templates")
+        mockMvc.perform(post("")
                         .with(csrf()) // Adding CSRF token for security bypass in tests
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(template)))
@@ -99,7 +99,7 @@ public class TemplateControllerTest {
     void createTemplate_AsUser_ShouldReturnForbidden() throws Exception {
         Template template = Template.builder().name("Forbidden").build();
 
-        mockMvc.perform(post("/api/v1/templates")
+        mockMvc.perform(post("")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(template)))
@@ -117,7 +117,7 @@ public class TemplateControllerTest {
 
         when(templateService.getTemplateById(1L)).thenReturn(template);
 
-        mockMvc.perform(get("/api/v1/templates/1"))
+        mockMvc.perform(get("/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.htmlLayout").value("<html></html>"));
     }
@@ -126,7 +126,7 @@ public class TemplateControllerTest {
     @WithMockUser(roles = "ADMIN")
     @DisplayName("API: PUT /api/v1/templates/{id}/deactivate - Admin should be able to deactivate")
     void deactivateTemplate_AsAdmin_ShouldReturnNoContent() throws Exception {
-        mockMvc.perform(put("/api/v1/templates/1/deactivate").with(csrf()))
+        mockMvc.perform(put("/1/deactivate").with(csrf()))
                 .andExpect(status().isNoContent());
     }
 }

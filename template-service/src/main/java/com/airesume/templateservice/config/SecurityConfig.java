@@ -27,23 +27,38 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(AbstractHttpConfigurer::disable) // Disable CSRF for stateless REST APIs
+            .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth
-                // Public Endpoints: Accessible by anyone (Guests)
-                .requestMatchers(HttpMethod.GET, "/api/v1/templates", "/api/v1/templates/free", "/api/v1/templates/{templateId}", "/api/v1/templates/category/**", "/api/v1/templates/popular").permitAll()
-                
-                // Internal Usage Increment: Public but usually called by other services
-                .requestMatchers(HttpMethod.PUT, "/api/v1/templates/{templateId}/increment-usage").permitAll()
-                
-                // Documentation & Monitoring
-                .requestMatchers("/v3/api-docs/**", "/api/v1/templates/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/actuator/**").permitAll()
-                
-                // All other requests require authentication (Role checks done at Controller level)
+                // Public GET endpoints — paths after gateway rewrite (no /api/v1/templates prefix)
+                .requestMatchers(HttpMethod.GET,
+                    "/",              // GET all templates
+                    "/free",          // GET free templates
+                    "/{templateId}",  // GET single template
+                    "/category/**",   // GET by category
+                    "/popular",       // GET popular
+                    "/search",        // GET search
+                    // Also allow with prefix in case of direct calls (not via gateway)
+                    "/api/v1/templates",
+                    "/api/v1/templates/free",
+                    "/api/v1/templates/{templateId}",
+                    "/api/v1/templates/category/**",
+                    "/api/v1/templates/popular"
+                ).permitAll()
+
+                // Usage increment — public
+                .requestMatchers(HttpMethod.PUT, "/{templateId}/increment-usage",
+                    "/api/v1/templates/{templateId}/increment-usage").permitAll()
+
+                // Docs & monitoring
+                .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/actuator/**").permitAll()
+
+                // All other requests require authentication
                 .anyRequest().authenticated()
             )
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // No JSESSIONID
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+
     }
 }

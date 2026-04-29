@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
  * Exposes endpoints for creating, retrieving, and updating resume templates.
  */
 @RestController
-@RequestMapping("/api/v1/templates")
+@RequestMapping("")
 @RequiredArgsConstructor
 @Tag(name = "Template Management", description = "APIs for managing and retrieving resume templates")
 public class TemplateController {

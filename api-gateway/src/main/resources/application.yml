@@ -5,7 +5,9 @@ spring:
   application:
     name: API-GATEWAY
   config:
-    import: optional:configserver:http://localhost:8888
+    import:
+      - optional:configserver:http://localhost:8888
+      - optional:file:../.env
   cloud:
     gateway:
       server:
@@ -13,9 +15,17 @@ spring:
           globalcors:
             cors-configurations:
               '[/**]':
-                allowedOrigins: "http://localhost:4200"
-                allowedMethods: "GET,POST,PUT,DELETE,OPTIONS"
-                allowedHeaders: "*"
+                allowedOrigins:
+                  - "http://localhost:4200"
+                  - "http://127.0.0.1:4200"
+                allowedMethods:
+                  - GET
+                  - POST
+                  - PUT
+                  - DELETE
+                  - OPTIONS
+                allowedHeaders:
+                  - "*"
                 allowCredentials: true
           routes:
             # Separate docs route so AUTH-SERVICE spec does not collide with gateway docs
@@ -25,6 +35,7 @@ spring:
                 - Path=/api/v1/auth/v3/api-docs, /api/v1/auth/v3/api-docs/**
               filters:
                 - RewritePath=/api/v1/auth/(?<segment>.*), /${segment}
+                - SetRequestHeader=X-Forwarded-Prefix, /api/v1/auth
 
             # Route for Authentication APIs
             - id: auth-api-route
@@ -48,21 +59,33 @@ spring:
               uri: lb://resume-service
               predicates:
                 - Path=/api/v1/resumes/**
+              filters:
+                - RewritePath=/api/v1/resumes/?(?<segment>.*), /${segment}
+                - SetRequestHeader=X-Forwarded-Prefix, /api/v1/resumes
 
             - id: section-service
               uri: lb://section-service
               predicates:
                 - Path=/api/v1/sections/**
+              filters:
+                - RewritePath=/api/v1/sections/?(?<segment>.*), /${segment}
+                - SetRequestHeader=X-Forwarded-Prefix, /api/v1/sections
 
             - id: ai-service
               uri: lb://ai-service
               predicates:
                 - Path=/api/v1/ai/**
+              filters:
+                - RewritePath=/api/v1/ai/?(?<segment>.*), /${segment}
+                - SetRequestHeader=X-Forwarded-Prefix, /api/v1/ai
 
             - id: template-service
               uri: lb://template-service
               predicates:
                 - Path=/api/v1/templates/**
+              filters:
+                - RewritePath=/api/v1/templates/?(?<segment>.*), /${segment}
+                - SetRequestHeader=X-Forwarded-Prefix, /api/v1/templates
 
             - id: export-service
               uri: lb://export-service

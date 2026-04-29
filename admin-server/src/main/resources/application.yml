@@ -4,6 +4,8 @@ server:
 spring:
   application:
     name: ADMIN-SERVER
+  config:
+    import: optional:file:../.env
   security:
     user:
       name: ${ADMIN_USERNAME}

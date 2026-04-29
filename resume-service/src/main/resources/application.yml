@@ -1,15 +1,18 @@
 server:
   port: 8083
+  forward-headers-strategy: framework
 
 spring:
   application:
     name: resume-service
   config:
-    import: optional:configserver:http://localhost:8888
+    import:
+      - optional:configserver:http://localhost:8888
+      - optional:file:../.env
   datasource:
-    url: jdbc:mysql://localhost:3306/resumeai_resume_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC
-    username: root
-    password: ${AUTH_DB_PASSWORD}
+    url: jdbc:mysql://${RESUME_DB_HOST:localhost}:3306/${RESUME_DB_NAME:airesume_resume}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&autoReconnect=true&serverTimezone=UTC
+    username: ${RESUME_DB_USERNAME:root}
+    password: ${RESUME_DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
   sql:
     init:
@@ -34,10 +37,25 @@ eureka:
     service-url:
       defaultZone: http://localhost:8761/eureka/
   instance:
-    prefer-ip-address: true
+    hostname: localhost
+    non-secure-port: 8083
+    instance-id: ${spring.application.name}:${server.port}
+    appname: RESUME-SERVICE
 
 management:
   endpoints:
     web:
       exposure:
         include: "*"
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    custom-css-url: /swagger-custom.css
+  api-docs:
+    path: /v3/api-docs
+
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration: ${JWT_EXPIRATION:86400000}

@@ -1,13 +1,11 @@
 # ResumeAI: AI-Powered Resume Builder Platform (Backend)
-**Current Branch:** `feature/UC5-Section-Service`
+**Current Branch:** `feature/UC6-AI-Service`
 
 ## 📌 Project Overview / Introduction
 
 **ResumeAI** is a full-stack AI-Powered Resume Builder platform designed to empower job seekers to create, optimize, and export professional resumes with the help of cutting-edge AI language models. 
 
-The platform utilizes a robust dual-AI strategy with cross-model failover to ensure 100% uptime and optimal quality:
-*   **Free Tier:** **Google Gemini (1.5 Flash)** is the primary model. If Gemini is unavailable, the system automatically fails over to **Anthropic Claude**.
-*   **Premium Tier:** **Anthropic Claude (3.5 Sonnet)** is the primary model for professional-grade quality. If Claude is unavailable, the system automatically fails over to **Google Gemini**.
+The platform utilizes an AI-powered content layer to generate and optimize resume content for multiple user flows. The current backend setup is configured around a **Groq-backed OpenAI-compatible API** (using models like `llama-3.1-8b-instant`). This allows the `ai-service` to generate professional summaries, write bullet points, provide ATS feedback, and translate resumes at lightning-fast speeds through a single provider.
 
 Features include:
 *   Intelligent content generation for Professional Summaries and work experience bullet points.
@@ -184,7 +182,7 @@ The microservices are pre-configured to seed the database with professional data
 
 ## 📑 Phase 5 (Modular Content Management)
 
-Currently, the **feature/UC5-section-service** branch of this repository represents **Phase 5** of the architecture. This phase introduces the `section-service` for modular resume data management.
+This phase introduces the `section-service` for modular resume data management.
 
 ### Section Service
 
@@ -196,5 +194,33 @@ Currently, the **feature/UC5-section-service** branch of this repository represe
 
 Use the automated launcher script to start all services in the correct sequence:
 ```bash
-start_all_services.bat
-```
+
+---
+
+## 🤖 Phase 6 (Intelligence Layer)
+
+Currently, the **feature/UC6-ai-service** branch of this repository represents **Phase 5** of the architecture. This phase introduces AI-powered content generation and optimization.
+
+### AI Service
+
+| Service Name | Port | Description |
+| :--- | :--- | :--- |
+| **`ai-service`** | `8085` | **AI Content Generation:** Uses **Groq's OpenAI-compatible API** (via Spring AI) to generate professional summaries, write bullet points, analyze ATS compatibility, and translate resumes. Implements Quota management for Free users and unlimited access for Premium users. |
+
+### How to Run AI Service
+
+1. **Start AI Service**
+   ```bash
+   cd ai-service
+   mvn spring-boot:run
+   ```
+   *AI APIs Swagger UI:* [http://localhost:8085/swagger-ui.html](http://localhost:8085/swagger-ui.html)
+
+---
+
+## 🐛 Troubleshooting & Debugging Logs
+
+### Recent Critical Fixes
+1. **OAuth2 User Context Fix**: Resolved an issue where OAuth2 logins (Google/LinkedIn) failed to include `userId` and `subscriptionPlan` in the generated JWT token. This caused `401 Unauthorized` errors during resume creation and fetching. `OAuth2SuccessHandler` was updated to accurately map claims.
+2. **Template Creation Bug**: Fixed a cascading error where clicking "Use this template" threw a creation failure. The root cause was identified as the missing `userId` in the OAuth JWT, which prevented the backend `resume-service` from correctly linking the new resume to the current user profile.
+3. **Circular Dependency Fix**: Resolved a deadlock during startup where `resume-service` and `section-service` were waiting on each other. Implemented `@Lazy` loading for cross-service Feign clients.

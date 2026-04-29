@@ -18,7 +18,7 @@ import java.util.List;
  * @version 1.0
  */
 @RestController
-@RequestMapping("/api/v1/sections")
+@RequestMapping("")
 @RequiredArgsConstructor
 public class SectionController {
 

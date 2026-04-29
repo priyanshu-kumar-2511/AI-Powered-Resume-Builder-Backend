@@ -1,0 +1,236 @@
+version: '3.8'
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  AI Resume Builder — Docker Compose
+#  Run: docker-compose up -d
+#  Frontend: ng serve --proxy-config proxy.conf.json   (separate terminal)
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── Infrastructure ──────────────────────────────────────────────────────────
+
+  mysql:
+    image: mysql:8.0
+    container_name: airesume-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${AUTH_DB_PASSWORD:-Priyanshu@MySql}
+      MYSQL_ROOT_HOST: '%'
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${AUTH_DB_PASSWORD:-Priyanshu@MySql}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: airesume-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # ── Spring Boot Services ────────────────────────────────────────────────────
+
+  eureka-server:
+    build: ./eureka-server
+    container_name: airesume-eureka
+    restart: unless-stopped
+    ports:
+      - "8761:8761"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  config-server:
+    build: ./config-server
+    container_name: airesume-config
+    restart: unless-stopped
+    ports:
+      - "8888:8888"
+    environment:
+      EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8888/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  auth-service:
+    build: ./auth-service
+    container_name: airesume-auth
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    env_file: .env
+    environment:
+      AUTH_DB_HOST: mysql
+      REDIS_HOST: redis
+      EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
+      API_GATEWAY_URL: http://localhost:8080
+      ADMIN_SERVER_URL: http://admin-server:9090
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  template-service:
+    build: ./template-service
+    container_name: airesume-template
+    restart: unless-stopped
+    ports:
+      - "8082:8082"
+    env_file: .env
+    environment:
+      TEMPLATE_DB_HOST: mysql
+      REDIS_HOST: redis
+      EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
+      ADMIN_SERVER_URL: http://admin-server:9090
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  resume-service:
+    build: ./resume-service
+    container_name: airesume-resume
+    restart: unless-stopped
+    ports:
+      - "8083:8083"
+    env_file: .env
+    environment:
+      RESUME_DB_HOST: mysql
+      REDIS_HOST: redis
+      EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  section-service:
+    build: ./section-service
+    container_name: airesume-section
+    restart: unless-stopped
+    ports:
+      - "8084:8084"
+    env_file: .env
+    environment:
+      SECTION_DB_HOST: mysql
+      REDIS_HOST: redis
+      EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8084/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  ai-service:
+    build: ./ai-service
+    container_name: airesume-ai
+    restart: unless-stopped
+    ports:
+      - "8085:8085"
+    env_file: .env
+    environment:
+      AI_DB_HOST: mysql
+      EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
+    depends_on:
+      mysql:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8085/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  api-gateway:
+    build: ./api-gateway
+    container_name: airesume-gateway
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    env_file: .env
+    environment:
+      EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  admin-server:
+    build: ./admin-server
+    container_name: airesume-admin
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    env_file: .env
+    environment:
+      EUREKA_SERVER_URL: http://eureka-server:8761/eureka/
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+
+volumes:
+  mysql_data:

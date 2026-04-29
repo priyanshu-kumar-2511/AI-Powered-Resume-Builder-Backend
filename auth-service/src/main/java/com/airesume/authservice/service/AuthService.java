@@ -71,9 +71,7 @@ public class AuthService {
             throw new RuntimeException("Incorrect Password");
         }
 
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("roles", user.getRoles().stream().map(Role::getName).collect(Collectors.toList()));
-        String token = jwtService.generateToken(user.getUsername(), claims);
+        String token = jwtService.generateToken(user.getUsername(), buildAuthClaims(user));
 
         // Send a welcome/thank-you login notification email (non-blocking)
         emailService.sendWelcomeLoginEmail(user.getEmail(), user.getFullName());
@@ -185,16 +183,7 @@ public class AuthService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        return UserProfileResponse.builder()
-                .username(user.getUsername())
-                .email(user.getEmail())
-                .fullName(user.getFullName())
-                .mobileNumber(user.getMobileNumber())
-                .age(user.getAge())
-                .roles(user.getRoles().stream().map(Role::getName).collect(Collectors.toSet()))
-                .subscriptionPlan(user.getSubscriptionPlan())
-                .isActive(user.isActive())
-                .build();
+        return toUserProfileResponse(user);
     }
 
     public String validateToken(String token) {
@@ -208,25 +197,14 @@ public class AuthService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("roles", user.getRoles().stream().map(Role::getName).collect(Collectors.toList()));
-        return jwtService.generateToken(username, claims);
+        return jwtService.generateToken(username, buildAuthClaims(user));
     }
 
     // ── Admin Methods ─────────────────────────────────────────────────────────
 
     public List<UserProfileResponse> getAllUsers() {
         return userRepository.findAll().stream()
-                .map(user -> UserProfileResponse.builder()
-                        .username(user.getUsername())
-                        .email(user.getEmail())
-                        .fullName(user.getFullName())
-                        .mobileNumber(user.getMobileNumber())
-                        .age(user.getAge())
-                        .roles(user.getRoles().stream().map(Role::getName).collect(Collectors.toSet()))
-                        .subscriptionPlan(user.getSubscriptionPlan())
-                        .isActive(user.isActive())
-                        .build())
+                .map(this::toUserProfileResponse)
                 .collect(Collectors.toList());
     }
 
@@ -254,31 +232,13 @@ public class AuthService {
 
     public List<UserProfileResponse> getUsersByRole(String roleName) {
         return userRepository.findAllByRoles_Name(roleName).stream()
-                .map(user -> UserProfileResponse.builder()
-                        .username(user.getUsername())
-                        .email(user.getEmail())
-                        .fullName(user.getFullName())
-                        .mobileNumber(user.getMobileNumber())
-                        .age(user.getAge())
-                        .roles(user.getRoles().stream().map(Role::getName).collect(Collectors.toSet()))
-                        .subscriptionPlan(user.getSubscriptionPlan())
-                        .isActive(user.isActive())
-                        .build())
+                .map(this::toUserProfileResponse)
                 .collect(Collectors.toList());
     }
 
     public List<UserProfileResponse> getUsersByPlan(PlanType plan) {
         return userRepository.findBySubscriptionPlan(plan).stream()
-                .map(user -> UserProfileResponse.builder()
-                        .username(user.getUsername())
-                        .email(user.getEmail())
-                        .fullName(user.getFullName())
-                        .mobileNumber(user.getMobileNumber())
-                        .age(user.getAge())
-                        .roles(user.getRoles().stream().map(Role::getName).collect(Collectors.toSet()))
-                        .subscriptionPlan(user.getSubscriptionPlan())
-                        .isActive(user.isActive())
-                        .build())
+                .map(this::toUserProfileResponse)
                 .collect(Collectors.toList());
     }
 
@@ -290,5 +250,27 @@ public class AuthService {
         quotaRepository.findByUserId(userId).ifPresent(quotaRepository::delete);
         userRepository.delete(user);
         return "User permanently deleted";
+    }
+
+    private Map<String, Object> buildAuthClaims(User user) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("roles", user.getRoles().stream().map(Role::getName).collect(Collectors.toList()));
+        claims.put("userId", user.getId());
+        claims.put("subscriptionPlan", user.getSubscriptionPlan().name());
+        return claims;
+    }
+
+    private UserProfileResponse toUserProfileResponse(User user) {
+        return UserProfileResponse.builder()
+                .userId(user.getId())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .fullName(user.getFullName())
+                .mobileNumber(user.getMobileNumber())
+                .age(user.getAge())
+                .roles(user.getRoles().stream().map(Role::getName).collect(Collectors.toSet()))
+                .subscriptionPlan(user.getSubscriptionPlan())
+                .isActive(user.isActive())
+                .build();
     }
 }

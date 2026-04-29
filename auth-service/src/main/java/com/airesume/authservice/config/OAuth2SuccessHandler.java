@@ -77,6 +77,8 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             claims.put("roles", user.getRoles().stream()
                     .map(Role::getName)
                     .collect(Collectors.toList()));
+            claims.put("userId", user.getId());
+            claims.put("subscriptionPlan", user.getSubscriptionPlan().name());
             String token = jwtService.generateToken(user.getUsername(), claims);
 
             // Send a welcome login email (non-blocking — OAuth login is never blocked by mail errors)
