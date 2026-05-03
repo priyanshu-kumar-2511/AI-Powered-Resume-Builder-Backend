@@ -2,8 +2,7 @@ package com.airesume.authservice.controller;
 
 import com.airesume.authservice.dto.UserProfileResponse;
 import com.airesume.authservice.service.AuthService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
+import com.airesume.authservice.model.PlanType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -13,55 +12,100 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Controller handling administrative operations for user management.
- * Exposes endpoints for managing user roles, statuses, and retrieving user lists.
- * Requires ROLE_ADMIN authority.
+ * Admin-only endpoints for user management.
+ * Gateway path: /api/v1/admin/**
  */
 @RestController
 @RequestMapping("/api/v1/admin")
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('ADMIN')")
-@Tag(name = "admin-controller", description = "Administrative endpoints for user management and platform oversight")
 public class AdminController {
 
     private final AuthService authService;
 
+    // ── User listing ─────────────────────────────────────────────────────────
+
+    /**
+     * Retrieves a list of all users in the system.
+     * @return a list containing profile information of all users
+     */
     @GetMapping("/users")
-    @Operation(summary = "Get all users", description = "Retrieves a comprehensive list of all users and their subscription statuses")
     public ResponseEntity<List<UserProfileResponse>> getAllUsers() {
         return ResponseEntity.ok(authService.getAllUsers());
     }
 
-    @PutMapping("/users/{username}/status")
-    @Operation(summary = "Update user status", description = "Suspend or reactivate a user account by its username")
-    public ResponseEntity<Map<String, String>> updateUserStatus(@PathVariable String username, @RequestParam boolean active) {
-        String result = authService.updateUserStatus(username, active);
-        return ResponseEntity.ok(Map.of("message", result));
+    // ── Suspend / Reactivate ─────────────────────────────────────────────────
+
+    /**
+     * Suspends a user by their ID. A suspension email containing the reason
+     * and Code of Conduct is sent to the user.
+     * @param userId the ID of the user to suspend
+     * @param body a map containing the reason for suspension (optional)
+     * @return a success message confirming the suspension
+     */
+    @PutMapping("/users/{userId}/suspend")
+    public ResponseEntity<Map<String,String>> suspendUser(
+            @PathVariable Long userId,
+            @RequestBody(required = false) Map<String,String> body) {
+        String reason = (body != null && body.containsKey("reason") && !body.get("reason").isBlank())
+                ? body.get("reason")
+                : "Violation of ResumeAI Terms of Service and Code of Conduct.";
+        return ResponseEntity.ok(Map.of("message", authService.suspendUserById(userId, reason)));
     }
 
-    @PutMapping("/users/{username}/role")
-    @Operation(summary = "Update user role", description = "Promote or demote a user to a specific role (e.g., ROLE_ADMIN, ROLE_USER)")
-    public ResponseEntity<Map<String, String>> updateUserRole(@PathVariable String username, @RequestParam String roleName) {
-        String result = authService.updateUserRole(username, roleName);
-        return ResponseEntity.ok(Map.of("message", result));
+    /**
+     * Reactivates a previously suspended user and sends a reactivation email.
+     * @param userId the ID of the user to reactivate
+     * @return a success message confirming the reactivation
+     */
+    @PutMapping("/users/{userId}/reactivate")
+    public ResponseEntity<Map<String,String>> reactivateUser(@PathVariable Long userId) {
+        return ResponseEntity.ok(Map.of("message", authService.reactivateUserById(userId)));
     }
 
-    @GetMapping("/users/role/{role}")
-    @Operation(summary = "Filter users by role", description = "Retrieves a list of users filtered by their assigned role (e.g., ROLE_USER, ROLE_ADMIN)")
-    public ResponseEntity<List<UserProfileResponse>> getUsersByRole(@PathVariable String role) {
-        return ResponseEntity.ok(authService.getUsersByRole(role));
+    // ── Subscription plan ────────────────────────────────────────────────────
+
+    /**
+     * Updates the subscription plan of a specific user.
+     * Body format: { "plan": "PREMIUM" } or { "plan": "FREE" }
+     * @param userId the ID of the user whose subscription is being updated
+     * @param body a map containing the new subscription plan
+     * @return a success message confirming the subscription change
+     */
+    @PutMapping("/users/{userId}/subscription")
+    public ResponseEntity<Map<String,String>> updateSubscription(
+            @PathVariable Long userId,
+            @RequestBody Map<String,String> body) {
+        PlanType plan = PlanType.valueOf(body.getOrDefault("plan","FREE").toUpperCase());
+        return ResponseEntity.ok(Map.of("message", authService.updateSubscriptionById(userId, plan)));
     }
 
-    @GetMapping("/users/plan/{plan}")
-    @Operation(summary = "Filter users by plan", description = "Retrieves a list of users filtered by their subscription tier (FREE/PREMIUM)")
-    public ResponseEntity<List<UserProfileResponse>> getUsersByPlan(@PathVariable com.airesume.authservice.model.PlanType plan) {
-        return ResponseEntity.ok(authService.getUsersByPlan(plan));
+    // ── Role management ──────────────────────────────────────────────────────
+
+    /**
+     * Updates the access role of a specific user.
+     * Body format: { "role": "ROLE_ADMIN" } or { "role": "ROLE_USER" }
+     * @param userId the ID of the user whose role is being updated
+     * @param body a map containing the new role
+     * @return a success message confirming the role change
+     */
+    @PutMapping("/users/{userId}/role")
+    public ResponseEntity<Map<String,String>> updateRole(
+            @PathVariable Long userId,
+            @RequestBody Map<String,String> body) {
+        String role = body.getOrDefault("role","ROLE_USER");
+        return ResponseEntity.ok(Map.of("message", authService.updateUserRoleById(userId, role)));
     }
 
+    // ── Delete ───────────────────────────────────────────────────────────────
+
+    /**
+     * Permanently deletes a user from the system.
+     * @param userId the ID of the user to delete
+     * @return a success message confirming the deletion
+     */
     @DeleteMapping("/users/{userId}")
-    @Operation(summary = "Delete user permanently", description = "Permanently removes a user record and its associated data from the platform")
-    public ResponseEntity<Map<String, String>> deleteUserPermanently(@PathVariable Long userId) {
-        String result = authService.deleteUserPermanently(userId);
-        return ResponseEntity.ok(Map.of("message", result));
+    public ResponseEntity<Map<String,String>> deleteUser(@PathVariable Long userId) {
+        return ResponseEntity.ok(Map.of("message", authService.deleteUserPermanently(userId)));
     }
 }

@@ -20,7 +20,7 @@ spring:
           max-tokens: 2048
 
   datasource:
-    url: jdbc:mysql://${AI_DB_HOST:localhost}:3306/${AI_DB_NAME:airesume_ai}?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC
+    url: jdbc:mysql://${AI_DB_HOST:localhost}:${AI_DB_PORT:3306}/${AI_DB_NAME:airesume_ai}?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC
     username: ${AI_DB_USERNAME:root}
     password: ${AI_DB_PASSWORD:Priyanshu@MySql}
     driver-class-name: com.mysql.cj.jdbc.Driver

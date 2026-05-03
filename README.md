@@ -1,5 +1,5 @@
 # ResumeAI: AI-Powered Resume Builder Platform (Backend)
-**Current Branch:** `feature/UC6-AI-Service`
+**Current Branch:** `feature/UC7-Export-Service`
 
 ## 📌 Project Overview / Introduction
 
@@ -199,7 +199,7 @@ Use the automated launcher script to start all services in the correct sequence:
 
 ## 🤖 Phase 6 (Intelligence Layer)
 
-Currently, the **feature/UC6-ai-service** branch of this repository represents **Phase 5** of the architecture. This phase introduces AI-powered content generation and optimization.
+This phase introduces AI-powered content generation and optimization.
 
 ### AI Service
 
@@ -218,9 +218,31 @@ Currently, the **feature/UC6-ai-service** branch of this repository represents *
 
 ---
 
+## 🖨️ Phase 7 (Export Management)
+
+Currently, the **feature/UC7-export-service** branch of this repository represents **Phase 7** of the architecture. This phase handles document generation and download capabilities.
+
+### Export Service
+
+| Service Name | Port | Description |
+| :--- | :--- | :--- |
+| **`export-service`** | `8086` | **Document Export:** Manages the conversion of web-rendered HTML resumes into portable formats. Handles asynchronous generation requests, integrates PDF rendering via headless browsers/libraries, and tracks export quotas. |
+
+### How to Run Export Service
+
+1. **Start Export Service**
+   ```bash
+   cd export-service
+   mvn spring-boot:run
+   ```
+   *Export APIs Swagger UI:* [http://localhost:8086/swagger-ui.html](http://localhost:8086/swagger-ui.html)
+
+---
+
 ## 🐛 Troubleshooting & Debugging Logs
 
 ### Recent Critical Fixes
 1. **OAuth2 User Context Fix**: Resolved an issue where OAuth2 logins (Google/LinkedIn) failed to include `userId` and `subscriptionPlan` in the generated JWT token. This caused `401 Unauthorized` errors during resume creation and fetching. `OAuth2SuccessHandler` was updated to accurately map claims.
 2. **Template Creation Bug**: Fixed a cascading error where clicking "Use this template" threw a creation failure. The root cause was identified as the missing `userId` in the OAuth JWT, which prevented the backend `resume-service` from correctly linking the new resume to the current user profile.
 3. **Circular Dependency Fix**: Resolved a deadlock during startup where `resume-service` and `section-service` were waiting on each other. Implemented `@Lazy` loading for cross-service Feign clients.
+4. **Export Service Architecture Simplification**: Removed legacy Apache POI DOCX generation overhead and complex watchdog scheduler logic from the `export-service`. This drastically simplified the backend and eliminated premature timeout failures for long-running export jobs.

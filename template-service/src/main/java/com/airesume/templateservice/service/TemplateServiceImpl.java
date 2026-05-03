@@ -32,10 +32,13 @@ public class TemplateServiceImpl implements TemplateService {
         return templateRepository.save(template);
     }
 
-    @Override
-    @Cacheable(value = "templates", key = "'all_active'")
     public List<Template> getAllActiveTemplates() {
         return templateRepository.findByIsActiveTrue();
+    }
+
+    @Override
+    public List<Template> getAllTemplates() {
+        return templateRepository.findAll();
     }
 
     @Override
@@ -75,6 +78,9 @@ public class TemplateServiceImpl implements TemplateService {
         template.setCategory(templateDetails.getCategory());
         template.setTier(templateDetails.getTier());
         template.setThumbnailUrl(templateDetails.getThumbnailUrl());
+        if (templateDetails.getIsActive() != null) {
+            template.setIsActive(templateDetails.getIsActive());
+        }
         return templateRepository.save(template);
     }
 

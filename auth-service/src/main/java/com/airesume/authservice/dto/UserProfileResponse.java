@@ -1,6 +1,7 @@
 package com.airesume.authservice.dto;
 
 import com.airesume.authservice.model.PlanType;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 import lombok.Data;
 
@@ -17,5 +18,7 @@ public class UserProfileResponse {
     private Integer age;
     private PlanType subscriptionPlan;
     private Set<String> roles;
+    
+    @JsonProperty("isActive")
     private boolean isActive;
 }

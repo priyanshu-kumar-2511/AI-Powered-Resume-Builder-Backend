@@ -22,6 +22,11 @@ public interface TemplateService {
     List<Template> getAllActiveTemplates();
 
     /**
+     * Retrieve all templates, including inactive ones (Admin only).
+     */
+    List<Template> getAllTemplates();
+
+    /**
      * Retrieve templates filtered by access tier.
      */
     List<Template> getTemplatesByTier(Tier tier);

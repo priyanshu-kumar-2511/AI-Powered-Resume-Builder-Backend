@@ -46,12 +46,23 @@ public class TemplateController {
      */
     @GetMapping
     @Operation(summary = "Get all active templates (Public)")
-    public ResponseEntity<List<TemplateResponseDTO>> getAllTemplates() {
+    public ResponseEntity<List<TemplateResponseDTO>> getAllActiveTemplates() {
         List<TemplateResponseDTO> templates = templateService.getAllActiveTemplates()
                 .stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(templates);
+    }
+
+    /**
+     * GET /api/v1/templates/admin
+     * Returns a list of all templates including inactive ones. Restricted to ADMIN.
+     */
+    @GetMapping("/admin")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Get all templates including inactive (Admin only)")
+    public ResponseEntity<List<Template>> getAllTemplatesForAdmin() {
+        return ResponseEntity.ok(templateService.getAllTemplates());
     }
 
     /**
@@ -167,6 +178,7 @@ public class TemplateController {
                 .category(template.getCategory())
                 .tier(template.getTier())
                 .usageCount(template.getUsageCount())
+                .isActive(template.getIsActive())
                 .build();
     }
 }

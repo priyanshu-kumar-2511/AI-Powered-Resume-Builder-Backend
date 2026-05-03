@@ -24,7 +24,7 @@ spring:
   
   # Persistence Layer
   datasource:
-    url: jdbc:mysql://${TEMPLATE_DB_HOST:localhost}:3306/${TEMPLATE_DB_NAME:airesume_template}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&autoReconnect=true
+    url: jdbc:mysql://${TEMPLATE_DB_HOST:localhost}:${TEMPLATE_DB_PORT:3306}/${TEMPLATE_DB_NAME:airesume_template}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&autoReconnect=true
     username: ${TEMPLATE_DB_USERNAME:root}
     password: ${TEMPLATE_DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver

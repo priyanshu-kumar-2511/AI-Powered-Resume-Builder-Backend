@@ -91,6 +91,9 @@ spring:
               uri: lb://export-service
               predicates:
                 - Path=/api/v1/exports/**
+              filters:
+                - RewritePath=/api/v1/exports/?(?<segment>.*), /${segment}
+                - SetRequestHeader=X-Forwarded-Prefix, /api/v1/exports
 
             - id: jobmatch-service
               uri: lb://jobmatch-service

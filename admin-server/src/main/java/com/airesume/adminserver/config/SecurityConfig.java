@@ -27,28 +27,24 @@ public class SecurityConfig {
         successHandler.setDefaultTargetUrl(this.adminServer.path("/"));
 
         http
-            .authorizeHttpRequests(authorizeRequests -> authorizeRequests
-                .requestMatchers(this.adminServer.path("/assets/**")).permitAll()
-                .requestMatchers(this.adminServer.path("/login")).permitAll()
-                .requestMatchers(new AntPathRequestMatcher("/actuator/**")).permitAll()
-                .anyRequest().authenticated()
-            )
-            .formLogin(formLogin -> formLogin
-                .loginPage(this.adminServer.path("/login"))
-                .successHandler(successHandler)
-            )
-            .logout(logout -> logout
-                .logoutUrl(this.adminServer.path("/logout"))
-            )
-            .httpBasic(httpBasic -> {})
-            .csrf(csrf -> csrf
-                .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-                .ignoringRequestMatchers(
-                    new AntPathRequestMatcher(this.adminServer.path("/instances"), "POST"),
-                    new AntPathRequestMatcher(this.adminServer.path("/instances/*"), "DELETE"),
-                    new AntPathRequestMatcher(this.adminServer.path("/actuator/**"))
-                )
-            );
+                .authorizeHttpRequests(authorizeRequests -> authorizeRequests
+                        .requestMatchers(this.adminServer.path("/assets/**")).permitAll()
+                        .requestMatchers(this.adminServer.path("/login")).permitAll()
+                        .requestMatchers(new AntPathRequestMatcher("/actuator/**")).permitAll()
+                        .anyRequest().authenticated())
+                .formLogin(formLogin -> formLogin
+                        .loginPage(this.adminServer.path("/login"))
+                        .successHandler(successHandler))
+                .logout(logout -> logout
+                        .logoutUrl(this.adminServer.path("/logout")))
+                .httpBasic(httpBasic -> {
+                })
+                .csrf(csrf -> csrf
+                        .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                        .ignoringRequestMatchers(
+                                new AntPathRequestMatcher(this.adminServer.path("/instances"), "POST"),
+                                new AntPathRequestMatcher(this.adminServer.path("/instances/*"), "DELETE"),
+                                new AntPathRequestMatcher(this.adminServer.path("/actuator/**"))));
 
         return http.build();
     }

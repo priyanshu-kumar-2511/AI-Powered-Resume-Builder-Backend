@@ -10,7 +10,7 @@ spring:
       - optional:configserver:http://localhost:8888
       - optional:file:../.env
   datasource:
-    url: jdbc:mysql://${RESUME_DB_HOST:localhost}:3306/${RESUME_DB_NAME:airesume_resume}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&autoReconnect=true&serverTimezone=UTC
+    url: jdbc:mysql://${RESUME_DB_HOST:localhost}:${RESUME_DB_PORT:3306}/${RESUME_DB_NAME:airesume_resume}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&autoReconnect=true&serverTimezone=UTC
     username: ${RESUME_DB_USERNAME:root}
     password: ${RESUME_DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver

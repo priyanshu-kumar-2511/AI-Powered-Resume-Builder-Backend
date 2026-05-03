@@ -2,6 +2,8 @@ package com.airesume.authservice.controller;
 
 import com.airesume.authservice.dto.LoginRequest;
 import com.airesume.authservice.dto.RegisterRequest;
+import com.airesume.authservice.dto.PasswordResetInitiateRequest;
+import com.airesume.authservice.dto.OtpVerificationRequest;
 import com.airesume.authservice.dto.UserProfileResponse;
 import com.airesume.authservice.service.AuthService;
 import com.airesume.authservice.service.JwtService;
@@ -13,7 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -42,16 +44,16 @@ public class AuthControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+    @MockitoBean
     private AuthService authService;
 
-    @MockBean
+    @MockitoBean
     private JwtService jwtService;
 
-    @MockBean
+    @MockitoBean
     private com.airesume.authservice.config.OAuth2SuccessHandler oAuth2SuccessHandler;
 
-    @MockBean
+    @MockitoBean
     private org.springframework.security.oauth2.client.registration.ClientRegistrationRepository clientRegistrationRepository;
 
     @Autowired
@@ -111,4 +113,41 @@ public class AuthControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.username").value("testuser"));
     }
+
+    @Test
+    @DisplayName("API: POST /api/v1/auth/forgot-password/initiate - Should return success")
+    void initiatePasswordReset_ShouldReturnSuccess() throws Exception {
+        PasswordResetInitiateRequest request = new PasswordResetInitiateRequest();
+        request.setIdentifier("test@example.com");
+
+        when(authService.initiatePasswordReset(any(PasswordResetInitiateRequest.class)))
+                .thenReturn("OTP sent to your email");
+
+        mockMvc.perform(post("/api/v1/auth/forgot-password/initiate")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("OTP sent to your email"));
+    }
+
+    @Test
+    @DisplayName("API: POST /api/v1/auth/forgot-password/verify - Should return success")
+    void verifyPasswordReset_ShouldReturnSuccess() throws Exception {
+        OtpVerificationRequest request = new OtpVerificationRequest();
+        request.setIdentifier("test@example.com");
+        request.setOtp("123456");
+        request.setNewPassword("NewPassword@123");
+
+        when(authService.resetPassword(any(OtpVerificationRequest.class)))
+                .thenReturn("Password reset successful");
+
+        mockMvc.perform(post("/api/v1/auth/forgot-password/verify")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Password reset successful"));
+    }
 }
+

@@ -24,4 +24,5 @@ public class TemplateResponseDTO {
     private Category category;
     private Tier tier;
     private Long usageCount;
+    private boolean isActive;
 }

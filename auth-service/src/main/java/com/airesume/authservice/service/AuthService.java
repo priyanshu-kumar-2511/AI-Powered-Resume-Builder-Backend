@@ -26,6 +26,13 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final UserQuotaRepository quotaRepository;
 
+    /**
+     * Registers a new user with the default ROLE_USER and FREE subscription plan.
+     * Also initializes their default AI quotas.
+     * @param request the registration details provided by the user
+     * @return a success message
+     * @throws RuntimeException if username or email already exists
+     */
     @Transactional
     public String register(RegisterRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {
@@ -63,6 +70,14 @@ public class AuthService {
         return "User registered successfully";
     }
 
+    /**
+     * Authenticates a user based on their credentials.
+     * Checks password validity and account status. If successful, generates a JWT
+     * and sends a welcome or admin alert email.
+     * @param request the login credentials
+     * @return a valid JWT token
+     * @throws RuntimeException if user not found, incorrect password, or account is suspended
+     */
     public String login(LoginRequest request) {
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new RuntimeException("Username not found"));
@@ -71,14 +86,28 @@ public class AuthService {
             throw new RuntimeException("Incorrect Password");
         }
 
+        if (!user.isActive()) {
+            throw new RuntimeException("ACCOUNT_SUSPENDED");
+        }
+
         String token = jwtService.generateToken(user.getUsername(), buildAuthClaims(user));
 
-        // Send a welcome/thank-you login notification email (non-blocking)
-        emailService.sendWelcomeLoginEmail(user.getEmail(), user.getFullName());
+        // Send notification email (non-blocking)
+        boolean isAdmin = user.getRoles().stream().anyMatch(r -> r.getName().equals("ROLE_ADMIN"));
+        if (isAdmin) {
+            emailService.sendAdminLoginAlertEmail(user.getEmail(), user.getFullName());
+        } else {
+            emailService.sendWelcomeLoginEmail(user.getEmail(), user.getFullName());
+        }
 
         return token;
     }
 
+    /**
+     * Initiates the username recovery flow by generating and emailing an OTP.
+     * @param request the email and password of the account
+     * @return a confirmation message that the OTP was sent
+     */
     public String initiateUsernameRecovery(UsernameRecoveryRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("No account found with this email"));
@@ -92,6 +121,11 @@ public class AuthService {
         return "Recovery OTP sent to your email";
     }
 
+    /**
+     * Verifies the provided OTP for username recovery. If valid, emails the username to the user.
+     * @param request the email and OTP
+     * @return a success message
+     */
     public String verifyUsernameRecovery(OtpVerificationRequest request) {
         User user = userRepository.findByEmail(request.getIdentifier())
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -118,6 +152,11 @@ public class AuthService {
         return "Password reset OTP sent to " + user.getEmail();
     }
 
+    /**
+     * Completes the password reset process by verifying the OTP and saving the new password.
+     * @param request the identifier (email), OTP, and new password
+     * @return a success message
+     */
     @Transactional
     public String resetPassword(OtpVerificationRequest request) {
         // FIX: `identifier` is an email (sent from frontend)
@@ -132,6 +171,12 @@ public class AuthService {
         throw new RuntimeException("Invalid or expired OTP");
     }
 
+    /**
+     * Updates the basic profile information of an existing user.
+     * @param username the username of the user
+     * @param request the updated profile fields
+     * @return a success message
+     */
     @Transactional
     public String updateProfile(String username, ProfileRequest request) {
         User user = userRepository.findByUsername(username)
@@ -145,6 +190,12 @@ public class AuthService {
         return "Profile updated successfully";
     }
 
+    /**
+     * Changes a user's password if the current password provided is correct.
+     * @param username the username of the user
+     * @param request the old and new passwords
+     * @return a success message
+     */
     @Transactional
     public String changePassword(String username, PasswordChangeRequest request) {
         User user = userRepository.findByUsername(username)
@@ -159,6 +210,12 @@ public class AuthService {
         return "Password changed successfully";
     }
 
+    /**
+     * Updates the subscription plan for a specific user.
+     * @param username the username of the user
+     * @param plan the new subscription plan
+     * @return a success message
+     */
     @Transactional
     public String updateSubscription(String username, PlanType plan) {
         User user = userRepository.findByUsername(username)
@@ -169,6 +226,11 @@ public class AuthService {
         return "Subscription updated to " + plan;
     }
 
+    /**
+     * Deactivates a user's account. This prevents them from logging in.
+     * @param username the username of the user to deactivate
+     * @return a success message
+     */
     @Transactional
     public String deactivateAccount(String username) {
         User user = userRepository.findByUsername(username)
@@ -179,6 +241,11 @@ public class AuthService {
         return "Account deactivated successfully";
     }
 
+    /**
+     * Retrieves the profile information for a specific user.
+     * @param username the username of the user
+     * @return a DTO containing the user's profile details
+     */
     public UserProfileResponse getUserProfile(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -202,6 +269,10 @@ public class AuthService {
 
     // ── Admin Methods ─────────────────────────────────────────────────────────
 
+    /**
+     * Retrieves a list of all users. Typically used by Admins.
+     * @return a list of user profiles
+     */
     public List<UserProfileResponse> getAllUsers() {
         return userRepository.findAll().stream()
                 .map(this::toUserProfileResponse)
@@ -272,5 +343,81 @@ public class AuthService {
                 .subscriptionPlan(user.getSubscriptionPlan())
                 .isActive(user.isActive())
                 .build();
+    }
+
+    // ── Admin: userId-based methods ───────────────────────────────────────────
+
+    /**
+     * Suspends a user by their ID, preventing them from logging in, and sends an email notification.
+     * @param userId the ID of the user
+     * @param reason the reason for suspension provided by the admin
+     * @return a success message
+     */
+    @Transactional
+    public String suspendUserById(Long userId, String reason) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+        user.setActive(false);
+        userRepository.save(user);
+        emailService.sendSuspensionEmail(user.getEmail(), user.getFullName(), reason);
+        return "User " + user.getUsername() + " suspended.";
+    }
+
+    /**
+     * Reactivates a suspended user and sends them an email notification.
+     * @param userId the ID of the user
+     * @return a success message
+     */
+    @Transactional
+    public String reactivateUserById(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+        user.setActive(true);
+        userRepository.save(user);
+        emailService.sendReactivationEmail(user.getEmail(), user.getFullName());
+        return "User " + user.getUsername() + " reactivated.";
+    }
+
+    /**
+     * Updates a user's subscription plan by their ID. If upgraded to PREMIUM, sends an email notification.
+     * @param userId the ID of the user
+     * @param plan the new subscription plan
+     * @return a success message
+     */
+    @Transactional
+    public String updateSubscriptionById(Long userId, PlanType plan) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+        user.setSubscriptionPlan(plan);
+        userRepository.save(user);
+
+        if (plan == PlanType.PREMIUM) {
+            emailService.sendPremiumActivationEmail(user.getEmail(), user.getFullName());
+        }
+        
+        return "User " + user.getUsername() + " plan updated to " + plan.name();
+    }
+
+    /**
+     * Updates a user's role by their ID. If promoted to ADMIN, sends an email notification.
+     * @param userId the ID of the user
+     * @param roleName the new role
+     * @return a success message
+     */
+    @Transactional
+    public String updateUserRoleById(Long userId, String roleName) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+        Role role = roleRepository.findByName(roleName)
+                .orElseThrow(() -> new RuntimeException("Role not found: " + roleName));
+        user.getRoles().clear();
+        user.getRoles().add(role);
+        userRepository.save(user);
+
+        if ("ROLE_ADMIN".equals(roleName)) {
+            emailService.sendAdminPromotionEmail(user.getEmail(), user.getFullName());
+        }
+
+        return "User " + user.getUsername() + " role updated to " + roleName;
     }
 }

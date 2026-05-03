@@ -12,7 +12,7 @@ spring:
       - optional:file:../.env
   
   datasource:
-    url: jdbc:mysql://${SECTION_DB_HOST:localhost}:3306/${SECTION_DB_NAME:airesume_section}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&autoReconnect=true
+    url: jdbc:mysql://${SECTION_DB_HOST:localhost}:${SECTION_DB_PORT:3306}/${SECTION_DB_NAME:airesume_section}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&autoReconnect=true
     username: ${AUTH_DB_USERNAME:root}
     password: ${AUTH_DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver

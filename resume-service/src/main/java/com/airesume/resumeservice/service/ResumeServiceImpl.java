@@ -21,6 +21,12 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Core implementation of the ResumeService.
+ * Handles the business logic for creating, fetching, and updating resumes.
+ * Uses caching (@Cacheable, @CacheEvict) to optimize performance and interacts
+ * with the SectionService via Feign Client for modular content management.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -54,9 +60,10 @@ public class ResumeServiceImpl implements ResumeService {
         resume = resumeRepository.save(resume);
 
         // Call synchronously. Since we removed @Transactional from this method,
-        // the resume is already committed to the DB. When section-service calls
-        // back to verify ownership, it will find the resume successfully.
+        // the resume is already committed to the DB. This prevents a deadlock where 
+        // section-service calls back to verify ownership but the resume isn't saved yet.
         try {
+            // Initializes Personal Info, Experience, Education, etc. via SectionService
             initializeDefaultSections(resume.getResumeId());
         } catch (Exception e) {
             log.error("Failed to initialize default sections for resume: {}. Cleaning up.", resume.getResumeId(), e);
@@ -71,7 +78,19 @@ public class ResumeServiceImpl implements ResumeService {
     @Override
     @Cacheable(value = "resume", key = "#resumeId")
     public ResumeResponse getResumeById(Long resumeId) {
-        return new ResumeResponse(requireOwnedOrAdminResume(resumeId));
+        Resume resume = resumeRepository.findById(resumeId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Resume not found with ID: " + resumeId));
+
+        if (resume.isPublic() || currentUserService.isAdmin()) {
+            return new ResumeResponse(resume);
+        }
+
+        Long currentUserId = currentUserService.requireUserId();
+        if (!resume.getUserId().equals(currentUserId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You do not have access to this resume.");
+        }
+
+        return new ResumeResponse(resume);
     }
 
     @Override
