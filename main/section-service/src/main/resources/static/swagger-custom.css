@@ -1,0 +1,17 @@
+/* Hide the dark/light mode toggle bulb icon */
+.swagger-ui .topbar .theme-toggle,
+.swagger-ui .topbar .dark-mode-toggle,
+.swagger-ui .topbar svg.feather-sun,
+.swagger-ui .topbar svg.feather-moon,
+.swagger-ui .topbar button svg[viewBox="0 0 24 24"] {
+    display: none !important;
+}
+
+/* Force light mode background */
+body {
+    background-color: #ffffff !important;
+    color: #3b4151 !important;
+}
+.swagger-ui {
+    filter: none !important;
+}

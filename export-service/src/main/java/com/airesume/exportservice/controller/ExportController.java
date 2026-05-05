@@ -48,6 +48,28 @@ public class ExportController {
         return new ResponseEntity<>(exportService.submitExportJob(userId, resumeId, ExportFormat.PDF, customizations, authorizationHeader), HttpStatus.ACCEPTED);
     }
 
+    @PostMapping("/docx/{resumeId}")
+    @Operation(summary = "Submit a DOCX export job")
+    public ResponseEntity<ExportJob> exportDocx(
+            @PathVariable Long resumeId,
+            @RequestBody(required = false) String customizations,
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationHeader
+    ) {
+        Long userId = currentUserService.requireUserId();
+        return new ResponseEntity<>(exportService.submitExportJob(userId, resumeId, ExportFormat.DOCX, customizations, authorizationHeader), HttpStatus.ACCEPTED);
+    }
+
+    @PostMapping("/json/{resumeId}")
+    @Operation(summary = "Submit a JSON export job")
+    public ResponseEntity<ExportJob> exportJson(
+            @PathVariable Long resumeId,
+            @RequestBody(required = false) String customizations,
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorizationHeader
+    ) {
+        Long userId = currentUserService.requireUserId();
+        return new ResponseEntity<>(exportService.submitExportJob(userId, resumeId, ExportFormat.JSON, customizations, authorizationHeader), HttpStatus.ACCEPTED);
+    }
+
     /**
      * Polls the status of an asynchronous export job.
      * 

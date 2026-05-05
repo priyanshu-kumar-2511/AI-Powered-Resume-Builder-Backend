@@ -1,5 +1,5 @@
 # ResumeAI: AI-Powered Resume Builder Platform (Backend)
-**Current Branch:** `feature/UC7-Export-Service`
+**Current Branch:** `feature/UC8-Notification-Service`
 
 ## 📌 Project Overview / Introduction
 
@@ -34,6 +34,7 @@ This project is built using **Java 17** and **Spring Boot 3.5.13**, following po
 | **`config-server`** | `8888` | **Centralized Configuration:** Provides a centralized location to manage properties. |
 | **`admin-server`** | `9090` | **Health & Monitoring:** visual dashboard to monitor health and metrics. |
 | **`api-gateway`** | `8080` | **Routing Gateway:** [Swagger UI](http://localhost:8080/swagger-ui.html) - Single entry point for all frontend client requests. |
+| **`notification-service`** | `8087` | **Alerts & Broadcasts:** Manages real-time alerts, email notifications, and admin-led broadcasts. |
 
 ## How to Run
 
@@ -78,7 +79,7 @@ This phase introduces the core business and user identity layer of the ecosystem
 
 | Service Name | Port | Description |
 | :--- | :--- | :--- |
-| **`auth-service`** | `8081` | **Identity Management & Admin Power:** Handles registration, robust JWT authentication, LinkedIn/Google OAuth2 integration, Profile management, and an **Admin Dashboard** for user oversight and platform security. |
+| **`auth-service`** | `8081` | **Identity Management & Premium Subscriptions:** Handles registration, robust JWT authentication, LinkedIn/Google OAuth2 integration, and **Razorpay Premium Subscription** flows for unlocking advanced AI features. |
 
 ### How to Run Phase 2
 
@@ -220,7 +221,7 @@ This phase introduces AI-powered content generation and optimization.
 
 ## 🖨️ Phase 7 (Export Management)
 
-Currently, the **feature/UC7-export-service** branch of this repository represents **Phase 7** of the architecture. This phase handles document generation and download capabilities.
+This phase handles document generation and download capabilities.
 
 ### Export Service
 
@@ -236,6 +237,27 @@ Currently, the **feature/UC7-export-service** branch of this repository represen
    mvn spring-boot:run
    ```
    *Export APIs Swagger UI:* [http://localhost:8086/swagger-ui.html](http://localhost:8086/swagger-ui.html)
+
+---
+
+## 🔔 Phase 8 (Notification & Alerts)
+
+Currently, the **feature/UC8-notification-service** branch of this repository represents **Phase 8** of the architecture. This phase introduces real-time user communication and platform-wide announcements.
+
+### Notification Service
+
+| Service Name | Port | Description |
+| :--- | :--- | :--- |
+| **`notification-service`** | `8087` | **Communication Engine:** Handles in-app alerts, email dispatches for OTPs/Welcome messages, and administrative broadcast functionality. Supports marked-as-read tracking and personalized notifications. |
+
+### How to Run Notification Service
+
+1. **Start Notification Service**
+   ```bash
+   cd notification-service
+   mvn spring-boot:run
+   ```
+   *Notification APIs Swagger UI:* [http://localhost:8087/swagger-ui.html](http://localhost:8087/swagger-ui.html)
 
 ---
 

@@ -37,11 +37,17 @@ spring:
                 - RewritePath=/api/v1/auth/(?<segment>.*), /${segment}
                 - SetRequestHeader=X-Forwarded-Prefix, /api/v1/auth
 
-            # Route for Authentication APIs
+            # Route for Authentication and Admin
             - id: auth-api-route
               uri: http://localhost:8081
               predicates:
                 - Path=/api/v1/auth/**, /api/v1/admin/**
+
+            # Explicit Route for Payments
+            - id: payment-api-route
+              uri: http://localhost:8081
+              predicates:
+                - Path=/api/v1/payments/**
 
             # Route for OAuth2 Login and Callbacks
             - id: oauth2-route
@@ -95,15 +101,13 @@ spring:
                 - RewritePath=/api/v1/exports/?(?<segment>.*), /${segment}
                 - SetRequestHeader=X-Forwarded-Prefix, /api/v1/exports
 
-            - id: jobmatch-service
-              uri: lb://jobmatch-service
-              predicates:
-                - Path=/api/v1/job-matches/**
-
             - id: notification-service
-              uri: lb://notification-service
+              uri: http://localhost:8087
               predicates:
                 - Path=/api/v1/notifications/**
+              filters:
+                - RewritePath=/api/v1/notifications/?(?<segment>.*), /${segment}
+                - SetRequestHeader=X-Forwarded-Prefix, /api/v1/notifications
 
 eureka:
   client:
@@ -139,8 +143,6 @@ springdoc:
         url: /api/v1/ai/v3/api-docs
       - name: EXPORT-SERVICE
         url: /api/v1/exports/v3/api-docs
-      - name: JOBMATCH-SERVICE
-        url: /api/v1/job-matches/v3/api-docs
       - name: NOTIFICATION-SERVICE
         url: /api/v1/notifications/v3/api-docs
   api-docs:

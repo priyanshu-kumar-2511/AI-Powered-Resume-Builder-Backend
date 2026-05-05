@@ -54,6 +54,21 @@ public class JwtService {
         return buildToken(extraClaims, username, jwtExpiration);
     }
 
+    /**
+     * Generates a fresh JWT from the current User entity state.
+     * This is used after payment upgrades so the frontend immediately gets
+     * updated role/userId/subscription claims.
+     */
+    public String generateTokenForUser(com.airesume.authservice.model.User user) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("roles", user.getRoles().stream()
+                .map(com.airesume.authservice.model.Role::getName)
+                .toList());
+        claims.put("userId", user.getId());
+        claims.put("subscriptionPlan", user.getSubscriptionPlan().name());
+        return buildToken(claims, user.getUsername(), jwtExpiration);
+    }
+
     private String buildToken(Map<String, Object> extraClaims, String username, long expiration) {
         return Jwts.builder()
                 .claims(extraClaims)

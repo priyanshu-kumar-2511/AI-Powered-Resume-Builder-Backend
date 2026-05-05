@@ -49,7 +49,7 @@ SELECT
     <div class="col">
       <h2 class="section-title">Technical Skills</h2>
       <ul class="bullet-list">
-        {{#skills}}<li>{{name}}</li>{{/skills}}
+        {{#technicalSkills}}<li>{{name}}</li>{{/technicalSkills}}
       </ul>
     </div>
     <div class="col">
@@ -233,6 +233,33 @@ SELECT
   </section>
 
   <section class="section">
+    <div class="section-title-bar"><h2>PROJECTS</h2></div>
+    {{#projects}}
+    <div class="exp-item">
+      <div class="exp-header">
+        <strong class="exp-role">{{title}}</strong>
+        <span class="exp-dates">{{dates}}</span>
+      </div>
+      <ul class="bullet-list">
+        {{#bullets}}<li>{{text}}</li>{{/bullets}}
+      </ul>
+    </div>
+    {{/projects}}
+  </section>
+
+  <section class="section">
+    <div class="section-title-bar"><h2>CERTIFICATIONS</h2></div>
+    {{#certifications}}
+    <div class="exp-item" style="margin-bottom: 8px;">
+      <div class="exp-header">
+        <strong class="exp-role">{{name}}</strong>
+        <span class="exp-dates">{{date}}</span>
+      </div>
+    </div>
+    {{/certifications}}
+  </section>
+
+  <section class="section">
     <div class="section-title-bar"><h2>EDUCATION</h2></div>
     {{#education}}
     <div class="edu-item">
@@ -389,6 +416,16 @@ SELECT
       </div>
       {{/education}}
     </div>
+
+    <div class="side-section">
+      <h3>Certifications</h3>
+      {{#certifications}}
+      <div class="side-edu">
+        <strong class="side-degree">{{name}}</strong>
+        <span class="side-dates">{{date}}</span>
+      </div>
+      {{/certifications}}
+    </div>
   </div>
 
   <div class="main-content">
@@ -417,6 +454,21 @@ SELECT
         </ul>
       </div>
       {{/experience}}
+    </section>
+
+    <section class="main-section">
+      <h2>Projects</h2>
+      {{#projects}}
+      <div class="exp-block">
+        <div class="exp-meta">
+          <strong>{{title}}</strong>
+          <span class="exp-dates">{{dates}}</span>
+        </div>
+        <ul class="main-bullets">
+          {{#bullets}}<li>{{text}}</li>{{/bullets}}
+        </ul>
+      </div>
+      {{/projects}}
     </section>
 
     <section class="main-section">
@@ -572,6 +624,21 @@ SELECT
     {{/experience}}
   </section>
 
+  <section class="section">
+    <h2 class="section-title">Projects</h2>
+    {{#projects}}
+    <div class="exp-item">
+      <div class="exp-header">
+        <strong class="exp-role">{{title}}</strong>
+        <span class="exp-dates">{{dates}}</span>
+      </div>
+      <ul class="bullet-list">
+        {{#bullets}}<li>{{text}}</li>{{/bullets}}
+      </ul>
+    </div>
+    {{/projects}}
+  </section>
+
   <section class="section edu-skills-row">
     <div class="edu-col">
       <h2 class="section-title">Education</h2>
@@ -594,6 +661,11 @@ SELECT
       <h2 class="section-title" style="margin-top:16px">Awards</h2>
       <ul class="bullet-list">
         {{#awards}}<li>{{name}}</li>{{/awards}}
+      </ul>
+
+      <h2 class="section-title" style="margin-top:16px">Certifications</h2>
+      <ul class="bullet-list">
+        {{#certifications}}<li><strong>{{name}}</strong> <span style="font-size: 11.5px; color: #64748b;">{{date}}</span></li>{{/certifications}}
       </ul>
     </div>
   </section>
@@ -738,6 +810,20 @@ SELECT
       </div>
     </div>
     {{/experience}}
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">Certifications</h2>
+    {{#certifications}}
+    <div class="timeline-item">
+      <div class="timeline-left">
+        <span class="tl-dates">{{date}}</span>
+      </div>
+      <div class="timeline-right">
+        <strong class="tl-title">{{name}}</strong>
+      </div>
+    </div>
+    {{/certifications}}
   </section>
 
   <section class="section">
@@ -948,6 +1034,13 @@ SELECT
     </main>
 
     <aside class="side-col">
+      <section class="section">
+        <h2 class="section-title-sm">Certifications</h2>
+        <ul class="side-list">
+          {{#certifications}}<li><strong>{{name}}</strong> <br><span style="font-size: 11px; color: #475569;">{{date}}</span></li>{{/certifications}}
+        </ul>
+      </section>
+
       <section class="section">
         <h2 class="section-title-sm">Additional Information</h2>
         <ul class="side-list">

@@ -161,6 +161,10 @@ public class EmailService {
 
     /**
      * Sends a notification when a user is promoted to Admin.
+     * This grants them access to the Administrative Dashboard and specialized tools.
+     * 
+     * @param to       The recipient's email address.
+     * @param fullName The recipient's full name.
      */
     public void sendAdminPromotionEmail(String to, String fullName) {
         SimpleMailMessage message = new SimpleMailMessage();
@@ -183,7 +187,38 @@ public class EmailService {
     }
 
     /**
+     * Sends a notification when a user's Admin privileges are revoked.
+     * The user will retain regular access to the platform.
+     * 
+     * @param to       The recipient's email address.
+     * @param fullName The recipient's full name.
+     */
+    public void sendAdminDemotionEmail(String to, String fullName) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(to);
+        message.setSubject("ResumeAI - Your Admin Access Has Been Removed");
+        message.setText(
+                "Hello " + fullName + ",\n\n" +
+                        "This is to let you know that your ResumeAI account no longer has Administrative privileges.\n\n" +
+                        "You can still sign in and use the platform as a regular user:\n" +
+                        "  http://localhost:4200/login\n\n" +
+                        "If you believe this change was made in error, please contact the platform administrator.\n\n" +
+                        "Regards,\n" +
+                        "The ResumeAI Management Team");
+        try {
+            mailSender.send(message);
+            log.info("Admin demotion email sent to: {}", to);
+        } catch (Exception e) {
+            log.warn("Could not send admin demotion email to {}: {}", to, e.getMessage());
+        }
+    }
+
+    /**
      * Sends a notification when a user is upgraded to Premium.
+     * Highlights the core benefits of the Premium plan.
+     * 
+     * @param to       The user's email address.
+     * @param fullName The user's full name.
      */
     public void sendPremiumActivationEmail(String to, String fullName) {
         SimpleMailMessage message = new SimpleMailMessage();
@@ -206,6 +241,33 @@ public class EmailService {
             log.info("Premium activation email sent to: {}", to);
         } catch (Exception e) {
             log.warn("Could not send premium activation email to {}: {}", to, e.getMessage());
+        }
+    }
+
+    /**
+     * Sends a notification when a user's Premium subscription is cancelled or expired.
+     * Invites the user to re-subscribe from the pricing page.
+     * 
+     * @param to       The user's email address.
+     * @param fullName The user's full name.
+     */
+    public void sendPremiumCancellationEmail(String to, String fullName) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(to);
+        message.setSubject("ResumeAI - Your Premium Plan Has Been Cancelled");
+        message.setText(
+                "Hello " + fullName + ",\n\n" +
+                        "Your ResumeAI Premium subscription has been cancelled successfully.\n\n" +
+                        "Your account is now on the Free plan. You can upgrade again anytime from the pricing page:\n" +
+                        "  http://localhost:4200/pricing\n\n" +
+                        "If you did not make this change, please contact support immediately.\n\n" +
+                        "Regards,\n" +
+                        "The ResumeAI Team");
+        try {
+            mailSender.send(message);
+            log.info("Premium cancellation email sent to: {}", to);
+        } catch (Exception e) {
+            log.warn("Could not send premium cancellation email to {}: {}", to, e.getMessage());
         }
     }
 

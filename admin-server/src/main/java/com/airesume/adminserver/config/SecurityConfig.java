@@ -8,7 +8,6 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 @Configuration
 @EnableWebSecurity
@@ -30,7 +29,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorizeRequests -> authorizeRequests
                         .requestMatchers(this.adminServer.path("/assets/**")).permitAll()
                         .requestMatchers(this.adminServer.path("/login")).permitAll()
-                        .requestMatchers(new AntPathRequestMatcher("/actuator/**")).permitAll()
+                        .requestMatchers("/actuator/**").permitAll()
                         .anyRequest().authenticated())
                 .formLogin(formLogin -> formLogin
                         .loginPage(this.adminServer.path("/login"))
@@ -42,9 +41,9 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                         .ignoringRequestMatchers(
-                                new AntPathRequestMatcher(this.adminServer.path("/instances"), "POST"),
-                                new AntPathRequestMatcher(this.adminServer.path("/instances/*"), "DELETE"),
-                                new AntPathRequestMatcher(this.adminServer.path("/actuator/**"))));
+                                this.adminServer.path("/instances"),
+                                this.adminServer.path("/instances/*"),
+                                "/actuator/**"));
 
         return http.build();
     }

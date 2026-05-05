@@ -39,7 +39,7 @@ public class ResumeServiceImpl implements ResumeService {
     private final CurrentUserService currentUserService;
 
     @Override
-    @CacheEvict(value = {"resumes_user", "public_resumes"}, allEntries = true)
+    @CacheEvict(value = { "resumes_user", "public_resumes" }, allEntries = true)
     public ResumeResponse createResume(ResumeCreateRequest request) {
         Long currentUserId = currentUserService.requireUserId();
         request.setUserId(currentUserId);
@@ -60,8 +60,9 @@ public class ResumeServiceImpl implements ResumeService {
         resume = resumeRepository.save(resume);
 
         // Call synchronously. Since we removed @Transactional from this method,
-        // the resume is already committed to the DB. This prevents a deadlock where 
-        // section-service calls back to verify ownership but the resume isn't saved yet.
+        // the resume is already committed to the DB. This prevents a deadlock where
+        // section-service calls back to verify ownership but the resume isn't saved
+        // yet.
         try {
             // Initializes Personal Info, Experience, Education, etc. via SectionService
             initializeDefaultSections(resume.getResumeId());
@@ -79,7 +80,8 @@ public class ResumeServiceImpl implements ResumeService {
     @Cacheable(value = "resume", key = "#resumeId")
     public ResumeResponse getResumeById(Long resumeId) {
         Resume resume = resumeRepository.findById(resumeId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Resume not found with ID: " + resumeId));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Resume not found with ID: " + resumeId));
 
         if (resume.isPublic() || currentUserService.isAdmin()) {
             return new ResumeResponse(resume);
@@ -121,7 +123,7 @@ public class ResumeServiceImpl implements ResumeService {
 
     @Override
     @Transactional
-    @CacheEvict(value = {"resume", "resumes_user", "resumes_template", "public_resumes"}, allEntries = true)
+    @CacheEvict(value = { "resume", "resumes_user", "resumes_template", "public_resumes" }, allEntries = true)
     public ResumeResponse updateResume(Long resumeId, ResumeUpdateRequest request) {
         Resume resume = requireOwnedOrAdminResume(resumeId);
 
@@ -144,7 +146,7 @@ public class ResumeServiceImpl implements ResumeService {
 
     @Override
     @Transactional
-    @CacheEvict(value = {"resume", "resumes_user", "resumes_template", "public_resumes"}, allEntries = true)
+    @CacheEvict(value = { "resume", "resumes_user", "resumes_template", "public_resumes" }, allEntries = true)
     public ResumeResponse updateAtsScore(Long resumeId, AtsUpdateDTO request) {
         Resume resume = requireOwnedOrAdminResume(resumeId);
         resume.setAtsScore(request.getAtsScore());
@@ -153,7 +155,7 @@ public class ResumeServiceImpl implements ResumeService {
     }
 
     @Override
-    @CacheEvict(value = {"resumes_user"}, allEntries = true)
+    @CacheEvict(value = { "resumes_user" }, allEntries = true)
     public ResumeResponse duplicateResume(Long resumeId) {
         Resume original = requireOwnedOrAdminResume(resumeId);
         long currentCount = resumeRepository.countByUserId(original.getUserId());
@@ -170,7 +172,7 @@ public class ResumeServiceImpl implements ResumeService {
                 .build();
 
         duplicate = resumeRepository.save(duplicate);
-        
+
         try {
             duplicateSections(resumeId, duplicate.getResumeId());
         } catch (Exception e) {
@@ -185,7 +187,7 @@ public class ResumeServiceImpl implements ResumeService {
 
     @Override
     @Transactional
-    @CacheEvict(value = {"resume", "resumes_user", "public_resumes"}, allEntries = true)
+    @CacheEvict(value = { "resume", "resumes_user", "public_resumes" }, allEntries = true)
     public ResumeResponse publishResume(Long resumeId) {
         Resume resume = requireOwnedOrAdminResume(resumeId);
         resume.setPublic(true);
@@ -196,7 +198,7 @@ public class ResumeServiceImpl implements ResumeService {
 
     @Override
     @Transactional
-    @CacheEvict(value = {"resume", "resumes_user", "public_resumes"}, allEntries = true)
+    @CacheEvict(value = { "resume", "resumes_user", "public_resumes" }, allEntries = true)
     public ResumeResponse unpublishResume(Long resumeId) {
         Resume resume = requireOwnedOrAdminResume(resumeId);
         resume.setPublic(false);
@@ -206,10 +208,11 @@ public class ResumeServiceImpl implements ResumeService {
 
     @Override
     @Transactional
-    @CacheEvict(value = {"resume", "resumes_user", "public_resumes"}, allEntries = true)
+    @CacheEvict(value = { "resume", "resumes_user", "public_resumes" }, allEntries = true)
     public void incrementViewCount(Long resumeId) {
         Resume resume = resumeRepository.findById(resumeId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Resume not found with ID: " + resumeId));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Resume not found with ID: " + resumeId));
         if (!resume.isPublic()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Resume not found with ID: " + resumeId);
         }
@@ -219,7 +222,7 @@ public class ResumeServiceImpl implements ResumeService {
 
     @Override
     @Transactional
-    @CacheEvict(value = {"resume", "resumes_user", "resumes_template", "public_resumes"}, allEntries = true)
+    @CacheEvict(value = { "resume", "resumes_user", "resumes_template", "public_resumes" }, allEntries = true)
     public void deleteResume(Long resumeId) {
         Resume resume = requireOwnedOrAdminResume(resumeId);
         sectionServiceClient.deleteAllSectionsByResume(resumeId);
@@ -237,7 +240,7 @@ public class ResumeServiceImpl implements ResumeService {
 
     @Override
     @Transactional
-    @CacheEvict(value = {"resume", "resumes_user", "resumes_template", "public_resumes"}, allEntries = true)
+    @CacheEvict(value = { "resume", "resumes_user", "resumes_template", "public_resumes" }, allEntries = true)
     public void forceDeleteResume(Long resumeId) {
         currentUserService.requireAdmin();
         if (!resumeRepository.existsById(resumeId)) {
@@ -258,14 +261,14 @@ public class ResumeServiceImpl implements ResumeService {
         if (!currentUserService.isPremium() && currentCount >= FREE_RESUME_LIMIT) {
             throw new ResponseStatusException(
                     HttpStatus.FORBIDDEN,
-                    "Free plan users can keep up to 3 resumes. Upgrade to create more."
-            );
+                    "Free plan users can keep up to 3 resumes. Upgrade to create more.");
         }
     }
 
     private Resume requireOwnedOrAdminResume(Long resumeId) {
         Resume resume = resumeRepository.findById(resumeId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Resume not found with ID: " + resumeId));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Resume not found with ID: " + resumeId));
 
         if (currentUserService.isAdmin()) {
             return resume;
@@ -306,7 +309,7 @@ public class ResumeServiceImpl implements ResumeService {
     }
 
     private void initializeDefaultSections(Long resumeId) {
-        String[] defaultTypes = {"SUMMARY", "EXPERIENCE", "EDUCATION", "SKILLS"};
+        String[] defaultTypes = { "SUMMARY", "EXPERIENCE", "EDUCATION", "SKILLS" };
         int order = 1;
         for (String type : defaultTypes) {
             String title = defaultSectionTitle(type);

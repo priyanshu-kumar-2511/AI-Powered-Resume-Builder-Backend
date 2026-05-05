@@ -19,7 +19,6 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 @SpringBootApplication
 @EnableDiscoveryClient
 @EnableCaching
-@EnableJpaRepositories(basePackages = "com.airesume.authservice.repository")
 public class AuthServiceApplication {
 
     public static void main(String[] args) {

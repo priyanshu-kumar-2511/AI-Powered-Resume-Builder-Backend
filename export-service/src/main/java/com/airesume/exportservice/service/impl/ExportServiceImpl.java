@@ -148,6 +148,10 @@ public class ExportServiceImpl implements ExportService {
     private void validateQuota(Long userId, ExportFormat format) {
         boolean isPremium = currentUserService.isPremium();
 
+        if (!isPremium && format != ExportFormat.PDF) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Premium plan required for " + format + " export.");
+        }
+
         if (format == ExportFormat.PDF && !isPremium) {
             long count = repository.countPdfExportsByUserIdSince(userId, LocalDate.now().atStartOfDay());
             if (count >= freeLimitDaily) {

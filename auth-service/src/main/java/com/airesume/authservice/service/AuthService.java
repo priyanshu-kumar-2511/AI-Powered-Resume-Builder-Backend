@@ -416,8 +416,35 @@ public class AuthService {
 
         if ("ROLE_ADMIN".equals(roleName)) {
             emailService.sendAdminPromotionEmail(user.getEmail(), user.getFullName());
+        } else if ("ROLE_USER".equals(roleName)) {
+            emailService.sendAdminDemotionEmail(user.getEmail(), user.getFullName());
         }
 
         return "User " + user.getUsername() + " role updated to " + roleName;
+    }
+
+    /**
+     * Returns a synthetic audit log list built from the current user table.
+     * In a production system this would read from a dedicated audit_log table.
+     * Each entry records account creation or last-known status change.
+     */
+    public List<Map<String, Object>> getAuditLogs() {
+        return userRepository.findAll().stream()
+                .map(u -> {
+                    Map<String, Object> entry = new HashMap<>();
+                    entry.put("logId",       u.getId());
+                    entry.put("actorId",     u.getId());
+                    entry.put("actorEmail",  u.getEmail());
+                    entry.put("actorName",   u.getFullName());
+                    entry.put("actionType",  u.isActive() ? "USER_REGISTERED" : "USER_SUSPENDED");
+                    entry.put("entityType",  "USER");
+                    entry.put("entityId",    String.valueOf(u.getId()));
+                    entry.put("beforeState", null);
+                    entry.put("afterState",  null);
+                    entry.put("ipAddress",   "—");
+                    entry.put("timestamp",   u.getCreatedAt() != null ? u.getCreatedAt().toString() : null);
+                    return entry;
+                })
+                .collect(Collectors.toList());
     }
 }

@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -43,10 +43,10 @@ public class TemplateControllerTest {
     @Autowired
     private MockMvc mockMvc; // Simulated HTTP client for controller testing
 
-    @MockBean
+    @MockitoBean
     private TemplateService templateService; // Mocking the business layer
 
-    @MockBean
+    @MockitoBean
     private JwtService jwtService; // Mocking the JWT service required by SecurityConfig
 
     @Autowired

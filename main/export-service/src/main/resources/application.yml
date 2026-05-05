@@ -1,0 +1,59 @@
+server:
+  port: 8086
+  forward-headers-strategy: framework
+
+spring:
+  application:
+    name: EXPORT-SERVICE
+  config:
+    import: optional:file:../.env
+
+  datasource:
+    url: jdbc:mysql://${EXPORT_DB_HOST:localhost}:${EXPORT_DB_PORT:3306}/${EXPORT_DB_NAME:airesume_export}?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC
+    username: ${EXPORT_DB_USERNAME:root}
+    password: ${EXPORT_DB_PASSWORD:Priyanshu@MySql}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  cloud:
+    config:
+      enabled: false
+    openfeign:
+      client:
+        config:
+          default:
+            connectTimeout: 5000
+            readTimeout: 60000
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration: ${JWT_EXPIRATION:86400000}
+  export:
+    storage-path: ./exports
+    job:
+      processing-timeout-seconds: 180
+      watchdog-interval-ms: 15000
+    pdf:
+      free-limit-daily: 10

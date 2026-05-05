@@ -108,4 +108,16 @@ public class AdminController {
     public ResponseEntity<Map<String,String>> deleteUser(@PathVariable Long userId) {
         return ResponseEntity.ok(Map.of("message", authService.deleteUserPermanently(userId)));
     }
+
+    // ── Audit Logs ───────────────────────────────────────────────────────────
+
+    /**
+     * Returns a list of all significant platform audit log events.
+     * Includes: user suspensions, reactivations, role changes, plan changes, deletions.
+     * GET /api/v1/admin/audit-logs
+     */
+    @GetMapping("/audit-logs")
+    public ResponseEntity<List<Map<String,Object>>> getAuditLogs() {
+        return ResponseEntity.ok(authService.getAuditLogs());
+    }
 }
