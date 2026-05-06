@@ -62,7 +62,8 @@ public class SecurityConfig {
                     "/api/v1/auth/forgot-username/**",
                     "/api/v1/auth/forgot-password/**",
                     "/api/v1/auth/logout",
-                    "/api/v1/auth/validate"
+                    "/api/v1/auth/validate",
+                    "/api/v1/internal/**"
                 ).permitAll()
                 .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()

@@ -1,5 +1,5 @@
 # ResumeAI: AI-Powered Resume Builder Platform (Backend)
-**Current Branch:** `feature/UC8-Notification-Service`
+**Current Branch:** `feature/UC9-Payment-Service`
 
 ## 📌 Project Overview / Introduction
 
@@ -13,6 +13,7 @@ Features include:
 *   Automated resume customization to perfectly match live job postings.
 *   Exporting dynamic visual CV templates directly to PDF and DOCX formats.
 *   **Job Linking:** Calculating a resume-to-job fit score and fetching live job data via **LinkedIn & Naukri APIs** (RapidAPI).
+*   **Payment & Subscriptions:** Full Razorpay integration for unlocking Premium tier features via a dedicated microservice.
 
 This repository holds the backend microservices ecosystem powering these platform features.
 
@@ -35,6 +36,7 @@ This project is built using **Java 17** and **Spring Boot 3.5.13**, following po
 | **`admin-server`** | `9090` | **Health & Monitoring:** visual dashboard to monitor health and metrics. |
 | **`api-gateway`** | `8080` | **Routing Gateway:** [Swagger UI](http://localhost:8080/swagger-ui.html) - Single entry point for all frontend client requests. |
 | **`notification-service`** | `8087` | **Alerts & Broadcasts:** Manages real-time alerts, email notifications, and admin-led broadcasts. |
+| **`payment-service`** | `8088` | **Financial Transactions:** Handles Razorpay orders, subscription verification, and plan syncing. |
 
 ## How to Run
 
@@ -79,7 +81,7 @@ This phase introduces the core business and user identity layer of the ecosystem
 
 | Service Name | Port | Description |
 | :--- | :--- | :--- |
-| **`auth-service`** | `8081` | **Identity Management & Premium Subscriptions:** Handles registration, robust JWT authentication, LinkedIn/Google OAuth2 integration, and **Razorpay Premium Subscription** flows for unlocking advanced AI features. |
+| **`auth-service`** | `8081` | **Identity Management:** Handles registration, robust JWT authentication, and LinkedIn/Google OAuth2 integration. (Note: Payment logic migrated to `payment-service`). |
 
 ### How to Run Phase 2
 
@@ -242,7 +244,7 @@ This phase handles document generation and download capabilities.
 
 ## 🔔 Phase 8 (Notification & Alerts)
 
-Currently, the **feature/UC8-notification-service** branch of this repository represents **Phase 8** of the architecture. This phase introduces real-time user communication and platform-wide announcements.
+This phase introduces real-time user communication and platform-wide announcements.
 
 ### Notification Service
 
@@ -258,6 +260,27 @@ Currently, the **feature/UC8-notification-service** branch of this repository re
    mvn spring-boot:run
    ```
    *Notification APIs Swagger UI:* [http://localhost:8087/swagger-ui.html](http://localhost:8087/swagger-ui.html)
+
+---
+
+## 💳 Phase 9 (Payment & Subscription Management)
+
+Currently, the **feature/UC9-payment-service** branch of this repository represents **Phase 9** of the architecture. This phase decouples financial logic into a dedicated service for better security and scalability.
+
+### Payment Service
+
+| Service Name | Port | Description |
+| :--- | :--- | :--- |
+| **`payment-service`** | `8088` | **Payment Gateway:** Fully integrated with **Razorpay**. Manages order creation, signature verification, and secure activation of premium plans. Synchronizes plan state with `auth-service` via internal Feign APIs. |
+
+### How to Run Payment Service
+
+1. **Start Payment Service**
+   ```bash
+   cd payment-service
+   mvn spring-boot:run
+   ```
+   *Payment APIs Swagger UI:* [http://localhost:8088/swagger-ui.html](http://localhost:8088/swagger-ui.html)
 
 ---
 

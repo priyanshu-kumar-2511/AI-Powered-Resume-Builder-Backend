@@ -18,6 +18,10 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.*;
 
+/**
+ * Implementation of AiService using Spring AI and Groq Llama 3.1.
+ * This service handles content generation, ATS scoring, and quota enforcement.
+ */
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -193,6 +197,10 @@ public class AiServiceImpl implements AiService {
         return Map.of("totalCost", 0.0);
     }
 
+    /**
+     * Helper to get user quota or create a new one if not exists.
+     * Quotas track usage for Free tier users.
+     */
     private UserQuota getOrCreateQuota(String userId) {
         final String uid = (userId == null) ? "anonymous" : userId;
         return userQuotaRepository.findById(uid).orElseGet(() -> {
@@ -248,6 +256,10 @@ public class AiServiceImpl implements AiService {
         }
     }
 
+    /**
+     * Core method to communicate with Groq AI via Spring AI.
+     * Saves request/response history for auditing.
+     */
     private Map<String, Object> callAiAndSaveHistory(String promptText, String userId, String actionType) {
         Map<String, Object> result = new HashMap<>();
         String responseContent = null;

@@ -571,6 +571,18 @@ body { background: #fff; }
   color: #374151;
 }
 
+.expertise-grid span {
+  background: rgba(96,165,250,0.08);
+  border: 1px solid rgba(96,165,250,0.35);
+  border-radius: 5px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #1e40af;
+  text-align: center;
+  display: block;
+}
+
 .exp-block { margin-bottom: 14px; }
 
 .exp-meta {
@@ -639,35 +651,39 @@ SELECT
     {{/projects}}
   </section>
 
-  <section class="section edu-skills-row">
-    <div class="edu-col">
-      <h2 class="section-title">Education</h2>
-      {{#education}}
-      <div class="edu-item">
-        <strong>{{degree}}</strong>
-        <div class="edu-inst">{{institution}}</div>
-        <div class="edu-dates">{{startYear}} – {{endYear}}</div>
-        <ul class="bullet-list">
-          {{#highlights}}<li>{{text}}</li>{{/highlights}}
-        </ul>
-      </div>
-      {{/education}}
+  <section class="section">
+    <h2 class="section-title">Education</h2>
+    {{#education}}
+    <div class="edu-item">
+      <strong>{{degree}}</strong>
+      <div class="edu-inst">{{institution}}</div>
+      <div class="edu-dates">{{startYear}} – {{endYear}}</div>
+      <ul class="bullet-list">
+        {{#highlights}}<li>{{text}}</li>{{/highlights}}
+      </ul>
     </div>
-    <div class="skills-col">
-      <h2 class="section-title">Skills</h2>
-      <ul class="bullet-list">
-        {{#skills}}<li>{{name}}</li>{{/skills}}
-      </ul>
-      <h2 class="section-title" style="margin-top:16px">Awards</h2>
-      <ul class="bullet-list">
-        {{#awards}}<li>{{name}}</li>{{/awards}}
-      </ul>
+    {{/education}}
+  </section>
 
-      <h2 class="section-title" style="margin-top:16px">Certifications</h2>
-      <ul class="bullet-list">
-        {{#certifications}}<li><strong>{{name}}</strong> <span style="font-size: 11.5px; color: #64748b;">{{date}}</span></li>{{/certifications}}
-      </ul>
-    </div>
+  <section class="section">
+    <h2 class="section-title">Skills</h2>
+    <ul class="bullet-list">
+      {{#skills}}<li>{{name}}</li>{{/skills}}
+    </ul>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">Awards</h2>
+    <ul class="bullet-list">
+      {{#awards}}<li>{{name}}</li>{{/awards}}
+    </ul>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">Certifications</h2>
+    <ul class="bullet-list">
+      {{#certifications}}<li><strong>{{name}}</strong> <span style="font-size: 11.5px; color: #64748b;">{{date}}</span></li>{{/certifications}}
+    </ul>
   </section>
 </div>',
 '@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap");
@@ -736,12 +752,6 @@ body { background: #fff; }
 .exp-role { font-weight: 700; font-size: 13px; }
 .exp-company { font-size: 12px; color: #0891b2; font-weight: 600; margin: 3px 0 6px; }
 .exp-dates { font-size: 12px; color: #64748b; }
-
-.edu-skills-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 28px;
-}
 
 .edu-item { margin-bottom: 12px; }
 .edu-item strong { font-size: 13px; }
@@ -1160,3 +1170,224 @@ body { background: #fff; }
 .side-list li { font-size: 12px; color: #374151; margin-bottom: 8px; }',
 true, 0, NOW(), NOW()
 FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM templates WHERE name = 'Creative Teal');
+
+-- TEMPLATE 7 (FREE): Simple Ivory
+INSERT INTO templates (name, description, thumbnail_url, category, tier, html_layout, css_styles, is_active, usage_count, created_at, updated_at)
+SELECT
+  'Simple Ivory',
+  'Warm, elegant one-column template with classic serif styling and minimal accents. Easy to read and great for general professional roles.',
+  'assets/templates/simple-ivory.svg',
+  'PROFESSIONAL',
+  'FREE',
+'<div class="ivory-resume">
+  <header class="ivory-header">
+    <h1>{{fullName}}</h1>
+    <p>{{jobTitle}}</p>
+    <div class="ivory-contact">{{email}} | {{phone}} | {{location}}</div>
+  </header>
+
+  <section class="section">
+    <h2>Professional Summary</h2>
+    <p>{{{summary}}}</p>
+  </section>
+
+  <section class="section">
+    <h2>Experience</h2>
+    {{#experience}}
+    <article class="ivory-block">
+      <div class="ivory-row">
+        <strong>{{role}}, {{company}}</strong>
+        <span>{{startDate}} - {{endDate}}</span>
+      </div>
+      <ul>{{#bullets}}<li>{{text}}</li>{{/bullets}}</ul>
+    </article>
+    {{/experience}}
+  </section>
+
+  <div class="ivory-grid">
+    <section class="section">
+      <h2>Education</h2>
+      {{#education}}
+      <article class="ivory-block">
+        <strong>{{degree}}</strong>
+        <div>{{institution}}</div>
+        <span>{{startYear}} - {{endYear}}</span>
+      </article>
+      {{/education}}
+    </section>
+
+    <section class="section">
+      <h2>Skills</h2>
+      <ul class="plain-list">{{#skills}}<li>{{name}}</li>{{/skills}}</ul>
+    </section>
+  </div>
+
+  <section class="section">
+    <h2>Projects</h2>
+    {{#projects}}
+    <article class="ivory-block">
+      <div class="ivory-row">
+        <strong>{{title}}</strong>
+        <span>{{dates}}</span>
+      </div>
+      <ul>{{#bullets}}<li>{{text}}</li>{{/bullets}}</ul>
+    </article>
+    {{/projects}}
+  </section>
+
+  <section class="section">
+    <h2>Certifications</h2>
+    <ul class="plain-list">{{#certifications}}<li>{{name}} <span>{{date}}</span></li>{{/certifications}}</ul>
+  </section>
+</div>',
+'* { box-sizing: border-box; margin: 0; padding: 0; } body { margin: 0; background: #fff; color: #1f2937; font-family: Georgia, "Times New Roman", serif; } .ivory-resume { max-width: 820px; margin: 0 auto; padding: 42px; background: #fffaf4; } .ivory-header { text-align: center; padding-bottom: 18px; margin-bottom: 22px; border-bottom: 1px solid #d6c8b8; } .ivory-header h1 { margin: 0; font-size: 31px; color: #2b2118; } .ivory-header p { margin: 6px 0 8px; font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: #7c6754; } .ivory-contact { font-size: 11px; color: #6b5b4d; } .section { margin-bottom: 22px; } .section h2 { margin: 0 0 12px; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: #6c4f3d; border-bottom: 1px solid #d6c8b8; padding-bottom: 5px; } .section p, .section li, .section div, .section span { font-size: 12.2px; } .ivory-block { margin-bottom: 12px; } .ivory-row { display: flex; justify-content: space-between; gap: 12px; } .ivory-row span, .section span { color: #7c6b5b; font-size: 11px; } .ivory-block ul, .plain-list { margin: 6px 0 0; padding-left: 18px; } .ivory-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 28px; }',
+true, 0, NOW(), NOW()
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM templates WHERE name = 'Simple Ivory');
+
+-- TEMPLATE 8 (FREE): Clean Columns
+INSERT INTO templates (name, description, thumbnail_url, category, tier, html_layout, css_styles, is_active, usage_count, created_at, updated_at)
+SELECT
+  'Clean Columns',
+  'Balanced two-column resume with a light information sidebar and clean content flow. Simple, modern and interview-friendly.',
+  'assets/templates/clean-columns.svg',
+  'PROFESSIONAL',
+  'FREE',
+'<div class="columns-resume">
+  <aside class="columns-side">
+    <section class="side-card">
+      <h1>{{fullName}}</h1>
+      <p>{{jobTitle}}</p>
+      <div>{{email}}</div>
+      <div>{{phone}}</div>
+      <div>{{location}}</div>
+      <div>{{linkedin}}</div>
+    </section>
+
+    <section class="side-card">
+      <h2>Skills</h2>
+      <ul>{{#skills}}<li>{{name}}</li>{{/skills}}</ul>
+    </section>
+
+    <section class="side-card">
+      <h2>Certifications</h2>
+      <ul>{{#certifications}}<li>{{name}}</li>{{/certifications}}</ul>
+    </section>
+  </aside>
+
+  <main class="columns-main">
+    <section class="main-card">
+      <h2>Summary</h2>
+      <p>{{{summary}}}</p>
+    </section>
+
+    <section class="main-card">
+      <h2>Experience</h2>
+      {{#experience}}
+      <article class="entry">
+        <div class="entry-top">
+          <strong>{{role}}</strong>
+          <span>{{startDate}} - {{endDate}}</span>
+        </div>
+        <div class="entry-sub">{{company}}</div>
+        <ul>{{#bullets}}<li>{{text}}</li>{{/bullets}}</ul>
+      </article>
+      {{/experience}}
+    </section>
+
+    <section class="main-card">
+      <h2>Education</h2>
+      {{#education}}
+      <article class="entry">
+        <div class="entry-top">
+          <strong>{{degree}}</strong>
+          <span>{{startYear}} - {{endYear}}</span>
+        </div>
+        <div class="entry-sub">{{institution}}</div>
+      </article>
+      {{/education}}
+    </section>
+
+    <section class="main-card">
+      <h2>Projects</h2>
+      {{#projects}}
+      <article class="entry">
+        <div class="entry-top">
+          <strong>{{title}}</strong>
+          <span>{{dates}}</span>
+        </div>
+        <ul>{{#bullets}}<li>{{text}}</li>{{/bullets}}</ul>
+      </article>
+      {{/projects}}
+    </section>
+  </main>
+</div>',
+'* { box-sizing: border-box; margin: 0; padding: 0; } body { margin: 0; background: #fff; color: #0f172a; font-family: "Segoe UI", Arial, sans-serif; } .columns-resume { display: grid; grid-template-columns: 220px 1fr; max-width: 860px; margin: 0 auto; background: #fff; } .columns-side { background: #f8fafc; border-right: 1px solid #dbe3ea; padding: 28px 20px; } .columns-main { padding: 28px 30px; } .side-card, .main-card { margin-bottom: 22px; } .side-card h1 { margin: 0 0 4px; font-size: 24px; } .side-card p { margin: 0 0 12px; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #475569; } .side-card h2, .main-card h2 { margin: 0 0 10px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em; color: #0f766e; } .side-card ul, .main-card ul { margin: 6px 0 0; padding-left: 18px; } .side-card li, .main-card li, .side-card div, .main-card p, .entry-sub, .entry span { font-size: 11.5px; } .entry { margin-bottom: 12px; } .entry-top { display: flex; justify-content: space-between; gap: 12px; } .entry-sub { margin-top: 2px; color: #475569; } .entry span { color: #64748b; } .main-card { padding-bottom: 14px; border-bottom: 1px solid #e2e8f0; }',
+true, 0, NOW(), NOW()
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM templates WHERE name = 'Clean Columns');
+
+-- TEMPLATE 9 (FREE): Minimal Mono
+INSERT INTO templates (name, description, thumbnail_url, category, tier, html_layout, css_styles, is_active, usage_count, created_at, updated_at)
+SELECT
+  'Minimal Mono',
+  'Compact mono-styled layout with crisp section labels and clean spacing. Great for ATS-first applications and technical resumes.',
+  'assets/templates/minimal-mono.svg',
+  'MINIMALIST',
+  'FREE',
+'<div class="mono-resume">
+  <header class="mono-header">
+    <div>
+      <h1>{{fullName}}</h1>
+      <p>{{jobTitle}}</p>
+    </div>
+    <div class="mono-contact">
+      <span>{{email}}</span>
+      <span>{{phone}}</span>
+      <span>{{location}}</span>
+    </div>
+  </header>
+
+  <section class="mono-section">
+    <h2>Summary</h2>
+    <p>{{{summary}}}</p>
+  </section>
+
+  <section class="mono-section">
+    <h2>Skills</h2>
+    <div class="mono-tags">{{#skills}}<span>{{name}}</span>{{/skills}}</div>
+  </section>
+
+  <section class="mono-section">
+    <h2>Experience</h2>
+    {{#experience}}
+    <article class="mono-item">
+      <div class="mono-top"><strong>{{role}} / {{company}}</strong><span>{{startDate}} - {{endDate}}</span></div>
+      <ul>{{#bullets}}<li>{{text}}</li>{{/bullets}}</ul>
+    </article>
+    {{/experience}}
+  </section>
+
+  <div class="mono-grid">
+    <section class="mono-section">
+      <h2>Education</h2>
+      {{#education}}
+      <article class="mono-item">
+        <div class="mono-top"><strong>{{degree}}</strong><span>{{startYear}} - {{endYear}}</span></div>
+        <div>{{institution}}</div>
+      </article>
+      {{/education}}
+    </section>
+
+    <section class="mono-section">
+      <h2>Projects</h2>
+      {{#projects}}
+      <article class="mono-item">
+        <div class="mono-top"><strong>{{title}}</strong><span>{{dates}}</span></div>
+        <ul>{{#bullets}}<li>{{text}}</li>{{/bullets}}</ul>
+      </article>
+      {{/projects}}
+    </section>
+  </div>
+</div>',
+'* { box-sizing: border-box; margin: 0; padding: 0; } body { margin: 0; background: #fff; color: #111827; font-family: "Courier New", monospace; } .mono-resume { max-width: 840px; margin: 0 auto; padding: 34px; background: #fff; } .mono-header { display: flex; justify-content: space-between; gap: 18px; padding-bottom: 16px; margin-bottom: 18px; border-bottom: 2px solid #111827; } .mono-header h1 { margin: 0; font-size: 28px; letter-spacing: 0.06em; } .mono-header p { margin: 6px 0 0; font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em; color: #4b5563; } .mono-contact { display: flex; flex-direction: column; gap: 4px; font-size: 11px; text-align: right; color: #374151; } .mono-section { margin-bottom: 20px; } .mono-section h2 { margin: 0 0 10px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em; color: #111827; background: #f3f4f6; padding: 6px 8px; } .mono-tags { display: flex; flex-wrap: wrap; gap: 8px; } .mono-tags span { border: 1px solid #d1d5db; padding: 4px 8px; font-size: 11px; } .mono-item { margin-bottom: 12px; } .mono-top { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 4px; } .mono-top span { font-size: 11px; color: #6b7280; } .mono-item div, .mono-item li, .mono-section p { font-size: 11.5px; } .mono-item ul { margin: 4px 0 0; padding-left: 18px; } .mono-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }',
+true, 0, NOW(), NOW()
+FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM templates WHERE name = 'Minimal Mono');

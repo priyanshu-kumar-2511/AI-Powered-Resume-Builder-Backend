@@ -1,29 +1,14 @@
-package com.airesume.authservice;
+package com.airesume.paymentservice;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
-
-import org.springframework.cache.annotation.EnableCaching;
-import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
-
-/**
- * Main Application class for the Auth Service.
- * 
- * This service handles identity management, user registration, 
- * authentication using JWT, and account recovery flows (Username/Password).
- * 
- * @author ResumeAI Team
- * @version 1.0
- */
 import org.springframework.cloud.openfeign.EnableFeignClients;
 
 @SpringBootApplication
 @EnableDiscoveryClient
-@EnableCaching
 @EnableFeignClients
-public class AuthServiceApplication {
-
+public class PaymentServiceApplication {
     public static void main(String[] args) {
         // Load .env file from the project root
         io.github.cdimascio.dotenv.Dotenv dotenv = io.github.cdimascio.dotenv.Dotenv.configure()
@@ -33,7 +18,6 @@ public class AuthServiceApplication {
         
         dotenv.entries().forEach(entry -> System.setProperty(entry.getKey(), entry.getValue()));
 
-        SpringApplication.run(AuthServiceApplication.class, args);
+        SpringApplication.run(PaymentServiceApplication.class, args);
     }
-
 }

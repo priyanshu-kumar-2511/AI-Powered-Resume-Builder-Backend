@@ -38,6 +38,11 @@ public class ResumeServiceImpl implements ResumeService {
     private final SectionServiceClient sectionServiceClient;
     private final CurrentUserService currentUserService;
 
+    /**
+     * Creates a new resume and initializes its default sections (Summary, Experience, etc.)
+     * via an inter-service call to Section Service.
+     */
+
     @Override
     @CacheEvict(value = { "resumes_user", "public_resumes" }, allEntries = true)
     public ResumeResponse createResume(ResumeCreateRequest request) {
@@ -257,6 +262,10 @@ public class ResumeServiceImpl implements ResumeService {
         return resumeRepository.countByUserId(userId);
     }
 
+    /**
+     * Enforces the 3-resume limit for Free users. 
+     * Premium users have unlimited access.
+     */
     private void enforceFreePlanLimit(long currentCount) {
         if (!currentUserService.isPremium() && currentCount >= FREE_RESUME_LIMIT) {
             throw new ResponseStatusException(
@@ -308,8 +317,12 @@ public class ResumeServiceImpl implements ResumeService {
         }
     }
 
+    /**
+     * Seeds a new resume with empty boilerplate sections.
+     * Calls SectionService over HTTP (Feign).
+     */
     private void initializeDefaultSections(Long resumeId) {
-        String[] defaultTypes = { "SUMMARY", "EXPERIENCE", "EDUCATION", "SKILLS" };
+        String[] defaultTypes = { "SUMMARY", "EXPERIENCE", "EDUCATION", "SKILLS", "PROJECTS", "CERTIFICATIONS" };
         int order = 1;
         for (String type : defaultTypes) {
             String title = defaultSectionTitle(type);
@@ -332,6 +345,8 @@ public class ResumeServiceImpl implements ResumeService {
             case "EXPERIENCE" -> "Work Experience";
             case "EDUCATION" -> "Education";
             case "SKILLS" -> "Skills";
+            case "PROJECTS" -> "Projects";
+            case "CERTIFICATIONS" -> "Certifications";
             default -> type.substring(0, 1).toUpperCase() + type.substring(1).toLowerCase();
         };
     }
@@ -340,6 +355,7 @@ public class ResumeServiceImpl implements ResumeService {
         return switch (type) {
             case "SUMMARY" -> "{\"text\":\"\"}";
             case "EXPERIENCE", "EDUCATION", "SKILLS" -> "[]";
+            case "PROJECTS", "CERTIFICATIONS" -> "{\"text\":\"\"}";
             default -> "{}";
         };
     }

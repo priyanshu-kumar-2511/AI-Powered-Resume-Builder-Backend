@@ -18,8 +18,11 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AuthService {
 
+    // Repositories for data persistence
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    
+    // Core services for logic
     private final OtpService otpService;
     private final EmailService emailService;
     private final JwtService jwtService;
@@ -55,6 +58,7 @@ public class AuthService {
                 .roles(Collections.singleton(userRole))
                 .provider(ProviderType.LOCAL)
                 .isActive(true)
+                // New users start with a FREE plan by default
                 .subscriptionPlan(PlanType.FREE)
                 .build();
 
@@ -102,6 +106,11 @@ public class AuthService {
 
         return token;
     }
+
+    /**
+     * Internal method to build claims for JWT token.
+     * Includes roles, userId, and current subscription plan.
+     */
 
     /**
      * Initiates the username recovery flow by generating and emailing an OTP.
@@ -379,6 +388,28 @@ public class AuthService {
     }
 
     /**
+     * Updates a user's subscription plan by their username.
+     * @param username the username of the user
+     * @param plan the new subscription plan
+     * @return a success message
+     */
+    @Transactional
+    public String updateSubscriptionByUsername(String username, PlanType plan) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found: " + username));
+        user.setSubscriptionPlan(plan);
+        userRepository.save(user);
+
+        if (plan == PlanType.PREMIUM) {
+            emailService.sendPremiumActivationEmail(user.getEmail(), user.getFullName());
+        } else if (plan == PlanType.FREE) {
+            emailService.sendPremiumCancellationEmail(user.getEmail(), user.getFullName());
+        }
+
+        return "User " + username + " plan updated to " + plan.name();
+    }
+
+    /**
      * Updates a user's subscription plan by their ID. If upgraded to PREMIUM, sends an email notification.
      * @param userId the ID of the user
      * @param plan the new subscription plan
@@ -394,7 +425,7 @@ public class AuthService {
         if (plan == PlanType.PREMIUM) {
             emailService.sendPremiumActivationEmail(user.getEmail(), user.getFullName());
         }
-        
+
         return "User " + user.getUsername() + " plan updated to " + plan.name();
     }
 

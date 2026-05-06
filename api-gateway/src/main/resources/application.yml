@@ -43,9 +43,9 @@ spring:
               predicates:
                 - Path=/api/v1/auth/**, /api/v1/admin/**
 
-            # Explicit Route for Payments
+            # Explicit Route for Payments (Migrated to PAYMENT-SERVICE)
             - id: payment-api-route
-              uri: http://localhost:8081
+              uri: lb://PAYMENT-SERVICE
               predicates:
                 - Path=/api/v1/payments/**
 
@@ -145,5 +145,7 @@ springdoc:
         url: /api/v1/exports/v3/api-docs
       - name: NOTIFICATION-SERVICE
         url: /api/v1/notifications/v3/api-docs
+      - name: PAYMENT-SERVICE
+        url: /api/v1/payments/v3/api-docs
   api-docs:
     path: /v3/api-docs
