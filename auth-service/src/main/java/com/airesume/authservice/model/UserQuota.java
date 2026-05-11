@@ -10,11 +10,10 @@ import java.time.LocalDateTime;
  */
 @Entity
 @Table(name = "user_quotas")
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@Builder(toBuilder = true)
 public class UserQuota {
 
     @Id

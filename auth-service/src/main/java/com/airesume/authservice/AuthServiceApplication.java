@@ -6,6 +6,7 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.cloud.openfeign.EnableFeignClients;
 
 /**
  * Main Application class for the Auth Service.
@@ -16,8 +17,6 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
  * @author ResumeAI Team
  * @version 1.0
  */
-import org.springframework.cloud.openfeign.EnableFeignClients;
-
 @SpringBootApplication
 @EnableDiscoveryClient
 @EnableCaching
@@ -30,7 +29,7 @@ public class AuthServiceApplication {
                 .directory("../") // Look at the root folder
                 .ignoreIfMissing()
                 .load();
-        
+
         dotenv.entries().forEach(entry -> System.setProperty(entry.getKey(), entry.getValue()));
 
         SpringApplication.run(AuthServiceApplication.class, args);

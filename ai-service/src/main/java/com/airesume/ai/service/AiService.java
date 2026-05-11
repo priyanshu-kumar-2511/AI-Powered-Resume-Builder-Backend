@@ -1,6 +1,7 @@
 package com.airesume.ai.service;
 
 import com.airesume.ai.dto.AiRequest;
+import com.airesume.ai.dto.TemplateExtractionResponse;
 import java.util.List;
 import java.util.Map;
 
@@ -84,6 +85,13 @@ public interface AiService {
     Map<String, Object> analyzeJobFit(AiRequest request);
 
     /**
+     * Extracts template content from an uploaded PDF file.
+     * @param file the uploaded PDF file
+     * @return extracted template information
+     */
+    TemplateExtractionResponse extractTemplateFromPdf(org.springframework.web.multipart.MultipartFile file);
+
+    /**
      * Retrieves platform-wide AI usage statistics for Admin dashboard.
      * @return aggregate usage stats
      */
@@ -94,4 +102,12 @@ public interface AiService {
      * @return cost statistics
      */
     Map<String, Object> getCostByUser();
+
+    /**
+     * Executes a background AI processing task and saves the result to user history (Premium feature).
+     * @param promptText complete prompt string
+     * @param userId user identifier
+     * @param actionType action type key
+     */
+    void processBackgroundAiJob(String promptText, String userId, String actionType);
 }

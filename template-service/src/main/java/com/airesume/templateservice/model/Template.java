@@ -31,6 +31,8 @@ public class Template {
 
     private String description;
 
+    @Lob
+    @Column(columnDefinition = "LONGTEXT")
     private String thumbnailUrl;
 
     @Lob

@@ -24,8 +24,22 @@ public class AuthController {
      * @param request the registration details including username, email, and password
      * @return a success message upon successful registration
      */
+    @PostMapping("/register/initiate")
+    @Operation(summary = "Initiate registration (Step 1)")
+    public ResponseEntity<Map<String, String>> initiateRegistration(@Valid @RequestBody RegisterInitiateRequest request) {
+        String result = authService.initiateRegistration(request);
+        return ResponseEntity.ok(Map.of("message", result));
+    }
+
+    @PostMapping("/register/verify-otp")
+    @Operation(summary = "Verify registration OTP (Step 2)")
+    public ResponseEntity<Map<String, String>> verifyRegistrationOtp(@Valid @RequestBody OtpVerificationRequest request) {
+        String result = authService.verifyRegistrationOtp(request.getIdentifier(), request.getOtp());
+        return ResponseEntity.ok(Map.of("message", result));
+    }
+
     @PostMapping("/register")
-    @Operation(summary = "Register a new user")
+    @Operation(summary = "Register a new user (Step 3)")
     public ResponseEntity<Map<String, String>> register(@Valid @RequestBody RegisterRequest request) {
         String result = authService.register(request);
         return ResponseEntity.ok(Map.of("message", result));
@@ -106,6 +120,18 @@ public class AuthController {
     @Operation(summary = "Update user profile")
     public ResponseEntity<Map<String, String>> updateProfile(java.security.Principal principal, @Valid @RequestBody ProfileRequest request) {
         String result = authService.updateProfile(principal.getName(), request);
+        return ResponseEntity.ok(Map.of("message", result));
+    }
+
+    /**
+     * Permanently deletes the currently authenticated user's own account.
+     * @param principal the currently authenticated user
+     * @return a success message
+     */
+    @DeleteMapping("/profile")
+    @Operation(summary = "Permanently delete own account")
+    public ResponseEntity<Map<String, String>> deleteOwnAccount(java.security.Principal principal) {
+        String result = authService.deleteOwnAccount(principal.getName());
         return ResponseEntity.ok(Map.of("message", result));
     }
 

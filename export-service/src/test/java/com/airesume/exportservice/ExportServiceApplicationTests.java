@@ -12,4 +12,13 @@ class ExportServiceApplicationTests {
 	void contextLoads() {
 	}
 
+	@Test
+	void testMain() {
+		System.setProperty("spring.profiles.active", "test");
+		ExportServiceApplication.main(new String[]{
+				"--spring.main.web-application-type=none",
+				"--spring.profiles.active=test"
+		});
+	}
 }
+

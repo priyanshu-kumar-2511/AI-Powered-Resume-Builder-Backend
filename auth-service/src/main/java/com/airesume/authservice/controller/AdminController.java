@@ -3,6 +3,8 @@ package com.airesume.authservice.controller;
 import com.airesume.authservice.dto.UserProfileResponse;
 import com.airesume.authservice.service.AuthService;
 import com.airesume.authservice.model.PlanType;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -19,6 +21,7 @@ import java.util.Map;
 @RequestMapping("/api/v1/admin")
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('ADMIN')")
+@Tag(name = "Admin Controller", description = "Admin-only endpoints for user and platform management")
 public class AdminController {
 
     private final AuthService authService;
@@ -30,6 +33,7 @@ public class AdminController {
      * @return a list containing profile information of all users
      */
     @GetMapping("/users")
+    @Operation(summary = "Retrieve a list of all users")
     public ResponseEntity<List<UserProfileResponse>> getAllUsers() {
         return ResponseEntity.ok(authService.getAllUsers());
     }
@@ -44,6 +48,7 @@ public class AdminController {
      * @return a success message confirming the suspension
      */
     @PutMapping("/users/{userId}/suspend")
+    @Operation(summary = "Suspend a user by ID")
     public ResponseEntity<Map<String,String>> suspendUser(
             @PathVariable Long userId,
             @RequestBody(required = false) Map<String,String> body) {
@@ -59,6 +64,7 @@ public class AdminController {
      * @return a success message confirming the reactivation
      */
     @PutMapping("/users/{userId}/reactivate")
+    @Operation(summary = "Reactivate a suspended user by ID")
     public ResponseEntity<Map<String,String>> reactivateUser(@PathVariable Long userId) {
         return ResponseEntity.ok(Map.of("message", authService.reactivateUserById(userId)));
     }
@@ -73,6 +79,7 @@ public class AdminController {
      * @return a success message confirming the subscription change
      */
     @PutMapping("/users/{userId}/subscription")
+    @Operation(summary = "Update subscription plan of a specific user")
     public ResponseEntity<Map<String,String>> updateSubscription(
             @PathVariable Long userId,
             @RequestBody Map<String,String> body) {
@@ -90,6 +97,7 @@ public class AdminController {
      * @return a success message confirming the role change
      */
     @PutMapping("/users/{userId}/role")
+    @Operation(summary = "Update access role of a specific user")
     public ResponseEntity<Map<String,String>> updateRole(
             @PathVariable Long userId,
             @RequestBody Map<String,String> body) {
@@ -105,6 +113,7 @@ public class AdminController {
      * @return a success message confirming the deletion
      */
     @DeleteMapping("/users/{userId}")
+    @Operation(summary = "Permanently delete a user")
     public ResponseEntity<Map<String,String>> deleteUser(@PathVariable Long userId) {
         return ResponseEntity.ok(Map.of("message", authService.deleteUserPermanently(userId)));
     }
@@ -117,6 +126,7 @@ public class AdminController {
      * GET /api/v1/admin/audit-logs
      */
     @GetMapping("/audit-logs")
+    @Operation(summary = "Retrieve significant platform audit log events")
     public ResponseEntity<List<Map<String,Object>>> getAuditLogs() {
         return ResponseEntity.ok(authService.getAuditLogs());
     }

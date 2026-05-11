@@ -10,4 +10,12 @@ class NotificationServiceApplicationTests {
 	void contextLoads() {
 	}
 
+	@Test
+	void testMain() {
+		System.setProperty("spring.profiles.active", "test");
+		NotificationServiceApplication.main(new String[] {
+				"--spring.profiles.active=test",
+				"--spring.main.web-application-type=none"
+		});
+	}
 }

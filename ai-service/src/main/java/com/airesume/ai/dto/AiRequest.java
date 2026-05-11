@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 @Data
-@Builder
+@Builder(toBuilder = true)
 @NoArgsConstructor
 @AllArgsConstructor
 public class AiRequest {
@@ -23,15 +23,4 @@ public class AiRequest {
     private String targetLanguage;
     private String sectionType;
     private String tone; // e.g., "Professional", "Confident", "Academic"
-}
-
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-class AiResponse {
-    private String content;
-    private List<String> bulletPoints;
-    private Integer score;
-    private Map<String, Object> metadata;
 }

@@ -4,6 +4,7 @@ import com.airesume.resumeservice.model.Resume;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.time.LocalDateTime;
 
@@ -22,8 +23,10 @@ public class ResumeResponse {
     private Integer atsScore;
     private String status;
     private String language;
+    @JsonProperty("isPublic")
     private boolean isPublic;
     private Integer viewCount;
+    private String customizations;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -43,6 +46,7 @@ public class ResumeResponse {
         this.language = resume.getLanguage();
         this.isPublic = resume.isPublic();
         this.viewCount = resume.getViewCount();
+        this.customizations = resume.getCustomizations();
         this.createdAt = resume.getCreatedAt();
         this.updatedAt = resume.getUpdatedAt();
     }

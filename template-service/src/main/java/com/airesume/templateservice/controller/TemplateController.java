@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("")
 @RequiredArgsConstructor
-@Tag(name = "Template Management", description = "APIs for managing and retrieving resume templates")
+@Tag(name = "Template Controller", description = "Endpoints for managing and retrieving resume templates")
 public class TemplateController {
 
     private final TemplateService templateService;

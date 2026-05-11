@@ -4,7 +4,12 @@ server:
 
 spring:
   application:
-    name: AI-SERVICE
+    name: ai-service
+  rabbitmq:
+    host: ${RABBITMQ_HOST}
+    port: ${RABBITMQ_PORT}
+    username: ${RABBITMQ_USERNAME}
+    password: ${RABBITMQ_PASSWORD}
   config:
     import: optional:file:../.env
 
@@ -22,7 +27,7 @@ spring:
   datasource:
     url: jdbc:mysql://${AI_DB_HOST:localhost}:${AI_DB_PORT:3306}/${AI_DB_NAME:airesume_ai}?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC
     username: ${AI_DB_USERNAME:root}
-    password: ${AI_DB_PASSWORD:Priyanshu@MySql}
+    password: ${AI_DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:

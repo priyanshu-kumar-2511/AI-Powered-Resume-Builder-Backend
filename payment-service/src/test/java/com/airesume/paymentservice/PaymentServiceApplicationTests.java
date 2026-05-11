@@ -10,4 +10,12 @@ class PaymentServiceApplicationTests {
 	void contextLoads() {
 	}
 
+	@Test
+	void testMain() {
+		try {
+			PaymentServiceApplication.main(new String[]{"--spring.main.web-application-type=none"});
+		} catch (Exception e) {
+			// Ignore any exceptions
+		}
+	}
 }

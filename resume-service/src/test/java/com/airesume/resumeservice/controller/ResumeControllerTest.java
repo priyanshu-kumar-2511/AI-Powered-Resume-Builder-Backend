@@ -15,6 +15,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -77,5 +78,149 @@ public class ResumeControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resumeId").value(10))
                 .andExpect(jsonPath("$.title").value("My Resume"));
+    }
+
+    @Test
+    @DisplayName("API: GET /user/{userId} - Should return user resumes")
+    void getResumesByUser_ShouldReturnList() throws Exception {
+        when(resumeService.getResumesByUser(1L)).thenReturn(List.of(new ResumeResponse()));
+
+        mockMvc.perform(get("/user/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1));
+    }
+
+    @Test
+    @DisplayName("API: POST /{resumeId}/duplicate - Should duplicate resume")
+    void duplicateResume_ShouldReturnCreated() throws Exception {
+        when(resumeService.duplicateResume(10L)).thenReturn(new ResumeResponse());
+
+        mockMvc.perform(post("/10/duplicate"))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    @DisplayName("API: GET /public - Should return public resumes")
+    void getPublicResumes_ShouldReturnList() throws Exception {
+        when(resumeService.getPublicResumes()).thenReturn(List.of());
+
+        mockMvc.perform(get("/public"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("API: GET /admin/all - Should return all resumes for admin")
+    void getAllResumes_ShouldReturnOk() throws Exception {
+        when(resumeService.getAllResumes()).thenReturn(List.of());
+
+        mockMvc.perform(get("/admin/all"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("API: GET /template/{templateId} - Should return resumes by template")
+    void getResumesByTemplate_ShouldReturnList() throws Exception {
+        when(resumeService.getResumesByTemplate(1L)).thenReturn(List.of(new ResumeResponse()));
+
+        mockMvc.perform(get("/template/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1));
+    }
+
+    @Test
+    @DisplayName("API: PUT /{resumeId} - Should update resume")
+    void updateResume_ShouldReturnUpdatedResume() throws Exception {
+        com.airesume.resumeservice.dto.ResumeUpdateRequest request = new com.airesume.resumeservice.dto.ResumeUpdateRequest();
+        request.setTitle("Updated Title");
+
+        ResumeResponse response = new ResumeResponse();
+        response.setResumeId(10L);
+        response.setTitle("Updated Title");
+
+        when(resumeService.updateResume(any(Long.class), any(com.airesume.resumeservice.dto.ResumeUpdateRequest.class))).thenReturn(response);
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/10")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Updated Title"));
+    }
+
+    @Test
+    @DisplayName("API: PUT /{resumeId}/ats-score - Should update ATS score")
+    void updateAtsScore_ShouldReturnUpdatedResume() throws Exception {
+        com.airesume.resumeservice.dto.AtsUpdateDTO request = new com.airesume.resumeservice.dto.AtsUpdateDTO();
+        request.setAtsScore(85);
+
+        ResumeResponse response = new ResumeResponse();
+        response.setResumeId(10L);
+        response.setAtsScore(85);
+
+        when(resumeService.updateAtsScore(any(Long.class), any(com.airesume.resumeservice.dto.AtsUpdateDTO.class))).thenReturn(response);
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/10/ats-score")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.atsScore").value(85));
+    }
+
+    @Test
+    @DisplayName("API: PUT /{resumeId}/publish - Should publish resume")
+    void publishResume_ShouldReturnUpdatedResume() throws Exception {
+        ResumeResponse response = new ResumeResponse();
+        response.setResumeId(10L);
+        response.setPublic(true);
+
+        when(resumeService.publishResume(10L)).thenReturn(response);
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/10/publish"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.public").value(true));
+    }
+
+    @Test
+    @DisplayName("API: PUT /{resumeId}/unpublish - Should unpublish resume")
+    void unpublishResume_ShouldReturnUpdatedResume() throws Exception {
+        ResumeResponse response = new ResumeResponse();
+        response.setResumeId(10L);
+        response.setPublic(false);
+
+        when(resumeService.unpublishResume(10L)).thenReturn(response);
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/10/unpublish"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.public").value(false));
+    }
+
+    @Test
+    @DisplayName("API: PUT /{resumeId}/view-count - Should increment view count")
+    void incrementViewCount_ShouldReturnOk() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/10/view-count"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("API: DELETE /{resumeId} - Should delete resume")
+    void deleteResume_ShouldReturnNoContent() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/10"))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @DisplayName("API: DELETE /admin/{resumeId} - Should force delete resume")
+    void forceDeleteResume_ShouldReturnNoContent() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/admin/10"))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @DisplayName("API: GET /admin/count/{userId} - Should return count")
+    void countUserResumes_ShouldReturnCount() throws Exception {
+        when(resumeService.countUserResumes(1L)).thenReturn(5L);
+
+        mockMvc.perform(get("/admin/count/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").value(5));
     }
 }

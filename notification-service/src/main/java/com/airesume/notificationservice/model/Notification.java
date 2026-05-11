@@ -47,4 +47,8 @@ public class Notification {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
     }
+
+    public String getTitleManual() {
+        return title;
+    }
 }

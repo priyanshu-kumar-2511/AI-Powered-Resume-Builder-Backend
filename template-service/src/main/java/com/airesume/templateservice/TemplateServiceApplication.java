@@ -8,7 +8,7 @@ import org.springframework.cache.annotation.EnableCaching;
 
 /**
  * Main Entry Point for the Template Service.
- * This service manages resume templates, including their HTML/CSS layouts, 
+ * This service manages resume templates, including their HTML/CSS layouts,
  * categories, and tiers. It integrates with Eureka for discovery.
  */
 @SpringBootApplication

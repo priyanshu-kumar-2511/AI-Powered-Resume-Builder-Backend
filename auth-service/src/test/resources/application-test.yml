@@ -1,4 +1,25 @@
 spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: dummy-google-id
+            client-secret: dummy-google-secret
+          linkedin:
+            client-id: dummy-linkedin-id
+            client-secret: dummy-linkedin-secret
+            client-name: LinkedIn
+            provider: linkedin
+            redirect-uri: "http://localhost:8080/login/oauth2/code/linkedin"
+            authorization-grant-type: authorization_code
+        provider:
+          linkedin:
+            authorization-uri: https://www.linkedin.com/oauth/v2/authorization
+            token-uri: https://www.linkedin.com/oauth/v2/accessToken
+            user-info-uri: https://api.linkedin.com/v2/userinfo
+            jwk-set-uri: https://www.linkedin.com/oauth/openid/jwks
+            user-name-attribute: sub
   datasource:
     url: jdbc:h2:mem:authdb;DB_CLOSE_DELAY=-1;MODE=MySQL
     driver-class-name: org.h2.Driver

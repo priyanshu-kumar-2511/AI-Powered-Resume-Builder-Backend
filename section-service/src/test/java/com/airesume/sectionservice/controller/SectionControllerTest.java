@@ -98,4 +98,119 @@ public class SectionControllerTest {
                 .andExpect(jsonPath("$.sectionId").value(1))
                 .andExpect(jsonPath("$.sectionType").value("EXPERIENCE"));
     }
+
+    @Test
+    @DisplayName("API: GET /resume/{resumeId}/type/{type} - Should return sections by type")
+    void getSectionsByType_ShouldReturnList() throws Exception {
+        Section section = new Section();
+        section.setSectionId(1L);
+        section.setSectionType(SectionType.EDUCATION);
+        
+        when(sectionService.getSectionsByType(10L, SectionType.EDUCATION)).thenReturn(List.of(section));
+
+        mockMvc.perform(get("/resume/10/type/EDUCATION"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].sectionId").value(1))
+                .andExpect(jsonPath("$[0].sectionType").value("EDUCATION"));
+    }
+
+    @Test
+    @DisplayName("API: GET /resume/{resumeId}/ai-generated - Should return ai sections")
+    void getAiGeneratedSections_ShouldReturnList() throws Exception {
+        Section section = new Section();
+        section.setSectionId(1L);
+        section.setAiGenerated(true);
+        
+        when(sectionService.getAiGeneratedSections(10L)).thenReturn(List.of(section));
+
+        mockMvc.perform(get("/resume/10/ai-generated"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].sectionId").value(1))
+                .andExpect(jsonPath("$[0].aiGenerated").value(true));
+    }
+
+    @Test
+    @DisplayName("API: PUT /{sectionId} - Should update section")
+    void updateSection_ShouldReturnUpdated() throws Exception {
+        Section requestSection = new Section();
+        requestSection.setTitle("New Title");
+        
+        Section responseSection = new Section();
+        responseSection.setSectionId(1L);
+        responseSection.setTitle("New Title");
+
+        when(sectionService.updateSection(any(Long.class), any(Section.class))).thenReturn(responseSection);
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(requestSection)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.sectionId").value(1))
+                .andExpect(jsonPath("$.title").value("New Title"));
+    }
+
+    @Test
+    @DisplayName("API: PUT /{sectionId}/toggle-visibility - Should toggle visibility")
+    void toggleVisibility_ShouldReturnUpdated() throws Exception {
+        Section responseSection = new Section();
+        responseSection.setSectionId(1L);
+        responseSection.setIsVisible(false);
+
+        when(sectionService.toggleVisibility(1L)).thenReturn(responseSection);
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/1/toggle-visibility"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.sectionId").value(1))
+                .andExpect(jsonPath("$.isVisible").value(false));
+    }
+
+    @Test
+    @DisplayName("API: PUT /resume/{resumeId}/reorder - Should reorder sections")
+    void reorderSections_ShouldReturnNoContent() throws Exception {
+        List<Long> sectionIds = List.of(3L, 1L, 2L);
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/resume/10/reorder")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(sectionIds)))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @DisplayName("API: PUT /bulk-update - Should bulk update sections")
+    void bulkUpdate_ShouldReturnUpdatedList() throws Exception {
+        Section s1 = new Section(); s1.setSectionId(1L);
+        List<Section> sections = List.of(s1);
+
+        when(sectionService.bulkUpdate(any())).thenReturn(sections);
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/bulk-update")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(sections)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].sectionId").value(1));
+    }
+
+    @Test
+    @DisplayName("API: DELETE /{sectionId} - Should delete section")
+    void deleteSection_ShouldReturnNoContent() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/1"))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @DisplayName("API: DELETE /resume/{resumeId}/all - Should delete all sections")
+    void deleteAllSectionsByResume_ShouldReturnNoContent() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/resume/10/all"))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @DisplayName("API: GET /resume/{resumeId}/count - Should return count")
+    void countSections_ShouldReturnCount() throws Exception {
+        when(sectionService.countSections(10L)).thenReturn(5L);
+
+        mockMvc.perform(get("/resume/10/count"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").value(5));
+    }
 }

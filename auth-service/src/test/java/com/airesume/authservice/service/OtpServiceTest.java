@@ -1,0 +1,85 @@
+package com.airesume.authservice.service;
+
+import com.airesume.authservice.model.User;
+import com.airesume.authservice.model.VerificationOtp;
+import com.airesume.authservice.repository.OtpRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.time.LocalDateTime;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+class OtpServiceTest {
+
+    @Mock
+    private OtpRepository otpRepository;
+
+    @InjectMocks
+    private OtpService otpService;
+
+    private User testUser;
+
+    @BeforeEach
+    void setUp() {
+        testUser = User.builder().id(1L).username("testuser").build();
+    }
+
+    @Test
+    void testGenerateAndSaveOtp() {
+        String code = otpService.generateAndSaveOtp(testUser, VerificationOtp.OtpType.PASSWORD_RESET);
+
+        assertNotNull(code);
+        assertEquals(6, code.length());
+        verify(otpRepository).deleteByUser(testUser);
+        verify(otpRepository).save(any(VerificationOtp.class));
+    }
+
+    @Test
+    void testValidateOtp_Success() {
+        VerificationOtp otp = VerificationOtp.builder()
+                .otpCode("123456")
+                .expiryDate(LocalDateTime.now().plusMinutes(10))
+                .build();
+
+        when(otpRepository.findByOtpCodeAndUserAndType("123456", testUser, VerificationOtp.OtpType.PASSWORD_RESET))
+                .thenReturn(Optional.of(otp));
+
+        boolean isValid = otpService.validateOtp(testUser, "123456", VerificationOtp.OtpType.PASSWORD_RESET);
+
+        assertTrue(isValid);
+    }
+
+    @Test
+    void testValidateOtp_Expired() {
+        VerificationOtp otp = VerificationOtp.builder()
+                .otpCode("123456")
+                .expiryDate(LocalDateTime.now().minusMinutes(1))
+                .build();
+
+        when(otpRepository.findByOtpCodeAndUserAndType("123456", testUser, VerificationOtp.OtpType.PASSWORD_RESET))
+                .thenReturn(Optional.of(otp));
+
+        boolean isValid = otpService.validateOtp(testUser, "123456", VerificationOtp.OtpType.PASSWORD_RESET);
+
+        assertFalse(isValid);
+    }
+
+    @Test
+    void testValidateOtp_NotFound() {
+        when(otpRepository.findByOtpCodeAndUserAndType(anyString(), any(), any()))
+                .thenReturn(Optional.empty());
+
+        boolean isValid = otpService.validateOtp(testUser, "000000", VerificationOtp.OtpType.PASSWORD_RESET);
+
+        assertFalse(isValid);
+    }
+}

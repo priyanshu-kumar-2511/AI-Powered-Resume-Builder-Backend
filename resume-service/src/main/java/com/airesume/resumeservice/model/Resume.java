@@ -80,6 +80,9 @@ public class Resume {
     @Builder.Default
     private Integer viewCount = 0;
 
+    @Column(columnDefinition = "TEXT")
+    private String customizations;
+
     /**
      * Timestamp of when the resume was created.
      */

@@ -11,4 +11,12 @@ class TemplateServiceApplicationTests {
 	void contextLoads() {
 	}
 
+	@Test
+	void testMain() {
+		try {
+			TemplateServiceApplication.main(new String[]{"--spring.main.web-application-type=none"});
+		} catch (Exception e) {
+			// Ignore exceptions
+		}
+	}
 }

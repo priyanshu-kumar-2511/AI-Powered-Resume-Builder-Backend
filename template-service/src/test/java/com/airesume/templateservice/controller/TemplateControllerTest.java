@@ -25,6 +25,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.Arrays;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -124,9 +125,88 @@ public class TemplateControllerTest {
 
     @Test
     @WithMockUser(roles = "ADMIN")
+    @DisplayName("API: GET /api/v1/templates/admin - Admin should see all templates")
+    void getAllTemplatesForAdmin_ShouldReturnList() throws Exception {
+        Template template = Template.builder().name("Admin Template").build();
+        when(templateService.getAllTemplates()).thenReturn(Arrays.asList(template));
+
+        mockMvc.perform(get("/admin"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].name").value("Admin Template"));
+    }
+
+    @Test
+    @DisplayName("API: GET /api/v1/templates/free - Should return free templates")
+    void getFreeTemplates_ShouldReturnList() throws Exception {
+        Template template = Template.builder().name("Free").tier(Tier.FREE).build();
+        when(templateService.getTemplatesByTier(Tier.FREE)).thenReturn(Arrays.asList(template));
+
+        mockMvc.perform(get("/free"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].name").value("Free"));
+    }
+
+    @Test
+    @WithMockUser(roles = "USER")
+    @DisplayName("API: GET /api/v1/templates/premium - User should see premium templates")
+    void getPremiumTemplates_ShouldReturnList() throws Exception {
+        Template template = Template.builder().name("Premium").tier(Tier.PREMIUM).build();
+        when(templateService.getTemplatesByTier(Tier.PREMIUM)).thenReturn(Arrays.asList(template));
+
+        mockMvc.perform(get("/premium"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].name").value("Premium"));
+    }
+
+    @Test
+    @DisplayName("API: GET /api/v1/templates/category/{category} - Should filter by category")
+    void getTemplatesByCategory_ShouldReturnList() throws Exception {
+        Template template = Template.builder().name("Modern").category(Category.MODERN).build();
+        when(templateService.getTemplatesByCategory(Category.MODERN)).thenReturn(Arrays.asList(template));
+
+        mockMvc.perform(get("/category/MODERN"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].name").value("Modern"));
+    }
+
+    @Test
+    @DisplayName("API: GET /api/v1/templates/popular - Should return popular templates")
+    void getPopularTemplates_ShouldReturnList() throws Exception {
+        Template template = Template.builder().name("Popular").usageCount(100L).build();
+        when(templateService.getPopularTemplates()).thenReturn(Arrays.asList(template));
+
+        mockMvc.perform(get("/popular"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].name").value("Popular"));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    @DisplayName("API: PUT /api/v1/templates/{id} - Admin should be able to update")
+    void updateTemplate_AsAdmin_ShouldReturnUpdated() throws Exception {
+        Template template = Template.builder().name("Updated").build();
+        when(templateService.updateTemplate(eq(1L), any())).thenReturn(template);
+
+        mockMvc.perform(put("/1")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(template)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Updated"));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
     @DisplayName("API: PUT /api/v1/templates/{id}/deactivate - Admin should be able to deactivate")
     void deactivateTemplate_AsAdmin_ShouldReturnNoContent() throws Exception {
         mockMvc.perform(put("/1/deactivate").with(csrf()))
                 .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @DisplayName("API: PUT /api/v1/templates/{id}/increment-usage - Should increment count")
+    void incrementUsage_ShouldReturnOk() throws Exception {
+        mockMvc.perform(put("/1/increment-usage").with(csrf()))
+                .andExpect(status().isOk());
     }
 }

@@ -144,6 +144,9 @@ public class ResumeServiceImpl implements ResumeService {
         if (request.getStatus() != null) {
             resume.setStatus(request.getStatus());
         }
+        if (request.getCustomizations() != null) {
+            resume.setCustomizations(request.getCustomizations());
+        }
 
         log.info("Updated resume with ID {}", resumeId);
         return new ResumeResponse(resumeRepository.save(resume));
@@ -172,6 +175,7 @@ public class ResumeServiceImpl implements ResumeService {
                 .targetJobTitle(original.getTargetJobTitle())
                 .templateId(original.getTemplateId())
                 .language(original.getLanguage())
+                .customizations(original.getCustomizations())
                 .status("DRAFT")
                 .isPublic(false)
                 .build();

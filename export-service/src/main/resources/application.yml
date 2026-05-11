@@ -4,14 +4,19 @@ server:
 
 spring:
   application:
-    name: EXPORT-SERVICE
+    name: export-service
+  rabbitmq:
+    host: ${RABBITMQ_HOST}
+    port: ${RABBITMQ_PORT}
+    username: ${RABBITMQ_USERNAME}
+    password: ${RABBITMQ_PASSWORD}
   config:
     import: optional:file:../.env
 
   datasource:
     url: jdbc:mysql://${EXPORT_DB_HOST:localhost}:${EXPORT_DB_PORT:3306}/${EXPORT_DB_NAME:airesume_export}?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC
     username: ${EXPORT_DB_USERNAME:root}
-    password: ${EXPORT_DB_PASSWORD:Priyanshu@MySql}
+    password: ${EXPORT_DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:

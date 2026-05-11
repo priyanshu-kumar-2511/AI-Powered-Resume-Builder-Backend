@@ -12,11 +12,10 @@ import java.util.Set;
  */
 @Entity
 @Table(name = "users")
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@Builder(toBuilder = true)
 public class User {
 
     @Id
@@ -64,6 +63,8 @@ public class User {
         inverseJoinColumns = @JoinColumn(name = "role_id")
     )
     @Builder.Default
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
     private Set<Role> roles = new HashSet<>();
 
     private LocalDateTime createdAt;

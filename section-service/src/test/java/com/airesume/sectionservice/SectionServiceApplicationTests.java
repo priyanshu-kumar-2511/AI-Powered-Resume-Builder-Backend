@@ -11,4 +11,13 @@ class SectionServiceApplicationTests {
 	void contextLoads() {
 	}
 
+	@Test
+	void testMain() {
+		System.setProperty("spring.profiles.active", "test");
+		// Run application main method with web environment disabled and test profile active
+		SectionServiceApplication.main(new String[]{
+				"--spring.main.web-application-type=none",
+				"--spring.profiles.active=test"
+		});
+	}
 }

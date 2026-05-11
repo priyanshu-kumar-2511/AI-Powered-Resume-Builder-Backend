@@ -10,7 +10,7 @@ import lombok.*;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@Builder(toBuilder = true)
 public class RegisterRequest {
 
     @NotBlank(message = "Full Name is compulsory")
@@ -41,4 +41,8 @@ public class RegisterRequest {
         message = "Password must be at least 8 characters long and contain uppercase, lowercase, number, and special character"
     )
     private String password;
+
+    @NotBlank(message = "OTP is compulsory")
+    @Size(min = 6, max = 6, message = "OTP must be exactly 6 digits")
+    private String otp;
 }

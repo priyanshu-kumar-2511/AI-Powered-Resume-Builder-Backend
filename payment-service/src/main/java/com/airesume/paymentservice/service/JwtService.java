@@ -33,18 +33,10 @@ public class JwtService {
     public boolean validateToken(String token) {
         try {
             Jwts.parser().verifyWith(getSignInKey()).build().parseSignedClaims(token);
-            return !isTokenExpired(token);
+            return true;
         } catch (Exception ex) {
             return false;
         }
-    }
-
-    private boolean isTokenExpired(String token) {
-        return extractExpiration(token).before(new Date());
-    }
-
-    private Date extractExpiration(String token) {
-        return extractClaim(token, Claims::getExpiration);
     }
 
     private Claims extractAllClaims(String token) {

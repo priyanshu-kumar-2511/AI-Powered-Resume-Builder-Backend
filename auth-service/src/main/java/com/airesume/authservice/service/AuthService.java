@@ -21,6 +21,7 @@ public class AuthService {
     // Repositories for data persistence
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final OtpRepository otpRepository;
     
     // Core services for logic
     private final OtpService otpService;
@@ -36,33 +37,93 @@ public class AuthService {
      * @return a success message
      * @throws RuntimeException if username or email already exists
      */
+    /**
+     * Initiates user registration (Step 1).
+     * Creates an inactive user and sends a 6-digit verification OTP.
+     */
     @Transactional
-    public String register(RegisterRequest request) {
-        if (userRepository.existsByUsername(request.getUsername())) {
-            throw new RuntimeException("Username is already taken");
-        }
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email is already registered");
-        }
+    public String initiateRegistration(RegisterInitiateRequest request) {
+        userRepository.findByEmail(request.getEmail()).ifPresent(user -> {
+            if (user.isActive()) {
+                throw new RuntimeException("Email is already registered");
+            } else {
+                // Clean up any existing inactive session
+                quotaRepository.findByUserId(user.getId()).ifPresent(quotaRepository::delete);
+                otpRepository.deleteByUser(user);
+                userRepository.delete(user);
+                userRepository.flush();
+            }
+        });
 
         Role userRole = roleRepository.findByName("ROLE_USER")
                 .orElseThrow(() -> new RuntimeException("Default Role not found"));
 
         User user = User.builder()
-                .username(request.getUsername())
+                .username("temp_" + UUID.randomUUID().toString().substring(0, 8))
                 .email(request.getEmail())
-                .password(passwordEncoder.encode(request.getPassword()))
+                .password("pending_verification")
                 .fullName(request.getFullName())
                 .age(request.getAge())
                 .mobileNumber(request.getMobileNumber())
                 .roles(Collections.singleton(userRole))
                 .provider(ProviderType.LOCAL)
-                .isActive(true)
-                // New users start with a FREE plan by default
+                .isActive(false)
                 .subscriptionPlan(PlanType.FREE)
                 .build();
 
         userRepository.save(user);
+
+        String otp = otpService.generateAndSaveOtp(user, VerificationOtp.OtpType.REGISTRATION);
+        emailService.sendOtpEmail(user.getEmail(), otp, "User Registration Verification");
+
+        return "Verification OTP sent to your email";
+    }
+
+    /**
+     * Verifies the registration OTP (Step 2).
+     */
+    public String verifyRegistrationOtp(String email, String otp) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Registration session not found"));
+
+        if (user.isActive()) {
+            throw new RuntimeException("Email is already registered and verified");
+        }
+
+        if (otpService.validateOtp(user, otp, VerificationOtp.OtpType.REGISTRATION)) {
+            return "OTP verified successfully";
+        }
+        throw new RuntimeException("Invalid or expired OTP");
+    }
+
+    /**
+     * Completes user registration and sets credentials (Step 3).
+     */
+    @Transactional
+    public String register(RegisterRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("Registration session not found. Please complete Step 1 first."));
+
+        if (user.isActive()) {
+            throw new RuntimeException("Email is already registered and verified");
+        }
+
+        if (!otpService.validateOtp(user, request.getOtp(), VerificationOtp.OtpType.REGISTRATION)) {
+            throw new RuntimeException("Invalid or expired OTP");
+        }
+
+        if (userRepository.existsByUsername(request.getUsername())) {
+            throw new RuntimeException("Username is already taken");
+        }
+
+        user.setUsername(request.getUsername());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setActive(true);
+        user.setEnabled(true);
+        userRepository.save(user);
+
+        // Delete the registration OTP after success
+        otpRepository.deleteByUser(user);
 
         UserQuota quota = UserQuota.builder()
                 .user(user)
@@ -332,6 +393,16 @@ public class AuthService {
         return "User permanently deleted";
     }
 
+    @Transactional
+    public String deleteOwnAccount(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        quotaRepository.findByUserId(user.getId()).ifPresent(quotaRepository::delete);
+        userRepository.delete(user);
+        return "Account permanently deleted successfully";
+    }
+
     private Map<String, Object> buildAuthClaims(User user) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("roles", user.getRoles().stream().map(Role::getName).collect(Collectors.toList()));
@@ -406,7 +477,7 @@ public class AuthService {
             emailService.sendPremiumCancellationEmail(user.getEmail(), user.getFullName());
         }
 
-        return "User " + username + " plan updated to " + plan.name();
+        return "User " + username + " plan updated to " + (plan != null ? plan.name() : "NONE");
     }
 
     /**

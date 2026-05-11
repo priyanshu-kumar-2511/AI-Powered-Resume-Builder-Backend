@@ -107,6 +107,55 @@ public class TemplateServiceTest {
     }
 
     @Test
+    @DisplayName("Test: Retrieve all Templates (Admin)")
+    void getAllTemplates_ShouldReturnList() {
+        when(templateRepository.findAll()).thenReturn(Arrays.asList(template));
+        List<Template> templates = templateService.getAllTemplates();
+        assertEquals(1, templates.size());
+    }
+
+    @Test
+    @DisplayName("Test: Retrieve by Tier")
+    void getTemplatesByTier_ShouldReturnList() {
+        when(templateRepository.findByIsActiveTrueAndTier(Tier.FREE)).thenReturn(Arrays.asList(template));
+        List<Template> templates = templateService.getTemplatesByTier(Tier.FREE);
+        assertEquals(1, templates.size());
+    }
+
+    @Test
+    @DisplayName("Test: Retrieve by Category")
+    void getTemplatesByCategory_ShouldReturnList() {
+        when(templateRepository.findByIsActiveTrueAndCategory(Category.MODERN)).thenReturn(Arrays.asList(template));
+        List<Template> templates = templateService.getTemplatesByCategory(Category.MODERN);
+        assertEquals(1, templates.size());
+    }
+
+    @Test
+    @DisplayName("Test: Retrieve Popular Templates")
+    void getPopularTemplates_ShouldReturnList() {
+        when(templateRepository.findByIsActiveTrueOrderByUsageCountDesc()).thenReturn(Arrays.asList(template));
+        List<Template> templates = templateService.getPopularTemplates();
+        assertEquals(1, templates.size());
+    }
+
+    @Test
+    @DisplayName("Test: Update Template")
+    void updateTemplate_ShouldUpdateAndSave() {
+        Template details = Template.builder()
+                .name("Updated Name")
+                .description("New Desc")
+                .isActive(true)
+                .build();
+        when(templateRepository.findById(1L)).thenReturn(Optional.of(template));
+        when(templateRepository.save(any(Template.class))).thenReturn(template);
+
+        Template updated = templateService.updateTemplate(1L, details);
+
+        assertEquals("Updated Name", updated.getName());
+        verify(templateRepository).save(any(Template.class));
+    }
+
+    @Test
     @DisplayName("Test: Template Deactivation (Soft Delete)")
     void deactivateTemplate_ShouldSetIsActiveToFalse() {
         when(templateRepository.findById(1L)).thenReturn(Optional.of(template));
@@ -117,4 +166,23 @@ public class TemplateServiceTest {
         assertFalse(template.getIsActive());
         verify(templateRepository, times(1)).save(template);
     }
+
+    @Test
+    @DisplayName("Test: Update Template with null isActive")
+    void updateTemplate_ShouldKeepIsActive_WhenIsActiveIsNull() {
+        Template details = Template.builder()
+                .name("Updated Name")
+                .description("New Desc")
+                .isActive(null)
+                .build();
+        when(templateRepository.findById(1L)).thenReturn(Optional.of(template));
+        when(templateRepository.save(any(Template.class))).thenReturn(template);
+
+        Template updated = templateService.updateTemplate(1L, details);
+
+        assertEquals("Updated Name", updated.getName());
+        assertTrue(updated.getIsActive());
+        verify(templateRepository).save(any(Template.class));
+    }
 }
+

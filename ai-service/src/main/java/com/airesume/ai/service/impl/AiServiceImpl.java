@@ -12,9 +12,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -33,6 +39,7 @@ public class AiServiceImpl implements AiService {
     private final AiHistoryRepository aiHistoryRepository;
     private final UserQuotaRepository userQuotaRepository;
     private final CurrentUserService currentUserService;
+    private final org.springframework.amqp.rabbit.core.RabbitTemplate rabbitTemplate;
 
     @Value("${ai-app.quota.free-limit:10}")
     private int defaultFreeLimit;
@@ -145,7 +152,27 @@ public class AiServiceImpl implements AiService {
                 targetContext,
                 request.getExistingContent()
         );
-        return callAiAndSaveHistory(promptText, request.getUserId(), "TAILOR_RESUME");
+
+        log.info("[RABBITMQ] Publishing tailor task to queue for user: {}", request.getUserId());
+        try {
+            com.airesume.ai.dto.AiJobMessage message = com.airesume.ai.dto.AiJobMessage.builder()
+                    .userId(request.getUserId())
+                    .actionType("TAILOR_RESUME")
+                    .promptText(promptText)
+                    .build();
+            rabbitTemplate.convertAndSend("x.airesume", "ai.job", message);
+            log.info("[RABBITMQ] Successfully published tailor task for user: {}", request.getUserId());
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("status", "QUEUED");
+            response.put("message", "Resume tailoring task has been submitted successfully to the background queue.");
+            response.put("timestamp", LocalDateTime.now().toString());
+            return response;
+        } catch (Exception e) {
+            log.error("[RABBITMQ] Failed to publish tailor task for user: {}. Error: {}", request.getUserId(), e.getMessage());
+            log.info("[FALLBACK] Executing tailor task synchronously due to queue error.");
+            return callAiAndSaveHistory(promptText, request.getUserId(), "TAILOR_RESUME");
+        }
     }
 
     @Override
@@ -157,7 +184,27 @@ public class AiServiceImpl implements AiService {
                 language,
                 request.getExistingContent()
         );
-        return callAiAndSaveHistory(promptText, request.getUserId(), "TRANSLATE_RESUME");
+
+        log.info("[RABBITMQ] Publishing translation task to queue for user: {}", request.getUserId());
+        try {
+            com.airesume.ai.dto.AiJobMessage message = com.airesume.ai.dto.AiJobMessage.builder()
+                    .userId(request.getUserId())
+                    .actionType("TRANSLATE_RESUME")
+                    .promptText(promptText)
+                    .build();
+            rabbitTemplate.convertAndSend("x.airesume", "ai.job", message);
+            log.info("[RABBITMQ] Successfully published translation task for user: {}", request.getUserId());
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("status", "QUEUED");
+            response.put("message", "Resume translation task has been submitted successfully to the background queue.");
+            response.put("timestamp", LocalDateTime.now().toString());
+            return response;
+        } catch (Exception e) {
+            log.error("[RABBITMQ] Failed to publish translation task for user: {}. Error: {}", request.getUserId(), e.getMessage());
+            log.info("[FALLBACK] Executing translation task synchronously due to queue error.");
+            return callAiAndSaveHistory(promptText, request.getUserId(), "TRANSLATE_RESUME");
+        }
     }
 
     @Override
@@ -173,7 +220,7 @@ public class AiServiceImpl implements AiService {
             item.put("id", history.getId());
             item.put("requestType", history.getActionType());
             item.put("model", history.getModelUsed());
-            item.put("tokensUsed", 0);
+            item.put("tokensUsed", history.getTokensUsed() != null ? history.getTokensUsed() : 0);
             item.put("timestamp", history.getCreatedAt());
             item.put("inputPrompt", history.getPromptUsed());
             item.put("response", history.getResponseContent());
@@ -189,12 +236,44 @@ public class AiServiceImpl implements AiService {
 
     @Override
     public Map<String, Object> getUsageStats() {
-        return Map.of("model", PROVIDER_MODEL, "totalRequests", aiHistoryRepository.count());
+        List<AiHistory> allHistory = aiHistoryRepository.findAll();
+        
+        Map<String, Integer> callsByModel = new HashMap<>();
+        Map<String, Integer> userCallMap = new HashMap<>();
+
+        for (AiHistory h : allHistory) {
+            String model = h.getModelUsed() != null ? h.getModelUsed() : PROVIDER_MODEL;
+            callsByModel.put(model, callsByModel.getOrDefault(model, 0) + 1);
+            
+            userCallMap.put(h.getUserId(), userCallMap.getOrDefault(h.getUserId(), 0) + 1);
+        }
+
+        // Top users by call count
+        List<Map<String, Object>> topUsers = userCallMap.entrySet().stream()
+                .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
+                .limit(10)
+                .map(e -> {
+                    String uid = e.getKey() != null ? e.getKey() : "anonymous";
+                    return Map.<String, Object>of(
+                        "userId", uid,
+                        "username", uid,
+                        "callCount", e.getValue()
+                    );
+                })
+                .toList();
+
+        return Map.of(
+                "totalAiCalls", (long) allHistory.size(),
+                "callsByModel", callsByModel,
+                "topUsersByUsage", topUsers,
+                "totalTokensUsed", 0, // Kept for compatibility but set to 0
+                "totalCostEstimate", 0.0
+        );
     }
 
     @Override
     public Map<String, Object> getCostByUser() {
-        return Map.of("totalCost", 0.0);
+        return getUsageStats();
     }
 
     /**
@@ -241,11 +320,11 @@ public class AiServiceImpl implements AiService {
 
         if ("SUMMARY".equals(type) && quota.getRemainingSummaryCount() > 0) {
             quota.setRemainingSummaryCount(quota.getRemainingSummaryCount() - 1);
+            userQuotaRepository.save(quota);
         } else if ("ATS".equals(type) && quota.getRemainingAtsCount() > 0) {
             quota.setRemainingAtsCount(quota.getRemainingAtsCount() - 1);
+            userQuotaRepository.save(quota);
         }
-
-        userQuotaRepository.save(quota);
     }
 
     private void validatePremium(String userId) {
@@ -263,14 +342,20 @@ public class AiServiceImpl implements AiService {
     private Map<String, Object> callAiAndSaveHistory(String promptText, String userId, String actionType) {
         Map<String, Object> result = new HashMap<>();
         String responseContent = null;
+        Integer tokensUsed = 0;
 
         try {
             log.info("Calling AI (Groq) for action={} user={}", actionType, userId);
-            responseContent = chatModel
-                    .call(new Prompt(new UserMessage(promptText)))
-                    .getResult()
-                    .getOutput()
-                    .getText();
+            ChatResponse response = chatModel.call(new Prompt(new UserMessage(promptText)));
+            
+            responseContent = response.getResult().getOutput().getText();
+            
+            // Extract tokens from metadata
+            Usage usage = response.getMetadata().getUsage();
+            if (usage != null) {
+                tokensUsed = (int) usage.getTotalTokens();
+                log.info("AI call success. Tokens used: {}", tokensUsed);
+            }
 
             if (responseContent == null || responseContent.isBlank()) {
                 throw new RuntimeException("AI returned an empty response. Please try again.");
@@ -279,7 +364,7 @@ public class AiServiceImpl implements AiService {
             result.put("content", responseContent);
             result.put("model", PROVIDER_MODEL);
             result.put("requestType", actionType);
-            result.put("tokensUsed", 0);
+            result.put("tokensUsed", tokensUsed);
             result.put("timestamp", LocalDateTime.now().toString());
             result.put("status", "SUCCESS");
         } catch (RuntimeException runtimeException) {
@@ -296,6 +381,7 @@ public class AiServiceImpl implements AiService {
                             .promptUsed(promptText.substring(0, Math.min(promptText.length(), 500)))
                             .responseContent(responseContent != null ? responseContent : "ERROR")
                             .modelUsed(PROVIDER_MODEL)
+                            .tokensUsed(tokensUsed)
                             .build();
                     aiHistoryRepository.save(history);
                 } catch (Exception historyEx) {
@@ -375,5 +461,83 @@ public class AiServiceImpl implements AiService {
             }
         }
         return "";
+    }
+
+    @Override
+    public void processBackgroundAiJob(String promptText, String userId, String actionType) {
+        log.info("[RABBITMQ-CONSUMER] Executing background AI task: actionType={}, userId={}", actionType, userId);
+        try {
+            callAiAndSaveHistory(promptText, userId, actionType);
+        } catch (Exception e) {
+            log.error("[RABBITMQ-CONSUMER] Background AI task execution failed: {}", e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public com.airesume.ai.dto.TemplateExtractionResponse extractTemplateFromPdf(MultipartFile file) {
+        log.info("Extracting template from uploaded PDF: {}", file.getOriginalFilename());
+        
+        try (org.apache.pdfbox.pdmodel.PDDocument document = org.apache.pdfbox.Loader.loadPDF(file.getBytes())) {
+            // 1. Generate Thumbnail Image
+            org.apache.pdfbox.rendering.PDFRenderer renderer = new org.apache.pdfbox.rendering.PDFRenderer(document);
+            // Render first page at 150 DPI
+            BufferedImage image = renderer.renderImageWithDPI(0, 150);
+            
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ImageIO.write(image, "jpeg", baos);
+            String base64Image = Base64.getEncoder().encodeToString(baos.toByteArray());
+            String thumbnailDataUri = "data:image/jpeg;base64," + base64Image;
+            
+            // 2. Extract Text
+            org.apache.pdfbox.text.PDFTextStripper stripper = new org.apache.pdfbox.text.PDFTextStripper();
+            String pdfText = stripper.getText(document);
+            
+            // 3. Generate HTML via Groq AI
+            String systemMessageStr = "You are an expert Frontend Developer. Your task is to convert the following raw resume text into a responsive HTML and CSS template.\n" +
+                    "RULES:\n" +
+                    "1. Separate the HTML structure from the CSS styles.\n" +
+                    "2. Use Mustache placeholders for all dynamic data. Examples: {{personalInfo.fullName}}, {{personalInfo.email}}, {{#experience}} ... {{/experience}}.\n" +
+                    "3. Ensure the layout mimics the structure of the provided text as closely as possible.\n" +
+                    "4. You MUST return ONLY a valid JSON object with EXACTLY two keys: 'html' and 'css'.\n" +
+                    "Example format:\n" +
+                    "{\n  \"html\": \"<div class='resume'>...</div>\",\n  \"css\": \".resume { ... }\"\n}\n\n" +
+                    "RESUME TEXT:\n" + pdfText;
+            
+            org.springframework.ai.chat.messages.SystemMessage systemMessage = new org.springframework.ai.chat.messages.SystemMessage(systemMessageStr);
+            org.springframework.ai.chat.prompt.Prompt prompt = new org.springframework.ai.chat.prompt.Prompt(List.of(systemMessage));
+            
+            org.springframework.ai.chat.model.ChatResponse chatResponse = chatModel.call(prompt);
+            String aiContent = chatResponse.getResult().getOutput().getText().trim();
+            
+            // Extract the JSON object from the AI response, ignoring conversational text
+            int startIndex = aiContent.indexOf('{');
+            int endIndex = aiContent.lastIndexOf('}');
+            if (startIndex != -1 && endIndex != -1 && startIndex < endIndex) {
+                aiContent = aiContent.substring(startIndex, endIndex + 1);
+            }
+            
+            String generatedHtml = "";
+            String generatedCss = "";
+            try {
+                com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                java.util.Map<String, String> parsed = mapper.readValue(aiContent, new com.fasterxml.jackson.core.type.TypeReference<java.util.Map<String, String>>(){});
+                generatedHtml = parsed.getOrDefault("html", "");
+                generatedCss = parsed.getOrDefault("css", "");
+            } catch (Exception ex) {
+                log.warn("Failed to parse AI JSON response, falling back to raw content. Content: {}", aiContent);
+                generatedHtml = aiContent;
+                generatedCss = "/* AI failed to separate CSS, styles might be inline or in HTML */";
+            }
+            
+            return com.airesume.ai.dto.TemplateExtractionResponse.builder()
+                    .thumbnailUrl(thumbnailDataUri)
+                    .htmlLayout(generatedHtml.trim())
+                    .cssStyles(generatedCss.trim())
+                    .build();
+                    
+        } catch (Exception e) {
+            log.error("Failed to extract template from PDF", e);
+            throw new RuntimeException("Failed to process PDF file: " + e.getMessage());
+        }
     }
 }

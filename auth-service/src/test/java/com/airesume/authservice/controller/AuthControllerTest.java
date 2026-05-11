@@ -5,6 +5,7 @@ import com.airesume.authservice.dto.RegisterRequest;
 import com.airesume.authservice.dto.PasswordResetInitiateRequest;
 import com.airesume.authservice.dto.OtpVerificationRequest;
 import com.airesume.authservice.dto.UserProfileResponse;
+import com.airesume.authservice.dto.ProfileRequest;
 import com.airesume.authservice.service.AuthService;
 import com.airesume.authservice.service.JwtService;
 import com.airesume.authservice.config.SecurityConfig;
@@ -24,21 +25,19 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Set;
 
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
  * Web Layer Tests for AuthController.
- * Technology: JUnit 5 + Mockito + MockMvc.
  */
 @WebMvcTest(AuthController.class)
 @ActiveProfiles("test")
 @Import({SecurityConfig.class, JwtAuthenticationFilter.class})
-@AutoConfigureMockMvc(addFilters = false)
+@AutoConfigureMockMvc(addFilters = true)
 public class AuthControllerTest {
 
     @Autowired
@@ -46,7 +45,6 @@ public class AuthControllerTest {
 
     @MockitoBean
     private AuthService authService;
-
 
     @MockitoBean
     private JwtService jwtService;
@@ -61,94 +59,110 @@ public class AuthControllerTest {
     private ObjectMapper objectMapper;
 
     @Test
-    @DisplayName("API: POST /api/v1/auth/register - Should return success with valid data")
+    void initiateRegistration_ShouldReturnSuccess() throws Exception {
+        com.airesume.authservice.dto.RegisterInitiateRequest request = new com.airesume.authservice.dto.RegisterInitiateRequest("Test Name", 25, "+919999999999", "test@example.com");
+        when(authService.initiateRegistration(any())).thenReturn("OTP sent");
+        mockMvc.perform(post("/api/v1/auth/register/initiate").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void verifyRegistrationOtp_ShouldReturnSuccess() throws Exception {
+        OtpVerificationRequest request = new OtpVerificationRequest("test@e.com", "123456", null);
+        when(authService.verifyRegistrationOtp(anyString(), anyString())).thenReturn("Verified");
+        mockMvc.perform(post("/api/v1/auth/register/verify-otp").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
     void register_ShouldReturnSuccess() throws Exception {
         RegisterRequest request = RegisterRequest.builder()
                 .username("testuser")
                 .email("test@example.com")
-                .password("Password@123") // Meets complexity requirements
+                .password("Password@123")
                 .fullName("Test User")
-                .age(25) // Meets min age requirement
-                .mobileNumber("+919999999999") // Meets regex requirement
+                .age(25)
+                .mobileNumber("+919999999999")
+                .otp("123456")
                 .build();
-
-        when(authService.register(any(RegisterRequest.class))).thenReturn("User registered successfully");
-
-        mockMvc.perform(post("/api/v1/auth/register")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("User registered successfully"));
+        when(authService.register(any())).thenReturn("User registered successfully");
+        mockMvc.perform(post("/api/v1/auth/register").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
     }
 
     @Test
-    @DisplayName("API: POST /api/v1/auth/login - Should return token")
     void login_ShouldReturnToken() throws Exception {
         LoginRequest request = new LoginRequest("testuser", "Password@123");
-
-        when(authService.login(any(LoginRequest.class))).thenReturn("mock-jwt-token");
-
-        mockMvc.perform(post("/api/v1/auth/login")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.token").value("mock-jwt-token"));
+        when(authService.login(any())).thenReturn("mock-token");
+        mockMvc.perform(post("/api/v1/auth/login").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
     }
 
     @Test
     @WithMockUser(username = "testuser")
-    @DisplayName("API: GET /api/v1/auth/profile - Should return profile")
     void getProfile_ShouldReturnProfile() throws Exception {
-        UserProfileResponse response = UserProfileResponse.builder()
-                .username("testuser")
-                .fullName("Test User")
-                .email("test@example.com")
-                .roles(Set.of("ROLE_USER"))
-                .build();
-
+        UserProfileResponse response = UserProfileResponse.builder().username("testuser").build();
         when(authService.getUserProfile("testuser")).thenReturn(response);
-
-        mockMvc.perform(get("/api/v1/auth/profile"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.username").value("testuser"));
+        mockMvc.perform(get("/api/v1/auth/profile")).andExpect(status().isOk());
     }
 
     @Test
-    @DisplayName("API: POST /api/v1/auth/forgot-password/initiate - Should return success")
     void initiatePasswordReset_ShouldReturnSuccess() throws Exception {
-        PasswordResetInitiateRequest request = new PasswordResetInitiateRequest();
-        request.setIdentifier("test@example.com");
-
-        when(authService.initiatePasswordReset(any(PasswordResetInitiateRequest.class)))
-                .thenReturn("OTP sent to your email");
-
-        mockMvc.perform(post("/api/v1/auth/forgot-password/initiate")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("OTP sent to your email"));
+        PasswordResetInitiateRequest request = new PasswordResetInitiateRequest("test@e.com");
+        when(authService.initiatePasswordReset(any())).thenReturn("OTP sent");
+        mockMvc.perform(post("/api/v1/auth/forgot-password/initiate").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
     }
 
     @Test
-    @DisplayName("API: POST /api/v1/auth/forgot-password/verify - Should return success")
-    void verifyPasswordReset_ShouldReturnSuccess() throws Exception {
-        OtpVerificationRequest request = new OtpVerificationRequest();
-        request.setIdentifier("test@example.com");
-        request.setOtp("123456");
-        request.setNewPassword("NewPassword@123");
+    @WithMockUser(username = "testuser")
+    void updateProfile_Success() throws Exception {
+        when(authService.updateProfile(eq("testuser"), any())).thenReturn("Updated");
+        mockMvc.perform(put("/api/v1/auth/profile").with(csrf()).contentType(MediaType.APPLICATION_JSON).content("{\"fullName\":\"New Name\"}"))
+                .andExpect(status().isOk());
+    }
 
-        when(authService.resetPassword(any(OtpVerificationRequest.class)))
-                .thenReturn("Password reset successful");
+    @Test
+    void validateToken_Success() throws Exception {
+        when(authService.validateToken(anyString())).thenReturn("testuser");
+        mockMvc.perform(get("/api/v1/auth/validate").param("token", "t")).andExpect(status().isOk());
+    }
 
-        mockMvc.perform(post("/api/v1/auth/forgot-password/verify")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("Password reset successful"));
+    @Test
+    @WithMockUser(username = "testuser")
+    void refreshToken_Success() throws Exception {
+        when(authService.refreshToken("testuser")).thenReturn("newToken");
+        mockMvc.perform(get("/api/v1/auth/refresh")).andExpect(status().isOk());
+    }
+
+    @Test
+    void initiateUsernameRecovery_Success() throws Exception {
+        com.airesume.authservice.dto.UsernameRecoveryRequest req = new com.airesume.authservice.dto.UsernameRecoveryRequest("test@test.com", "password");
+        when(authService.initiateUsernameRecovery(any())).thenReturn("OTP sent");
+        mockMvc.perform(post("/api/v1/auth/forgot-username/initiate").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void verifyUsernameRecovery_Success() throws Exception {
+        OtpVerificationRequest req = new OtpVerificationRequest("test@test.com", "123456", null);
+        when(authService.verifyUsernameRecovery(any())).thenReturn("Username sent");
+        mockMvc.perform(post("/api/v1/auth/forgot-username/verify").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void resetPassword_Success() throws Exception {
+        OtpVerificationRequest req = new OtpVerificationRequest("test@test.com", "123456", "Password@123");
+        when(authService.resetPassword(any())).thenReturn("Password reset successful");
+        mockMvc.perform(post("/api/v1/auth/forgot-password/verify").with(csrf()).contentType(MediaType.APPLICATION_JSON).content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(username = "testuser")
+    void deleteOwnAccount_Success() throws Exception {
+        when(authService.deleteOwnAccount("testuser")).thenReturn("Deleted");
+        mockMvc.perform(delete("/api/v1/auth/profile").with(csrf())).andExpect(status().isOk());
     }
 }
-

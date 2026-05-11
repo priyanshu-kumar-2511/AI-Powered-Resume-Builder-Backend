@@ -1,0 +1,51 @@
+server:
+  port: 0
+
+spring:
+  application:
+    name: PAYMENT-SERVICE-TEST
+
+  # Disable Cloud Config Server during tests
+  cloud:
+    config:
+      enabled: false
+      import-check:
+        enabled: false
+
+  config:
+    import: ""   # override to avoid optional:configserver
+
+  # H2 in-memory database for tests
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=false;NON_KEYWORDS=VALUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  sql:
+    init:
+      mode: never
+
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    defer-datasource-initialization: false
+    show-sql: false
+
+# Disable Eureka during tests
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
+
+# Stub required secrets
+app:
+  jwt:
+    secret: test-secret-key-for-unit-tests-only-32chars!!
+    expiration: 86400000
+
+razorpay:
+  key-id: test_key_id
+  key-secret: test_key_secret

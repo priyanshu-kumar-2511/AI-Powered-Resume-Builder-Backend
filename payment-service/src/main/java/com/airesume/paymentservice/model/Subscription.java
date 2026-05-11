@@ -63,4 +63,8 @@ public class Subscription {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
     }
+
+    public String getUsernameManual() {
+        return username;
+    }
 }

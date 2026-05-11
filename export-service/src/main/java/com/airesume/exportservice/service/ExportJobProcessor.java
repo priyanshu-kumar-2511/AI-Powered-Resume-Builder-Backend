@@ -37,7 +37,6 @@ public class ExportJobProcessor {
     @Value("${app.export.storage-path:./exports}")
     private String storagePath;
 
-    @Async
     public void processJob(String jobId, String authorizationHeader) {
         ExportJob job = repository.findById(jobId).orElse(null);
         if (job == null) {

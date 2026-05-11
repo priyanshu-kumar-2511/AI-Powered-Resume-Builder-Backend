@@ -4,14 +4,19 @@ server:
 
 spring:
   application:
-    name: NOTIFICATION-SERVICE
+    name: notification-service
+  rabbitmq:
+    host: ${RABBITMQ_HOST}
+    port: ${RABBITMQ_PORT}
+    username: ${RABBITMQ_USERNAME}
+    password: ${RABBITMQ_PASSWORD}
   config:
     import: optional:file:../.env
 
   datasource:
     url: jdbc:mysql://${NOTIFICATION_DB_HOST:localhost}:${NOTIFICATION_DB_PORT:3306}/${NOTIFICATION_DB_NAME:airesume_notification}?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC
     username: ${NOTIFICATION_DB_USERNAME:root}
-    password: ${NOTIFICATION_DB_PASSWORD:Priyanshu@MySql}
+    password: ${NOTIFICATION_DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
@@ -23,10 +28,10 @@ spring:
         format_sql: true
 
   mail:
-    host: ${MAIL_HOST:email-smtp.us-east-1.amazonaws.com}
-    port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME:mock_user}
-    password: ${MAIL_PASSWORD:mock_password}
+    host: ${AUTH_MAIL_HOST:smtp.gmail.com}
+    port: ${AUTH_MAIL_PORT:587}
+    username: ${AUTH_MAIL_USERNAME}
+    password: ${AUTH_MAIL_PASSWORD}
     properties:
       mail:
         transport:
@@ -53,3 +58,14 @@ app:
   jwt:
     secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
     expiration: ${JWT_EXPIRATION:86400000}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+
+management:
+  endpoint:
+    health:
+      show-details: always

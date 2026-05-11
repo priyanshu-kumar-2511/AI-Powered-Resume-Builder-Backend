@@ -30,4 +30,9 @@ public class ResumeUpdateRequest {
      * Updated status (e.g., "DRAFT" or "COMPLETE").
      */
     private String status;
+
+    /**
+     * Updated customization settings for layout, font, and accent color (JSON string).
+     */
+    private String customizations;
 }

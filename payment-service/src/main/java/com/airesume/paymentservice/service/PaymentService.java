@@ -2,6 +2,8 @@ package com.airesume.paymentservice.service;
 
 import com.airesume.paymentservice.dto.CreateOrderResponse;
 import com.airesume.paymentservice.dto.SubscriptionStatusResponse;
+import com.airesume.paymentservice.dto.AdminSubscriptionResponse;
+import com.airesume.paymentservice.dto.SubscriptionStats;
 import com.airesume.paymentservice.dto.VerifyPaymentRequest;
 import com.airesume.paymentservice.dto.VerifyPaymentResponse;
 import com.airesume.paymentservice.model.BillingCycle;
@@ -17,6 +19,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -182,6 +186,47 @@ public class PaymentService {
         authServiceClient.updatePlan(new AuthServiceClient.UpdatePlanRequest(username, PlanType.FREE));
 
         return "Subscription cancelled successfully.";
+    }
+
+    public Page<AdminSubscriptionResponse> getSubscriptions(Pageable pageable) {
+        return subscriptionRepository.findAll(pageable)
+                .map(s -> AdminSubscriptionResponse.builder()
+                        .id(s.getId())
+                        .username(s.getUsername())
+                        .fullName(s.getUsername()) // Fallback to username
+                        .plan(s.getPlan())
+                        .billingCycle(s.getBillingCycle())
+                        .status(s.getStatus())
+                        .startDate(s.getStartDate())
+                        .endDate(s.getEndDate())
+                        .razorpayOrderId(s.getRazorpayOrderId())
+                        .razorpayPaymentId(s.getRazorpayPaymentId())
+                        .createdAt(s.getCreatedAt())
+                        .build());
+    }
+
+    public SubscriptionStats getStats() {
+        java.util.List<Subscription> all = subscriptionRepository.findAll();
+        
+        long active = all.stream().filter(s -> s.getStatus() == SubscriptionStatus.ACTIVE).count();
+        long cancelled = all.stream().filter(s -> s.getStatus() == SubscriptionStatus.CANCELLED).count();
+        long expired = all.stream().filter(s -> s.getStatus() == SubscriptionStatus.EXPIRED).count();
+        
+        long revenue = all.stream()
+                .filter(s -> s.getStatus() != SubscriptionStatus.EXPIRED) // Simple logic: active/cancelled contributed revenue
+                .mapToLong(s -> s.getBillingCycle() == BillingCycle.YEARLY ? YEARLY_PRICE_PAISE : MONTHLY_PRICE_PAISE)
+                .sum();
+
+        java.util.Map<String, Long> distribution = all.stream()
+                .collect(java.util.stream.Collectors.groupingBy(s -> s.getBillingCycle().name(), java.util.stream.Collectors.counting()));
+
+        return SubscriptionStats.builder()
+                .totalActiveSubscriptions(active)
+                .totalCancelledSubscriptions(cancelled)
+                .totalExpiredSubscriptions(expired)
+                .totalRevenueInPaise(revenue)
+                .planDistribution(distribution)
+                .build();
     }
 
     private boolean isValidSignature(String orderId, String paymentId, String signature) {

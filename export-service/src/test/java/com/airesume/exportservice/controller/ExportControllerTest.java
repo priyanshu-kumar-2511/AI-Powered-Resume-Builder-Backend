@@ -1,140 +1,190 @@
 package com.airesume.exportservice.controller;
 
+import com.airesume.exportservice.dto.ExportStatsDTO;
 import com.airesume.exportservice.entity.ExportJob;
 import com.airesume.exportservice.model.ExportFormat;
 import com.airesume.exportservice.model.ExportStatus;
 import com.airesume.exportservice.security.CurrentUserService;
 import com.airesume.exportservice.service.ExportService;
-import com.airesume.exportservice.service.JwtService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.when;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import java.util.List;
+import java.util.Map;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(ExportController.class)
-@AutoConfigureMockMvc(addFilters = false) // Skip security filters for simpler controller testing
+@AutoConfigureMockMvc(addFilters = false) // Disabling security filters for controller logic testing
 class ExportControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    @MockitoBean
+    @MockBean
     private ExportService exportService;
 
-    @MockitoBean
+    @MockBean
     private CurrentUserService currentUserService;
 
-    @MockitoBean
-    private JwtService jwtService;
+    @MockBean
+    private com.airesume.exportservice.service.JwtService jwtService;
 
-    @Test
-    @WithMockUser
-    void exportPdf_Success() throws Exception {
-        // Arrange
-        Long resumeId = 101L;
-        ExportJob mockJob = ExportJob.builder()
-                .jobId("test-job-uuid")
-                .status(ExportStatus.QUEUED)
-                .build();
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    private ExportJob job;
+
+    @BeforeEach
+    void setUp() {
+        job = new ExportJob();
+        job.setJobId("job-123");
+        job.setResumeId(1L);
+        job.setUserId(1L);
+        job.setFormat(ExportFormat.PDF);
+        job.setStatus(ExportStatus.COMPLETED);
 
         when(currentUserService.requireUserId()).thenReturn(1L);
-        when(exportService.submitExportJob(anyLong(), eq(resumeId), eq(ExportFormat.PDF), any(), any()))
-                .thenReturn(mockJob);
-
-        // Act & Assert
-        mockMvc.perform(post("/pdf/" + resumeId)
-                .with(csrf())
-                .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isAccepted())
-                .andExpect(jsonPath("$.jobId").value("test-job-uuid"))
-                .andExpect(jsonPath("$.status").value("QUEUED"));
     }
 
     @Test
-    @WithMockUser
-    void getJobStatus_Success() throws Exception {
-        // Arrange
-        String jobId = "test-job-uuid";
-        ExportJob mockJob = ExportJob.builder()
-                .jobId(jobId)
-                .status(ExportStatus.COMPLETED)
-                .build();
+    void testExportPdf() throws Exception {
+        when(exportService.submitExportJob(eq(1L), eq(1L), eq(ExportFormat.PDF), any(), any())).thenReturn(job);
 
-        when(exportService.getJobStatus(jobId)).thenReturn(mockJob);
+        mockMvc.perform(post("/pdf/1")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"color\":\"red\"}"))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.jobId").value("job-123"));
+    }
 
-        // Act & Assert
-        mockMvc.perform(get("/job/" + jobId))
+    @Test
+    void testExportDocx() throws Exception {
+        when(exportService.submitExportJob(eq(1L), eq(1L), eq(ExportFormat.DOCX), any(), any())).thenReturn(job);
+
+        mockMvc.perform(post("/docx/1")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.jobId").value("job-123"));
+    }
+
+    @Test
+    void testExportJson() throws Exception {
+        when(exportService.submitExportJob(eq(1L), eq(1L), eq(ExportFormat.JSON), any(), any())).thenReturn(job);
+
+        mockMvc.perform(post("/json/1")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.jobId").value("job-123"));
+    }
+
+    @Test
+    void testGetJobStatus() throws Exception {
+        when(exportService.getJobStatus("job-123")).thenReturn(job);
+
+        mockMvc.perform(get("/job/job-123"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("COMPLETED"));
+                .andExpect(jsonPath("$.jobId").value("job-123"));
     }
 
     @Test
-    @WithMockUser
-    void downloadFile_Success() throws Exception {
-        // Arrange
-        String jobId = "test-job-uuid";
-        byte[] mockContent = "PDF content".getBytes();
-        ExportJob mockJob = ExportJob.builder()
-                .resumeId(1L)
-                .format(ExportFormat.PDF)
-                .build();
+    void testGetExportsByUser() throws Exception {
+        when(exportService.getExportsByUser(1L)).thenReturn(List.of(job));
 
-        when(exportService.getJobStatus(jobId)).thenReturn(mockJob);
-        when(exportService.downloadFile(jobId)).thenReturn(mockContent);
-
-        // Act & Assert
-        mockMvc.perform(get("/download/" + jobId))
+        mockMvc.perform(get("/user/1"))
                 .andExpect(status().isOk())
-                .andExpect(header().string("Content-Disposition", "attachment; filename=\"resume_1.pdf\""))
-                .andExpect(content().bytes(mockContent));
+                .andExpect(jsonPath("$[0].jobId").value("job-123"));
     }
 
     @Test
-    @WithMockUser
-    void exportDocx_Success() throws Exception {
-        Long resumeId = 101L;
-        ExportJob mockJob = ExportJob.builder()
-                .jobId("docx-job")
-                .status(ExportStatus.QUEUED)
-                .build();
+    void testDownloadFile() throws Exception {
+        when(exportService.getJobStatus("job-123")).thenReturn(job);
+        when(exportService.downloadFile("job-123")).thenReturn(new byte[]{1, 2, 3});
 
-        when(currentUserService.requireUserId()).thenReturn(1L);
-        when(exportService.submitExportJob(anyLong(), eq(resumeId), eq(ExportFormat.DOCX), any(), any()))
-                .thenReturn(mockJob);
-
-        mockMvc.perform(post("/docx/" + resumeId)
-                .with(csrf()))
-                .andExpect(status().isAccepted())
-                .andExpect(jsonPath("$.jobId").value("docx-job"));
+        mockMvc.perform(get("/download/job-123"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"resume_1.pdf\""))
+                .andExpect(content().contentType(MediaType.APPLICATION_PDF))
+                .andExpect(content().bytes(new byte[]{1, 2, 3}));
     }
 
     @Test
-    @WithMockUser
-    void exportJson_Success() throws Exception {
-        Long resumeId = 101L;
-        ExportJob mockJob = ExportJob.builder()
-                .jobId("json-job")
-                .status(ExportStatus.QUEUED)
-                .build();
+    void testDeleteExport() throws Exception {
+        mockMvc.perform(delete("/job-123"))
+                .andExpect(status().isNoContent());
 
+        verify(exportService).deleteExport("job-123");
+    }
+
+    @Test
+    void testGetStats() throws Exception {
+        ExportStatsDTO stats = ExportStatsDTO.builder().userId(1L).totalExports(10L).build();
+        when(exportService.getUserStats(1L)).thenReturn(stats);
+
+        mockMvc.perform(get("/stats/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalExports").value(10));
+    }
+
+    @Test
+    void testCleanup() throws Exception {
+        mockMvc.perform(delete("/internal/cleanup-expired"))
+                .andExpect(status().isOk());
+
+        verify(exportService).cleanupExpiredExports();
+    }
+
+    @Test
+    void testGetAdminStats() throws Exception {
+        when(exportService.getAdminStats()).thenReturn(Map.of("PDF", 100L));
+
+        mockMvc.perform(get("/admin/stats"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.PDF").value(100));
+    }
+
+    @Test
+    void testGetDailyCount() throws Exception {
+        when(exportService.getDailyPdfCount(1L)).thenReturn(5L);
+
+        mockMvc.perform(get("/admin/user/1/daily-count"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("5"));
+    }
+
+    @Test
+    void testGetExportsByUser_DifferentUserId() throws Exception {
+        // Current user is 1, but requesting stats/exports for user 2
         when(currentUserService.requireUserId()).thenReturn(1L);
-        when(exportService.submitExportJob(anyLong(), eq(resumeId), eq(ExportFormat.JSON), any(), any()))
-                .thenReturn(mockJob);
+        when(exportService.getExportsByUser(2L)).thenReturn(List.of());
 
-        mockMvc.perform(post("/json/" + resumeId)
-                .with(csrf()))
-                .andExpect(status().isAccepted())
-                .andExpect(jsonPath("$.jobId").value("json-job"));
+        mockMvc.perform(get("/user/2"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void testDownloadFile_NonPdf() throws Exception {
+        job.setFormat(ExportFormat.DOCX); // non-PDF
+        when(exportService.getJobStatus("job-123")).thenReturn(job);
+        when(exportService.downloadFile("job-123")).thenReturn(new byte[]{4, 5, 6});
+
+        mockMvc.perform(get("/download/job-123"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"resume_1.docx\""))
+                .andExpect(content().contentType(MediaType.APPLICATION_OCTET_STREAM))
+                .andExpect(content().bytes(new byte[]{4, 5, 6}));
     }
 }

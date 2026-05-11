@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "ai_history")
 @Data
-@Builder
+@Builder(toBuilder = true)
 @NoArgsConstructor
 @AllArgsConstructor
 public class AiHistory {
@@ -31,6 +31,8 @@ public class AiHistory {
     private String responseContent;
 
     private String modelUsed;
+    
+    private Integer tokensUsed;
 
     private LocalDateTime createdAt;
     

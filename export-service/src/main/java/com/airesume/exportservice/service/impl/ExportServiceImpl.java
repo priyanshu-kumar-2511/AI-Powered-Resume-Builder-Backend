@@ -7,9 +7,10 @@ import com.airesume.exportservice.model.ExportStatus;
 import com.airesume.exportservice.repository.ExportJobRepository;
 import com.airesume.exportservice.security.CurrentUserService;
 import com.airesume.exportservice.service.ExportService;
-import com.airesume.exportservice.service.ExportJobProcessor;
+import com.airesume.exportservice.dto.ExportMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -31,7 +32,7 @@ import java.util.stream.Collectors;
 public class ExportServiceImpl implements ExportService {
 
     private final ExportJobRepository repository;
-    private final ExportJobProcessor exportJobProcessor;
+    private final RabbitTemplate rabbitTemplate;
     private final CurrentUserService currentUserService;
 
     @Value("${app.export.storage-path:./exports}")
@@ -58,8 +59,21 @@ public class ExportServiceImpl implements ExportService {
         
         job = repository.save(job);
 
-        // 3. Process Async
-        exportJobProcessor.processJob(job.getJobId(), authorizationHeader);
+        // 3. Process Async via RabbitMQ Queue
+        log.info("[RABBITMQ] Publishing export task for jobId: {} to queue.", job.getJobId());
+        try {
+            ExportMessage message = ExportMessage.builder()
+                    .jobId(job.getJobId())
+                    .authorizationHeader(authorizationHeader)
+                    .build();
+            rabbitTemplate.convertAndSend("x.airesume", "pdf.export", message);
+            log.info("[RABBITMQ] Successfully published export task for jobId: {}", job.getJobId());
+        } catch (Exception e) {
+            log.error("[RABBITMQ] Failed to publish export task to queue for jobId: {}. Error: {}", 
+                    job.getJobId(), e.getMessage(), e);
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR, "Failed to queue export task: " + e.getMessage());
+        }
 
         return job;
     }

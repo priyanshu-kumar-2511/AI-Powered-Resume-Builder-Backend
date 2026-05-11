@@ -57,7 +57,7 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
-                    "/api/v1/auth/register",
+                    "/api/v1/auth/register/**",
                     "/api/v1/auth/login",
                     "/api/v1/auth/forgot-username/**",
                     "/api/v1/auth/forgot-password/**",
@@ -66,7 +66,7 @@ public class SecurityConfig {
                     "/api/v1/internal/**"
                 ).permitAll()
                 .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
-                .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                .requestMatchers("/v3/api-docs", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 .requestMatchers("/actuator/**").permitAll()
                 .anyRequest().authenticated()
             )
@@ -121,7 +121,7 @@ public class SecurityConfig {
         };
     }
 
-    private OAuth2AuthorizationRequest removeLinkedInNonce(OAuth2AuthorizationRequest authorizationRequest) {
+    OAuth2AuthorizationRequest removeLinkedInNonce(OAuth2AuthorizationRequest authorizationRequest) {
         if (authorizationRequest == null || !isLinkedInRequest(authorizationRequest)) {
             return authorizationRequest;
         }
@@ -132,7 +132,7 @@ public class SecurityConfig {
                 .build();
     }
 
-    private boolean isLinkedInRequest(OAuth2AuthorizationRequest authorizationRequest) {
+    boolean isLinkedInRequest(OAuth2AuthorizationRequest authorizationRequest) {
         String authorizationUri = authorizationRequest.getAuthorizationUri();
         return authorizationUri != null && authorizationUri.contains("linkedin.com");
     }

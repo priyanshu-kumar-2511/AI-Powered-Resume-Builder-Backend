@@ -24,7 +24,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("")
 @RequiredArgsConstructor
-@Tag(name = "Export Management", description = "APIs for exporting resumes to PDF, DOCX, and JSON")
+@Tag(name = "Export Controller", description = "Endpoints for exporting resumes to PDF, DOCX, and JSON")
 public class ExportController {
 
     private final ExportService exportService;

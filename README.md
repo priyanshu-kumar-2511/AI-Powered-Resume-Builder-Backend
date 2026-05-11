@@ -1,5 +1,5 @@
 # ResumeAI: AI-Powered Resume Builder Platform (Backend)
-**Current Branch:** `feature/UC9-Payment-Service`
+**Current Branch:** `feature/UC10-Quality-Testing`
 
 ## 📌 Project Overview / Introduction
 
@@ -12,7 +12,6 @@ Features include:
 *   **ATS Compatibility Scoring** against target job descriptions.
 *   Automated resume customization to perfectly match live job postings.
 *   Exporting dynamic visual CV templates directly to PDF and DOCX formats.
-*   **Job Linking:** Calculating a resume-to-job fit score and fetching live job data via **LinkedIn & Naukri APIs** (RapidAPI).
 *   **Payment & Subscriptions:** Full Razorpay integration for unlocking Premium tier features via a dedicated microservice.
 
 This repository holds the backend microservices ecosystem powering these platform features.
@@ -265,7 +264,7 @@ This phase introduces real-time user communication and platform-wide announcemen
 
 ## 💳 Phase 9 (Payment & Subscription Management)
 
-Currently, the **feature/UC9-payment-service** branch of this repository represents **Phase 9** of the architecture. This phase decouples financial logic into a dedicated service for better security and scalability.
+This phase decouples financial logic into a dedicated service for better security and scalability.
 
 ### Payment Service
 
@@ -291,3 +290,54 @@ Currently, the **feature/UC9-payment-service** branch of this repository represe
 2. **Template Creation Bug**: Fixed a cascading error where clicking "Use this template" threw a creation failure. The root cause was identified as the missing `userId` in the OAuth JWT, which prevented the backend `resume-service` from correctly linking the new resume to the current user profile.
 3. **Circular Dependency Fix**: Resolved a deadlock during startup where `resume-service` and `section-service` were waiting on each other. Implemented `@Lazy` loading for cross-service Feign clients.
 4. **Export Service Architecture Simplification**: Removed legacy Apache POI DOCX generation overhead and complex watchdog scheduler logic from the `export-service`. This drastically simplified the backend and eliminated premature timeout failures for long-running export jobs.
+5. **Backend Test Coverage Optimization**: Achieved 90%+ branch coverage across all core business microservices to guarantee runtime stability and reliable CI/CD delivery. Optimized `ai-service` specifically to reach **90.7%** branch coverage by simulating complex AI failure modes and quota edge cases.
+6. **Dependency Standardization**: Centralized `JwtService` and security filters into a shared infrastructure module, eliminating bean definition conflicts and ensuring unified authentication logic across the distributed ecosystem.
+
+---
+
+## ⚒️ Phase 10 (Quality Testing)
+
+Currently, the **feature/UC10-quality-testing** branch of this repository represents **Phase 10** of the architecture. 
+
+## 🛠 Core Infrastructure & Quality Standards
+
+To ensure production-grade reliability and performance, the following technologies are deeply integrated into the architecture:
+
+*   **RabbitMQ (Asynchronous Messaging):** Powers the decoupled execution of AI generation, document exports, and notification broadcasts. This ensures that long-running tasks do not block the main user thread, providing a seamless UX.
+*   **Redis (Distributed Caching):** Implemented in high-traffic services like `section-service` to minimize database latency and optimize resume-building performance.
+*   **JaCoCo (Quality Assurance):** Used as the primary metric for code quality. The project maintains a strict **90%+ branch coverage** standard, verified by automated JaCoCo reports, ensuring that all logical paths and edge cases are thoroughly validated.
+
+## 📊 Test Coverage & Quality Assurance
+
+All core business microservices have been optimized to achieve **exceptionally high instruction and branch coverage (90%+)** to guarantee runtime stability, clean exception boundaries, and reliable CI/CD delivery. 
+
+### 🏆 Coverage Dashboard (JaCoCo Verified)
+
+| Microservice | Instruction Coverage | Branch Coverage | Status |
+| :--- | :---: | :---: | :---: |
+| **`notification-service`** | **100.00%** | **91.30%** | **PASSED** |
+| **`resume-service`** | **99.30%** | **93.80%** | **PASSED** |
+| **`section-service`** | **99.30%** | **91.40%** | **PASSED** |
+| **`ai-service`** | **98.80%** | **90.70%** | **PASSED** |
+| **`export-service`** | **97.90%** | **99.40%** | **PASSED** |
+| **`template-service`** | **95.83%** | **95.83%** | **PASSED** |
+| **`payment-service`** | **95.65%** | **95.65%** | **PASSED** |
+| **`auth-service`** | **94.40%** | **91.80%** | **PASSED** |
+
+### 🛠 Running Tests & Generating Reports
+
+To run tests across all microservices and inspect reports locally:
+```bash
+# Run all unit tests and generate JaCoCo execution files
+mvn clean test
+
+# Generate HTML report site for all modules
+mvn jacoco:report
+```
+
+To view report site:
+* **Report path**: `[service-name]/target/site/jacoco/index.html`
+
+> 💡 All unit tests execute purely in-memory using Mockito and mock contexts, ensuring lightning-fast local testing without any database or service runtime overhead.
+
+--- 

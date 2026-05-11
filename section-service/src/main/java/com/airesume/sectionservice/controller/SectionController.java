@@ -3,6 +3,8 @@ package com.airesume.sectionservice.controller;
 import com.airesume.sectionservice.model.Section;
 import com.airesume.sectionservice.model.SectionType;
 import com.airesume.sectionservice.service.SectionService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +22,7 @@ import java.util.List;
 @RestController
 @RequestMapping("")
 @RequiredArgsConstructor
+@Tag(name = "Section Controller", description = "Endpoints for managing resume sections and content details")
 public class SectionController {
 
     private final SectionService sectionService;
@@ -31,6 +34,7 @@ public class SectionController {
      * @return the created section with generated ID
      */
     @PostMapping
+    @Operation(summary = "Create a new resume section")
     public ResponseEntity<Section> addSection(@RequestBody Section section) {
         return new ResponseEntity<>(sectionService.addSection(section), HttpStatus.CREATED);
     }
@@ -42,6 +46,7 @@ public class SectionController {
      * @return a list of ordered sections
      */
     @GetMapping("/resume/{resumeId}")
+    @Operation(summary = "Get all sections for a resume")
     public ResponseEntity<List<Section>> getSectionsByResume(@PathVariable Long resumeId) {
         return ResponseEntity.ok(sectionService.getSectionsByResume(resumeId));
     }
@@ -53,6 +58,7 @@ public class SectionController {
      * @return the requested section
      */
     @GetMapping("/{sectionId}")
+    @Operation(summary = "Get a single section by ID")
     public ResponseEntity<Section> getSectionById(@PathVariable Long sectionId) {
         return ResponseEntity.ok(sectionService.getSectionById(sectionId));
     }
@@ -65,6 +71,7 @@ public class SectionController {
      * @return a list of sections matching the type
      */
     @GetMapping("/resume/{resumeId}/type/{type}")
+    @Operation(summary = "Get resume sections filtered by type")
     public ResponseEntity<List<Section>> getSectionsByType(@PathVariable Long resumeId, @PathVariable SectionType type) {
         return ResponseEntity.ok(sectionService.getSectionsByType(resumeId, type));
     }
@@ -76,6 +83,7 @@ public class SectionController {
      * @return a list of AI-generated sections
      */
     @GetMapping("/resume/{resumeId}/ai-generated")
+    @Operation(summary = "Get AI-generated/optimized sections for a resume")
     public ResponseEntity<List<Section>> getAiGeneratedSections(@PathVariable Long resumeId) {
         return ResponseEntity.ok(sectionService.getAiGeneratedSections(resumeId));
     }
@@ -88,6 +96,7 @@ public class SectionController {
      * @return the updated section
      */
     @PutMapping("/{sectionId}")
+    @Operation(summary = "Update an existing section")
     public ResponseEntity<Section> updateSection(@PathVariable Long sectionId, @RequestBody Section section) {
         return ResponseEntity.ok(sectionService.updateSection(sectionId, section));
     }
@@ -99,6 +108,7 @@ public class SectionController {
      * @return the updated section with new visibility status
      */
     @PutMapping("/{sectionId}/toggle-visibility")
+    @Operation(summary = "Toggle visibility of a section")
     public ResponseEntity<Section> toggleVisibility(@PathVariable Long sectionId) {
         return ResponseEntity.ok(sectionService.toggleVisibility(sectionId));
     }
@@ -112,6 +122,7 @@ public class SectionController {
      * @return no content on success
      */
     @PutMapping("/resume/{resumeId}/reorder")
+    @Operation(summary = "Reorder list of sections for a resume")
     public ResponseEntity<Void> reorderSections(@PathVariable Long resumeId, @RequestBody List<Long> sectionIds) {
         sectionService.reorderSections(resumeId, sectionIds);
         return ResponseEntity.noContent().build();
@@ -124,6 +135,7 @@ public class SectionController {
      * @return the list of updated sections
      */
     @PutMapping("/bulk-update")
+    @Operation(summary = "Bulk update multiple sections")
     public ResponseEntity<List<Section>> bulkUpdate(@RequestBody List<Section> sections) {
         return ResponseEntity.ok(sectionService.bulkUpdate(sections));
     }
@@ -135,6 +147,7 @@ public class SectionController {
      * @return no content on success
      */
     @DeleteMapping("/{sectionId}")
+    @Operation(summary = "Delete a specific section")
     public ResponseEntity<Void> deleteSection(@PathVariable Long sectionId) {
         sectionService.deleteSection(sectionId);
         return ResponseEntity.noContent().build();
@@ -148,6 +161,7 @@ public class SectionController {
      * @return no content on success
      */
     @DeleteMapping("/resume/{resumeId}/all")
+    @Operation(summary = "Delete all sections for a resume")
     public ResponseEntity<Void> deleteAllSectionsByResume(@PathVariable Long resumeId) {
         sectionService.deleteAllSectionsByResume(resumeId);
         return ResponseEntity.noContent().build();
@@ -160,6 +174,7 @@ public class SectionController {
      * @return the count of sections
      */
     @GetMapping("/resume/{resumeId}/count")
+    @Operation(summary = "Count total sections in a resume")
     public ResponseEntity<Long> countSections(@PathVariable Long resumeId) {
         return ResponseEntity.ok(sectionService.countSections(resumeId));
     }

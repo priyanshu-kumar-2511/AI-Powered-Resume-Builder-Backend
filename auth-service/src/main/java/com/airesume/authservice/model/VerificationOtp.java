@@ -10,11 +10,10 @@ import java.time.LocalDateTime;
  */
 @Entity
 @Table(name = "verification_otps")
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@Builder(toBuilder = true)
 public class VerificationOtp {
 
     @Id
@@ -37,7 +36,8 @@ public class VerificationOtp {
 
     public enum OtpType {
         USERNAME_RECOVERY,
-        PASSWORD_RESET
+        PASSWORD_RESET,
+        REGISTRATION
     }
 
     /**

@@ -27,7 +27,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.GET, "/public", "/api/v1/resumes/public").permitAll()
                         .requestMatchers(HttpMethod.PUT, "/*/view-count", "/api/v1/resumes/*/view-count").permitAll()
-                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/actuator/**").permitAll()
+                        .requestMatchers("/v3/api-docs", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/actuator/**").permitAll()
                         .requestMatchers("/admin/**", "/api/v1/resumes/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )

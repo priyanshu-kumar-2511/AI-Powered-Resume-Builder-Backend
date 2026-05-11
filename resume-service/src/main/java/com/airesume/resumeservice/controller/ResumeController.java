@@ -5,6 +5,8 @@ import com.airesume.resumeservice.dto.ResumeCreateRequest;
 import com.airesume.resumeservice.dto.ResumeResponse;
 import com.airesume.resumeservice.dto.ResumeUpdateRequest;
 import com.airesume.resumeservice.service.ResumeService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -20,6 +22,7 @@ import java.util.List;
 @RestController
 @RequestMapping("")
 @RequiredArgsConstructor
+@Tag(name = "Resume Controller", description = "Endpoints for creating, updating, and managing user resumes")
 public class ResumeController {
 
     private final ResumeService resumeService;
@@ -28,6 +31,7 @@ public class ResumeController {
      * 1. Creates a new resume from a template.
      */
     @PostMapping
+    @Operation(summary = "Create a new resume from a template")
     public ResponseEntity<ResumeResponse> createResume(@Valid @RequestBody ResumeCreateRequest request) {
         return new ResponseEntity<>(resumeService.createResume(request), HttpStatus.CREATED);
     }
@@ -36,6 +40,7 @@ public class ResumeController {
      * 2. Retrieves a specific resume by ID.
      */
     @GetMapping("/{resumeId}")
+    @Operation(summary = "Get detailed information of a specific resume")
     public ResponseEntity<ResumeResponse> getResumeById(@PathVariable Long resumeId) {
         return ResponseEntity.ok(resumeService.getResumeById(resumeId));
     }
@@ -44,6 +49,7 @@ public class ResumeController {
      * 3. Retrieves all resumes associated with a specific user.
      */
     @GetMapping("/user/{userId}")
+    @Operation(summary = "Get all resumes for a specific user")
     public ResponseEntity<List<ResumeResponse>> getResumesByUser(@PathVariable Long userId) {
         return ResponseEntity.ok(resumeService.getResumesByUser(userId));
     }
@@ -52,6 +58,7 @@ public class ResumeController {
      * 4. Retrieves resumes based on a template ID (Admin analytics).
      */
     @GetMapping("/template/{templateId}")
+    @Operation(summary = "Get resumes created from a specific template")
     public ResponseEntity<List<ResumeResponse>> getResumesByTemplate(@PathVariable Long templateId) {
         return ResponseEntity.ok(resumeService.getResumesByTemplate(templateId));
     }
@@ -60,6 +67,7 @@ public class ResumeController {
      * 5. Retrieves all public gallery resumes.
      */
     @GetMapping("/public")
+    @Operation(summary = "Get all resumes published to public gallery")
     public ResponseEntity<List<ResumeResponse>> getPublicResumes() {
         return ResponseEntity.ok(resumeService.getPublicResumes());
     }
@@ -68,6 +76,7 @@ public class ResumeController {
      * 6. Updates editable metadata of a resume.
      */
     @PutMapping("/{resumeId}")
+    @Operation(summary = "Update metadata of an existing resume")
     public ResponseEntity<ResumeResponse> updateResume(
             @PathVariable Long resumeId,
             @RequestBody ResumeUpdateRequest request) {
@@ -79,6 +88,7 @@ public class ResumeController {
      * Intended to be called by ai-service.
      */
     @PutMapping("/{resumeId}/ats-score")
+    @Operation(summary = "Update ATS score of a resume (Internal)")
     public ResponseEntity<ResumeResponse> updateAtsScore(
             @PathVariable Long resumeId,
             @Valid @RequestBody AtsUpdateDTO request) {
@@ -89,6 +99,7 @@ public class ResumeController {
      * 8. Duplicates an existing resume to create a new variant.
      */
     @PostMapping("/{resumeId}/duplicate")
+    @Operation(summary = "Duplicate an existing resume")
     public ResponseEntity<ResumeResponse> duplicateResume(@PathVariable Long resumeId) {
         return new ResponseEntity<>(resumeService.duplicateResume(resumeId), HttpStatus.CREATED);
     }
@@ -97,6 +108,7 @@ public class ResumeController {
      * 9. Publishes a resume to the public gallery.
      */
     @PutMapping("/{resumeId}/publish")
+    @Operation(summary = "Publish a resume to the public gallery")
     public ResponseEntity<ResumeResponse> publishResume(@PathVariable Long resumeId) {
         return ResponseEntity.ok(resumeService.publishResume(resumeId));
     }
@@ -105,6 +117,7 @@ public class ResumeController {
      * 10. Removes a resume from the public gallery.
      */
     @PutMapping("/{resumeId}/unpublish")
+    @Operation(summary = "Remove a resume from the public gallery")
     public ResponseEntity<ResumeResponse> unpublishResume(@PathVariable Long resumeId) {
         return ResponseEntity.ok(resumeService.unpublishResume(resumeId));
     }
@@ -113,6 +126,7 @@ public class ResumeController {
      * 11. Increments the public view count of a resume.
      */
     @PutMapping("/{resumeId}/view-count")
+    @Operation(summary = "Increment public view count of a resume")
     public ResponseEntity<Void> incrementViewCount(@PathVariable Long resumeId) {
         resumeService.incrementViewCount(resumeId);
         return ResponseEntity.ok().build();
@@ -122,6 +136,7 @@ public class ResumeController {
      * 12. Deletes a resume completely.
      */
     @DeleteMapping("/{resumeId}")
+    @Operation(summary = "Delete a specific resume permanently")
     public ResponseEntity<Void> deleteResume(@PathVariable Long resumeId) {
         resumeService.deleteResume(resumeId);
         return ResponseEntity.noContent().build();
@@ -133,6 +148,7 @@ public class ResumeController {
      * 13. Retrieves all resumes globally (Admin panel).
      */
     @GetMapping("/admin/all")
+    @Operation(summary = "Get all resumes globally (Admin only)")
     public ResponseEntity<List<ResumeResponse>> getAllResumes() {
         return ResponseEntity.ok(resumeService.getAllResumes());
     }
@@ -141,6 +157,7 @@ public class ResumeController {
      * 14. Admin operation to forcefully delete any resume.
      */
     @DeleteMapping("/admin/{resumeId}")
+    @Operation(summary = "Forcefully delete any resume (Admin only)")
     public ResponseEntity<Void> forceDeleteResume(@PathVariable Long resumeId) {
         resumeService.forceDeleteResume(resumeId);
         return ResponseEntity.noContent().build();
@@ -150,6 +167,7 @@ public class ResumeController {
      * 15. Admin operation to count total resumes per user.
      */
     @GetMapping("/admin/count/{userId}")
+    @Operation(summary = "Get count of resumes for a user (Admin only)")
     public ResponseEntity<Long> countUserResumes(@PathVariable Long userId) {
         return ResponseEntity.ok(resumeService.countUserResumes(userId));
     }

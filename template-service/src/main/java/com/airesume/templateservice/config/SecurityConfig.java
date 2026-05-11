@@ -50,7 +50,7 @@ public class SecurityConfig {
                     "/api/v1/templates/{templateId}/increment-usage").permitAll()
 
                 // Docs & monitoring
-                .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/actuator/**").permitAll()
+                .requestMatchers("/v3/api-docs", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/actuator/**").permitAll()
 
                 // All other requests require authentication
                 .anyRequest().authenticated()

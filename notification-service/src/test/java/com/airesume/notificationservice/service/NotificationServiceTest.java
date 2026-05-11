@@ -1,12 +1,8 @@
 package com.airesume.notificationservice.service;
 
-import com.airesume.notificationservice.dto.BulkNotificationRequest;
-import com.airesume.notificationservice.dto.NotificationRequest;
-import com.airesume.notificationservice.dto.NotificationResponse;
-import com.airesume.notificationservice.dto.AdminUserDto;
+import com.airesume.notificationservice.dto.*;
 import com.airesume.notificationservice.model.Notification;
 import com.airesume.notificationservice.model.NotificationTier;
-import com.airesume.notificationservice.model.NotificationType;
 import com.airesume.notificationservice.repository.NotificationRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,18 +10,17 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 
-import java.time.LocalDateTime;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -40,168 +35,210 @@ class NotificationServiceTest {
     @InjectMocks
     private NotificationService notificationService;
 
-    private NotificationRequest sampleRequest;
-    private Notification savedNotification;
-
-    @BeforeEach
-    void setUp() {
-        sampleRequest = new NotificationRequest();
-        sampleRequest.setRecipientId(101L);
-        sampleRequest.setTitle("Welcome!");
-        sampleRequest.setMessage("Thanks for joining ResumeAI.");
-        sampleRequest.setType(NotificationType.INFO);
-
-        savedNotification = Notification.builder()
-                .id(1L)
-                .recipientId(101L)
-                .title("Welcome!")
-                .message("Thanks for joining ResumeAI.")
-                .type(NotificationType.INFO)
-                .tier(NotificationTier.ALL)
-                .isRead(false)
-                .createdAt(LocalDateTime.now())
-                .build();
-    }
-
     @Test
-    void testSendNotification_Success() {
-        when(notificationRepository.save(any(Notification.class))).thenReturn(savedNotification);
+    void testSendNotification() {
+        NotificationRequest request = new NotificationRequest();
+        request.setRecipientId(1L);
+        request.setTitle("Test");
+        request.setMessage("Body");
 
-        NotificationResponse response = notificationService.sendNotification(sampleRequest);
+        when(notificationRepository.save(any(Notification.class))).thenAnswer(i -> i.getArgument(0));
+
+        NotificationResponse response = notificationService.sendNotification(request);
 
         assertNotNull(response);
-        assertEquals(1L, response.getId());
-        assertEquals(101L, response.getRecipientId());
-        assertEquals("Welcome!", response.getTitle());
-        assertFalse(response.isRead());
-
-        verify(notificationRepository, times(1)).save(any(Notification.class));
+        assertEquals("Test", response.getTitle());
+        verify(notificationRepository).save(any());
     }
 
     @Test
-    void testSendBulkNotification_Success() {
-        BulkNotificationRequest bulkRequest = new BulkNotificationRequest();
-        bulkRequest.setTitle("System Update");
-        bulkRequest.setMessage("Maintenance tonight.");
-        bulkRequest.setTier(NotificationTier.ALL);
-        bulkRequest.setType(NotificationType.SYSTEM);
+    void testSendBulkNotification() {
+        BulkNotificationRequest request = new BulkNotificationRequest();
+        request.setTitle("Bulk");
+        request.setTier(NotificationTier.PREMIUM);
 
         AdminUserDto user = new AdminUserDto();
-        user.setUserId(101L);
-        user.setSubscriptionPlan("FREE");
+        user.setUserId(1L);
+        user.setSubscriptionPlan("PREMIUM");
         user.setActive(true);
 
-        when(adminUserClient.getAllUsers("Bearer mock")).thenReturn(List.of(user));
-        when(notificationRepository.saveAll(anyList())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(adminUserClient.getAllUsers(anyString())).thenReturn(Collections.singletonList(user));
 
-        assertDoesNotThrow(() -> notificationService.sendBulkNotification(bulkRequest, "Bearer mock"));
-        verify(notificationRepository, times(1)).saveAll(anyList());
+        notificationService.sendBulkNotification(request, "Bearer token");
+
+        verify(notificationRepository).saveAll(anyList());
     }
 
     @Test
-    void testGetNotificationsForUser_Success() {
-        Pageable pageable = PageRequest.of(0, 10);
-        Page<Notification> mockPage = new PageImpl<>(List.of(savedNotification));
+    void testSendBulkNotification_NoUsers() {
+        BulkNotificationRequest request = new BulkNotificationRequest();
+        when(adminUserClient.getAllUsers(anyString())).thenReturn(Collections.emptyList());
+
+        notificationService.sendBulkNotification(request, "Bearer token");
+
+        verify(notificationRepository, never()).saveAll(anyList());
+    }
+
+    @Test
+    void testSendBulkNotification_InactiveUser() {
+        BulkNotificationRequest request = new BulkNotificationRequest();
+        request.setTier(NotificationTier.ALL);
         
-        when(notificationRepository.findByRecipientIdOrderByCreatedAtDesc(101L, pageable)).thenReturn(mockPage);
+        AdminUserDto user = new AdminUserDto();
+        user.setActive(false);
+        user.setUserId(1L);
 
-        Page<NotificationResponse> result = notificationService.getNotificationsForUser(101L, pageable);
+        when(adminUserClient.getAllUsers(anyString())).thenReturn(Collections.singletonList(user));
 
-        assertNotNull(result);
-        assertEquals(1, result.getTotalElements());
-        assertEquals("Welcome!", result.getContent().get(0).getTitle());
+        notificationService.sendBulkNotification(request, "Bearer token");
+
+        verify(notificationRepository, never()).saveAll(anyList());
+    }
+
+    @Test
+    void testSendBulkNotification_TierMismatch() {
+        BulkNotificationRequest request = new BulkNotificationRequest();
+        request.setTier(NotificationTier.PREMIUM);
         
-        verify(notificationRepository, times(1)).findByRecipientIdOrderByCreatedAtDesc(101L, pageable);
+        AdminUserDto user = new AdminUserDto();
+        user.setActive(true);
+        user.setUserId(1L);
+        user.setSubscriptionPlan("FREE");
+
+        when(adminUserClient.getAllUsers(anyString())).thenReturn(Collections.singletonList(user));
+
+        notificationService.sendBulkNotification(request, "Bearer token");
+
+        verify(notificationRepository, never()).saveAll(anyList());
     }
 
     @Test
-    void testGetUnreadCount_Success() {
-        when(notificationRepository.countByRecipientIdAndIsReadFalse(101L)).thenReturn(5L);
-
-        long count = notificationService.getUnreadCount(101L);
-
-        assertEquals(5L, count);
-        verify(notificationRepository, times(1)).countByRecipientIdAndIsReadFalse(101L);
+    void testGetUnreadCount() {
+        when(notificationRepository.countByRecipientIdAndIsReadFalse(1L)).thenReturn(10L);
+        assertEquals(10L, notificationService.getUnreadCount(1L));
     }
 
     @Test
-    void testMarkAsRead_UnreadNotification_Success() {
-        when(notificationRepository.findById(1L)).thenReturn(Optional.of(savedNotification));
-        when(notificationRepository.save(any(Notification.class))).thenReturn(savedNotification);
+    void testMarkAsRead() {
+        Notification notification = Notification.builder().id(1L).isRead(false).build();
+        when(notificationRepository.findById(1L)).thenReturn(Optional.of(notification));
 
         notificationService.markAsRead(1L);
 
-        assertTrue(savedNotification.isRead());
-        assertNotNull(savedNotification.getReadAt());
-        verify(notificationRepository, times(1)).findById(1L);
-        verify(notificationRepository, times(1)).save(savedNotification);
+        assertTrue(notification.isRead());
+        verify(notificationRepository).save(notification);
     }
 
     @Test
-    void testMarkAsRead_AlreadyRead_DoesNothing() {
-        savedNotification.setRead(true);
-        savedNotification.setReadAt(LocalDateTime.now());
-        
-        when(notificationRepository.findById(1L)).thenReturn(Optional.of(savedNotification));
-
-        notificationService.markAsRead(1L);
-
-        verify(notificationRepository, times(1)).findById(1L);
-        verify(notificationRepository, never()).save(any(Notification.class));
-    }
-
-    @Test
-    void testMarkAsRead_NotFound_ThrowsException() {
+    void testMarkAsRead_NotFound() {
         when(notificationRepository.findById(1L)).thenReturn(Optional.empty());
-
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> notificationService.markAsRead(1L));
-        assertEquals("Notification not found with id 1", exception.getMessage());
-        
-        verify(notificationRepository, times(1)).findById(1L);
+        assertThrows(RuntimeException.class, () -> notificationService.markAsRead(1L));
     }
 
     @Test
-    void testMarkAllAsRead_Success() {
-        Notification n1 = Notification.builder().id(1L).isRead(false).build();
-        Notification n2 = Notification.builder().id(2L).isRead(false).build();
-        List<Notification> unreadList = Arrays.asList(n1, n2);
+    void testMarkAsRead_AlreadyRead() {
+        Notification notification = Notification.builder().id(1L).isRead(true).build();
+        when(notificationRepository.findById(1L)).thenReturn(Optional.of(notification));
 
-        when(notificationRepository.findByRecipientIdAndIsReadFalse(101L)).thenReturn(unreadList);
-        when(notificationRepository.saveAll(unreadList)).thenReturn(unreadList);
+        notificationService.markAsRead(1L);
 
-        notificationService.markAllAsRead(101L);
+        verify(notificationRepository, never()).save(any());
+    }
+
+    @Test
+    void testMarkAllAsRead() {
+        Notification n1 = Notification.builder().isRead(false).build();
+        when(notificationRepository.findByRecipientIdAndIsReadFalse(1L)).thenReturn(Collections.singletonList(n1));
+
+        notificationService.markAllAsRead(1L);
 
         assertTrue(n1.isRead());
-        assertNotNull(n1.getReadAt());
-        assertTrue(n2.isRead());
-        assertNotNull(n2.getReadAt());
-        
-        verify(notificationRepository, times(1)).findByRecipientIdAndIsReadFalse(101L);
-        verify(notificationRepository, times(1)).saveAll(unreadList);
+        verify(notificationRepository).saveAll(anyList());
     }
 
     @Test
-    void testDeleteNotification_Success() {
-        doNothing().when(notificationRepository).deleteById(1L);
-
-        assertDoesNotThrow(() -> notificationService.deleteNotification(1L));
-        
-        verify(notificationRepository, times(1)).deleteById(1L);
+    void testDeleteNotification() {
+        notificationService.deleteNotification(1L);
+        verify(notificationRepository).deleteById(1L);
     }
 
     @Test
-    void testGetAllNotifications_Success() {
-        Pageable pageable = PageRequest.of(0, 10);
-        Page<Notification> mockPage = new PageImpl<>(List.of(savedNotification));
-        
-        when(notificationRepository.findAll(pageable)).thenReturn(mockPage);
+    void testGetAllNotifications() {
+        when(notificationRepository.findAll(any(org.springframework.data.domain.Pageable.class))).thenReturn(org.springframework.data.domain.Page.empty());
+        assertNotNull(notificationService.getAllNotifications(org.springframework.data.domain.PageRequest.of(0, 10)));
+    }
 
-        Page<NotificationResponse> result = notificationService.getAllNotifications(pageable);
+    @Test
+    void testGetNotificationsForUser() {
+        when(notificationRepository.findByRecipientIdOrderByCreatedAtDesc(eq(1L), any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(org.springframework.data.domain.Page.empty());
+        assertNotNull(notificationService.getNotificationsForUser(1L, org.springframework.data.domain.PageRequest.of(0, 10)));
+    }
 
-        assertNotNull(result);
-        assertEquals(1, result.getTotalElements());
-        assertEquals("Welcome!", result.getContent().get(0).getTitle());
+    @Test
+    void testSendBulkNotification_UserIdNull() {
+        BulkNotificationRequest request = new BulkNotificationRequest();
+        request.setTier(NotificationTier.ALL);
         
-        verify(notificationRepository, times(1)).findAll(pageable);
+        AdminUserDto user = new AdminUserDto();
+        user.setActive(true);
+        user.setUserId(null);
+
+        when(adminUserClient.getAllUsers(anyString())).thenReturn(Collections.singletonList(user));
+
+        notificationService.sendBulkNotification(request, "Bearer token");
+
+        verify(notificationRepository, never()).saveAll(anyList());
+    }
+
+    @Test
+    void testSendBulkNotification_NullTier() {
+        BulkNotificationRequest request = new BulkNotificationRequest();
+        request.setTier(null);
+        
+        AdminUserDto user = new AdminUserDto();
+        user.setActive(true);
+        user.setUserId(1L);
+        user.setSubscriptionPlan("PREMIUM");
+
+        when(adminUserClient.getAllUsers(anyString())).thenReturn(Collections.singletonList(user));
+
+        notificationService.sendBulkNotification(request, "Bearer token");
+
+        verify(notificationRepository).saveAll(anyList());
+    }
+
+    @Test
+    void testSendBulkNotification_UserPlanNull() {
+        BulkNotificationRequest request = new BulkNotificationRequest();
+        request.setTier(NotificationTier.PREMIUM);
+        
+        AdminUserDto user = new AdminUserDto();
+        user.setActive(true);
+        user.setUserId(1L);
+        user.setSubscriptionPlan(null);
+
+        when(adminUserClient.getAllUsers(anyString())).thenReturn(Collections.singletonList(user));
+
+        notificationService.sendBulkNotification(request, "Bearer token");
+
+        verify(notificationRepository, never()).saveAll(anyList());
+    }
+
+    @Test
+    void testSendBulkNotification_UserPlanBlank() {
+        BulkNotificationRequest request = new BulkNotificationRequest();
+        request.setTier(NotificationTier.PREMIUM);
+        
+        AdminUserDto user = new AdminUserDto();
+        user.setActive(true);
+        user.setUserId(1L);
+        user.setSubscriptionPlan("   ");
+
+        when(adminUserClient.getAllUsers(anyString())).thenReturn(Collections.singletonList(user));
+
+        notificationService.sendBulkNotification(request, "Bearer token");
+
+        verify(notificationRepository, never()).saveAll(anyList());
     }
 }
