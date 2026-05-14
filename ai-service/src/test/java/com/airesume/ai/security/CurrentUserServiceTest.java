@@ -11,6 +11,10 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Unit tests for the Current User Security helper.
+ * Verifies extraction of user IDs and subscription tiers from the Spring Security context.
+ */
 class CurrentUserServiceTest {
 
     private final CurrentUserService currentUserService = new CurrentUserService();
@@ -20,18 +24,27 @@ class CurrentUserServiceTest {
         SecurityContextHolder.clearContext();
     }
 
+    /**
+     * Verifies that user IDs can be extracted when provided as Numbers in the token claims.
+     */
     @Test
     void testRequireUserIdAsString_WithNumber() {
         setAuthenticationDetails(Map.of("userId", 123L));
         assertEquals("123", currentUserService.requireUserIdAsString());
     }
 
+    /**
+     * Verifies that user IDs can be extracted when provided as Strings in the token claims.
+     */
     @Test
     void testRequireUserIdAsString_WithString() {
         setAuthenticationDetails(Map.of("userId", "456"));
         assertEquals("456", currentUserService.requireUserIdAsString());
     }
 
+    /**
+     * Verifies that the service throws an UNAUTHORIZED exception when user identity is missing or malformed.
+     */
     @Test
     void testRequireUserIdAsString_MissingOrInvalid() {
         setAuthenticationDetails(Map.of("userId", "")); // blank string
@@ -47,6 +60,9 @@ class CurrentUserServiceTest {
         assertEquals(HttpStatus.UNAUTHORIZED, ex.getStatusCode());
     }
 
+    /**
+     * Tests the logic for determining if the current user has a PREMIUM subscription.
+     */
     @Test
     void testIsPremium() {
         setAuthenticationDetails(Map.of("subscriptionPlan", "PREMIUM"));
@@ -65,6 +81,9 @@ class CurrentUserServiceTest {
         assertFalse(currentUserService.isPremium());
     }
 
+    /**
+     * Verifies that the service handles cases where the authentication details are not in the expected Map format.
+     */
     @Test
     void testGetDetail_DetailsNotAMap() {
         UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken("user", null);

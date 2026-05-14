@@ -13,6 +13,10 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Unit tests for JwtService in Auth Service.
+ * Verifies token generation, extraction, and validation logic.
+ */
 class JwtServiceTest {
 
     private JwtService jwtService;
@@ -26,6 +30,9 @@ class JwtServiceTest {
         ReflectionTestUtils.setField(jwtService, "jwtExpiration", 3600000L); // 1 hour
     }
 
+    /**
+     * Verifies that the service can generate a token from a username and claims, and correctly extract the username back.
+     */
     @Test
     void testGenerateAndExtractToken() {
         String username = "testuser";
@@ -40,6 +47,9 @@ class JwtServiceTest {
         assertTrue(jwtService.validateToken(token));
     }
 
+    /**
+     * Verifies that a valid token can be generated directly from a User entity, including their roles and plan.
+     */
     @Test
     void testGenerateTokenForUser() {
         User user = User.builder()
@@ -54,11 +64,17 @@ class JwtServiceTest {
         assertEquals("realuser", jwtService.extractUsername(token));
     }
 
+    /**
+     * Verifies that the service correctly identifies and rejects malformed token strings.
+     */
     @Test
     void testInvalidToken() {
         assertFalse(jwtService.validateToken("invalid-token-string"));
     }
 
+    /**
+     * Verifies that a token generated for one user is considered invalid when checked against a different username.
+     */
     @Test
     void testTokenWithWrongUsername() {
         String token = jwtService.generateToken("user1");

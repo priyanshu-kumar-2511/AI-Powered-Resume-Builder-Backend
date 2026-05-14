@@ -13,6 +13,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
+/**
+ * Controller for internal service-to-service communication.
+ * Provides endpoints for other microservices (like Payment Service) to update 
+ * user metadata or subscription states securely.
+ */
 @RestController
 @RequestMapping("/api/v1/internal/users")
 @RequiredArgsConstructor
@@ -21,6 +26,10 @@ public class InternalUserController {
 
     private final AuthService authService;
 
+    /**
+     * Updates a user's subscription plan and returns a fresh JWT token.
+     * Typically triggered by Payment Service after a successful order.
+     */
     @PostMapping("/update-plan")
     @Operation(summary = "Update user subscription plan (Internal)")
     public ResponseEntity<Map<String, String>> updatePlan(@RequestBody UpdatePlanRequest request) {

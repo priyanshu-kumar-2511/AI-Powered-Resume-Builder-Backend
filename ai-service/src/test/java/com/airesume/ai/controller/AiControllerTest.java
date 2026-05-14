@@ -22,6 +22,11 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+/**
+ * Unit tests for the AI Controller.
+ * Verifies that the AI endpoints correctly delegate to the AI service
+ * and return expected JSON structures.
+ */
 @WebMvcTest(AiController.class)
 @AutoConfigureMockMvc(addFilters = false)
 class AiControllerTest {
@@ -52,6 +57,9 @@ class AiControllerTest {
         when(currentUserService.requireUserIdAsString()).thenReturn("user1");
     }
 
+    /**
+     * Verifies that the summary generation endpoint returns 200 OK and valid content.
+     */
     @Test
     void testGenerateSummary() throws Exception {
         AiRequest request = new AiRequest();
@@ -64,6 +72,9 @@ class AiControllerTest {
                 .andExpect(jsonPath("$.content").value("summary"));
     }
 
+    /**
+     * Verifies that the experience bullets generation endpoint returns expected content.
+     */
     @Test
     void testGenerateBullets() throws Exception {
         AiRequest request = new AiRequest();
@@ -76,6 +87,9 @@ class AiControllerTest {
                 .andExpect(jsonPath("$.content").value("bullets"));
     }
 
+    /**
+     * Verifies that the ATS compatibility check returns the expected score.
+     */
     @Test
     void testCheckAts() throws Exception {
         AiRequest request = new AiRequest();
@@ -88,6 +102,9 @@ class AiControllerTest {
                 .andExpect(jsonPath("$.score").value(90));
     }
 
+    /**
+     * Verifies skill suggestions based on a target job title.
+     */
     @Test
     void testSuggestSkills() throws Exception {
         when(aiService.suggestSkills(anyLong(), anyString())).thenReturn(Collections.singletonList("Java"));
@@ -98,6 +115,9 @@ class AiControllerTest {
                 .andExpect(jsonPath("$[0]").value("Java"));
     }
 
+    /**
+     * Verifies the retrieval of current AI quota for a user.
+     */
     @Test
     void testGetQuota() throws Exception {
         when(aiService.getUserQuota(anyString())).thenReturn(Map.of("remaining", 10));
@@ -107,6 +127,9 @@ class AiControllerTest {
                 .andExpect(jsonPath("$.remaining").value(10));
     }
 
+    /**
+     * Verifies AI cover letter generation based on resume content.
+     */
     @Test
     void testGenerateCoverLetter() throws Exception {
         AiRequest request = new AiRequest();
@@ -119,6 +142,9 @@ class AiControllerTest {
                 .andExpect(jsonPath("$.content").value("letter"));
     }
 
+    /**
+     * Verifies the AI-powered section improvement endpoint.
+     */
     @Test
     void testImproveSection() throws Exception {
         AiRequest request = new AiRequest();
@@ -131,6 +157,9 @@ class AiControllerTest {
                 .andExpect(jsonPath("$.content").value("improved"));
     }
 
+    /**
+     * Verifies the resume tailoring endpoint which aligns a resume to a job description.
+     */
     @Test
     void testTailorResume() throws Exception {
         AiRequest request = new AiRequest();
@@ -143,6 +172,9 @@ class AiControllerTest {
                 .andExpect(jsonPath("$.status").value("QUEUED"));
     }
 
+    /**
+     * Verifies the AI-powered resume translation endpoint.
+     */
     @Test
     void testTranslateResume() throws Exception {
         AiRequest request = new AiRequest();
@@ -155,6 +187,9 @@ class AiControllerTest {
                 .andExpect(jsonPath("$.status").value("QUEUED"));
     }
 
+    /**
+     * Verifies retrieval of all AI generation events for a specific user.
+     */
     @Test
     void testGetHistory() throws Exception {
         when(aiService.getUserHistory(anyString())).thenReturn(Collections.emptyList());
@@ -164,6 +199,9 @@ class AiControllerTest {
                 .andExpect(jsonPath("$").isArray());
     }
 
+    /**
+     * Verifies the internal job fit analysis which compares a resume against a job description.
+     */
     @Test
     void testAnalyzeJobFit() throws Exception {
         AiRequest request = new AiRequest();
@@ -176,6 +214,9 @@ class AiControllerTest {
                 .andExpect(jsonPath("$.score").value(80));
     }
 
+    /**
+     * Verifies that PDF template extraction handles multipart file uploads.
+     */
     @Test
     void testExtractTemplateFromPdf() throws Exception {
         MockMultipartFile file = new MockMultipartFile("file", "test.pdf", "application/pdf", "dummy content".getBytes());
@@ -191,6 +232,9 @@ class AiControllerTest {
                 .andExpect(jsonPath("$.htmlLayout").value("<div></div>"));
     }
 
+    /**
+     * Verifies retrieval of global administrative AI usage statistics.
+     */
     @Test
     void testGetAdminStats() throws Exception {
         when(aiService.getUsageStats()).thenReturn(Map.of("totalCalls", 100));
@@ -200,6 +244,9 @@ class AiControllerTest {
                 .andExpect(jsonPath("$.totalCalls").value(100));
     }
 
+    /**
+     * Verifies retrieval of detailed token-level usage statistics for cost monitoring.
+     */
     @Test
     void testGetUsageStats() throws Exception {
         when(aiService.getUsageStats()).thenReturn(Map.of("totalTokens", 5000));
@@ -209,6 +256,9 @@ class AiControllerTest {
                 .andExpect(jsonPath("$.totalTokens").value(5000));
     }
 
+    /**
+     * Verifies retrieval of AI processing costs broken down by individual users.
+     */
     @Test
     void testGetCostByUser() throws Exception {
         when(aiService.getCostByUser()).thenReturn(Map.of("totalCost", 1.5));

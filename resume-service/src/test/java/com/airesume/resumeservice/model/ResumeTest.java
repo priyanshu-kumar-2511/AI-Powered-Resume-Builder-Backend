@@ -5,8 +5,16 @@ import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Unit tests for the Resume domain model.
+ * Verifies entity persistence mapping, JPA lifecycle callbacks, and
+ * consistent data access across builder and constructor variations.
+ */
 class ResumeTest {
 
+    /**
+     * Verifies the fluent builder and standard getter/setter accessors.
+     */
     @Test
     void testResumeBuilderAndAccessors() {
         LocalDateTime now = LocalDateTime.now();
@@ -69,6 +77,9 @@ class ResumeTest {
         assertEquals(tomorrow, resume.getUpdatedAt());
     }
 
+    /**
+     * Ensures default values are correctly initialized by the no-args constructor.
+     */
     @Test
     void testNoArgsConstructor() {
         Resume resume = new Resume();
@@ -101,6 +112,9 @@ class ResumeTest {
         assertEquals(now, resume.getUpdatedAt());
     }
 
+    /**
+     * Tests JPA lifecycle callbacks for automated timestamp management.
+     */
     @Test
     void testLifecycleCallbacks() {
         Resume resume = new Resume();

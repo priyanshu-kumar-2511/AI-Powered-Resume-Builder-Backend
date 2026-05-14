@@ -16,6 +16,12 @@ import org.springframework.cache.annotation.EnableCaching;
 @EnableCaching
 public class TemplateServiceApplication {
 
+    /**
+     * Entry point for the Template Service.
+     * Initializes environment variables and starts the application context.
+     * 
+     * @param args command line arguments
+     */
 	public static void main(String[] args) {
 		io.github.cdimascio.dotenv.Dotenv dotenv = io.github.cdimascio.dotenv.Dotenv.configure()
 				.directory("../")

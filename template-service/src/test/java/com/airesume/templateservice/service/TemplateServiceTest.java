@@ -51,6 +51,9 @@ public class TemplateServiceTest {
                 .build();
     }
 
+    /**
+     * Verifies that a new template is correctly persisted to the database.
+     */
     @Test
     @DisplayName("Test: Create Template should save correctly")
     void createTemplate_ShouldReturnSavedTemplate() {
@@ -66,6 +69,9 @@ public class TemplateServiceTest {
         verify(templateRepository, times(1)).save(any(Template.class));
     }
 
+    /**
+     * Verifies retrieval of a template by its ID when it exists.
+     */
     @Test
     @DisplayName("Test: Get Template by ID - Success Scenario")
     void getTemplateById_ShouldReturnTemplate_WhenExists() {
@@ -77,6 +83,9 @@ public class TemplateServiceTest {
         assertEquals(1L, foundTemplate.getTemplateId());
     }
 
+    /**
+     * Verifies that a RuntimeException is thrown when requesting a template ID that does not exist.
+     */
     @Test
     @DisplayName("Test: Get Template by ID - Not Found Scenario")
     void getTemplateById_ShouldThrowException_WhenNotExists() {
@@ -85,6 +94,9 @@ public class TemplateServiceTest {
         assertThrows(RuntimeException.class, () -> templateService.getTemplateById(99L));
     }
 
+    /**
+     * Verifies retrieval of all templates that are currently marked as active.
+     */
     @Test
     @DisplayName("Test: Retrieve all Active Templates")
     void getAllActiveTemplates_ShouldReturnList() {
@@ -96,6 +108,9 @@ public class TemplateServiceTest {
         assertEquals(1, templates.size());
     }
 
+    /**
+     * Verifies that the template usage count is incremented atomically.
+     */
     @Test
     @DisplayName("Test: Atomic increment of usage count")
     void incrementUsage_ShouldCallRepository() {
@@ -106,6 +121,9 @@ public class TemplateServiceTest {
         verify(templateRepository, times(1)).incrementUsageCount(1L);
     }
 
+    /**
+     * Verifies that administrators can retrieve the master list of all templates.
+     */
     @Test
     @DisplayName("Test: Retrieve all Templates (Admin)")
     void getAllTemplates_ShouldReturnList() {
@@ -114,6 +132,9 @@ public class TemplateServiceTest {
         assertEquals(1, templates.size());
     }
 
+    /**
+     * Verifies filtering of active templates by their subscription tier (FREE/PREMIUM).
+     */
     @Test
     @DisplayName("Test: Retrieve by Tier")
     void getTemplatesByTier_ShouldReturnList() {
@@ -122,6 +143,9 @@ public class TemplateServiceTest {
         assertEquals(1, templates.size());
     }
 
+    /**
+     * Verifies filtering of active templates by their category.
+     */
     @Test
     @DisplayName("Test: Retrieve by Category")
     void getTemplatesByCategory_ShouldReturnList() {
@@ -130,6 +154,9 @@ public class TemplateServiceTest {
         assertEquals(1, templates.size());
     }
 
+    /**
+     * Verifies retrieval of templates ordered by their usage count.
+     */
     @Test
     @DisplayName("Test: Retrieve Popular Templates")
     void getPopularTemplates_ShouldReturnList() {
@@ -138,6 +165,9 @@ public class TemplateServiceTest {
         assertEquals(1, templates.size());
     }
 
+    /**
+     * Verifies that template metadata can be updated.
+     */
     @Test
     @DisplayName("Test: Update Template")
     void updateTemplate_ShouldUpdateAndSave() {
@@ -155,6 +185,9 @@ public class TemplateServiceTest {
         verify(templateRepository).save(any(Template.class));
     }
 
+    /**
+     * Verifies the soft-deletion logic for templates via the deactivation flag.
+     */
     @Test
     @DisplayName("Test: Template Deactivation (Soft Delete)")
     void deactivateTemplate_ShouldSetIsActiveToFalse() {

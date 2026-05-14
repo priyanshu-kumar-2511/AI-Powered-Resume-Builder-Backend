@@ -19,6 +19,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+/**
+ * Service for managing in-app notifications and broadcast messages.
+ * Supports individual notifications and tier-based bulk broadcasting.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -27,6 +31,9 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final AdminUserClient adminUserClient;
 
+    /**
+     * Sends a notification to a single recipient.
+     */
     @Transactional
     public NotificationResponse sendNotification(NotificationRequest request) {
         Notification notification = Notification.builder()
@@ -43,6 +50,10 @@ public class NotificationService {
         return mapToResponse(notification);
     }
 
+    /**
+     * Broadcasts a notification to multiple users based on their subscription tier.
+     * Uses AdminUserClient to fetch the target user list.
+     */
     @Transactional
     public void sendBulkNotification(BulkNotificationRequest request, String authorizationHeader) {
         List<AdminUserDto> users = adminUserClient.getAllUsers(authorizationHeader);
@@ -76,11 +87,17 @@ public class NotificationService {
                 request.getTitle(), request.getTier(), notifications.size());
     }
 
+    /**
+     * Retrieves a paginated list of notifications for a specific user.
+     */
     public Page<NotificationResponse> getNotificationsForUser(Long userId, Pageable pageable) {
         return notificationRepository.findByRecipientIdOrderByCreatedAtDesc(userId, pageable)
                 .map(this::mapToResponse);
     }
 
+    /**
+     * Returns the count of unread notifications for a user.
+     */
     public long getUnreadCount(Long userId) {
         return notificationRepository.countByRecipientIdAndIsReadFalse(userId);
     }
@@ -132,6 +149,9 @@ public class NotificationService {
                 .build();
     }
 
+    /**
+     * Helper logic to check if a user's plan matches the broadcast target tier.
+     */
     private boolean matchesTier(NotificationTier requestedTier, String userPlan) {
         if (requestedTier == null || requestedTier == NotificationTier.ALL) {
             return true;

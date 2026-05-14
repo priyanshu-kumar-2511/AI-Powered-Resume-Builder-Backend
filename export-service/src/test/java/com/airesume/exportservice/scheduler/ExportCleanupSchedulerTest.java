@@ -19,6 +19,11 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
+/**
+ * Unit tests for the Export Cleanup Scheduler.
+ * Verifies the automated identification and recovery of stalled or expired 
+ * document generation jobs.
+ */
 @ExtendWith(MockitoExtension.class)
 class ExportCleanupSchedulerTest {
 
@@ -36,12 +41,18 @@ class ExportCleanupSchedulerTest {
         ReflectionTestUtils.setField(exportCleanupScheduler, "processingTimeoutSeconds", 180L);
     }
 
+    /**
+     * Verifies that the scheduler correctly delegates the cleanup of expired export files.
+     */
     @Test
     void testCleanupExpiredExports() {
         exportCleanupScheduler.cleanupExpiredExports();
         verify(exportService).cleanupExpiredExports();
     }
 
+    /**
+     * Ensures no actions are taken when there are no stalled jobs in the system.
+     */
     @Test
     void testFailStuckJobs_NoStuckJobs() {
         when(exportJobRepository.findByStatusAndRequestedAtBefore(eq(ExportStatus.QUEUED), any())).thenReturn(List.of());
@@ -52,6 +63,9 @@ class ExportCleanupSchedulerTest {
         verify(exportJobRepository, never()).saveAll(any());
     }
 
+    /**
+     * Verifies that jobs stuck in QUEUED or PROCESSING states are correctly transitioned to FAILED.
+     */
     @Test
     void testFailStuckJobs_HasStuckJobs() {
         ExportJob queuedJob = new ExportJob();
@@ -78,6 +92,9 @@ class ExportCleanupSchedulerTest {
                    savedJobs.get(1).getStatus() == ExportStatus.FAILED;
         }));
     }
+    /**
+     * Verifies that the scheduler preserves existing failure reasons when transitioning a stuck job to FAILED.
+     */
     @Test
     void testFailStuckJobs_HasStuckJobs_WithExistingFailureReasonAndCompletedAt() {
         ExportJob queuedJob = new ExportJob();
@@ -102,6 +119,9 @@ class ExportCleanupSchedulerTest {
                    savedJobs.get(0).getCompletedAt() != null;
         }));
     }
+    /**
+     * Verifies that a generic timeout message is applied when a stuck job has a blank failure reason.
+     */
     @Test
     void testFailStuckJobs_HasStuckJobs_WithBlankFailureReason() {
         ExportJob queuedJob = new ExportJob();

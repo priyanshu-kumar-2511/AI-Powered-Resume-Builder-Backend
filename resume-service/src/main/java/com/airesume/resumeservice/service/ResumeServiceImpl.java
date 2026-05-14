@@ -81,6 +81,13 @@ public class ResumeServiceImpl implements ResumeService {
         return new ResumeResponse(resume);
     }
 
+    /**
+     * Retrieves a single resume by its ID.
+     * Caches the result to reduce database load.
+     * Enforces access control:
+     * - Public resumes are accessible to everyone.
+     * - Private resumes require ownership or ADMIN privileges.
+     */
     @Override
     @Cacheable(value = "resume", key = "#resumeId")
     public ResumeResponse getResumeById(Long resumeId) {

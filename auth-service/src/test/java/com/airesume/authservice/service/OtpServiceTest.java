@@ -17,6 +17,11 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+/**
+ * Unit tests for the OTP (One-Time Password) Service.
+ * Verifies secure generation, persistence, and validation of verification codes 
+ * for account registration and password recovery.
+ */
 @ExtendWith(MockitoExtension.class)
 class OtpServiceTest {
 
@@ -33,6 +38,9 @@ class OtpServiceTest {
         testUser = User.builder().id(1L).username("testuser").build();
     }
 
+    /**
+     * Verifies that a 6-digit OTP is generated and saved to the repository.
+     */
     @Test
     void testGenerateAndSaveOtp() {
         String code = otpService.generateAndSaveOtp(testUser, VerificationOtp.OtpType.PASSWORD_RESET);
@@ -43,6 +51,9 @@ class OtpServiceTest {
         verify(otpRepository).save(any(VerificationOtp.class));
     }
 
+    /**
+     * Verifies successful validation of a valid, non-expired OTP.
+     */
     @Test
     void testValidateOtp_Success() {
         VerificationOtp otp = VerificationOtp.builder()
@@ -58,6 +69,9 @@ class OtpServiceTest {
         assertTrue(isValid);
     }
 
+    /**
+     * Ensures that an expired OTP is correctly identified as invalid.
+     */
     @Test
     void testValidateOtp_Expired() {
         VerificationOtp otp = VerificationOtp.builder()
@@ -73,6 +87,9 @@ class OtpServiceTest {
         assertFalse(isValid);
     }
 
+    /**
+     * Verifies that OTP validation returns false if no matching code is found in the database.
+     */
     @Test
     void testValidateOtp_NotFound() {
         when(otpRepository.findByOtpCodeAndUserAndType(anyString(), any(), any()))

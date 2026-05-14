@@ -24,10 +24,18 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
+    /**
+     * Configures the security filter chain.
+     * Highlights:
+     * - Allows public read access to all resume templates.
+     * - Allows public usage increment for analytics.
+     * - Requires authentication for all other operations (e.g., admin template creation).
+     */
     @Bean
+    @SuppressWarnings("java:S4502") // CSRF is disabled because we use JWT and the API is stateless
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(AbstractHttpConfigurer::disable)
+            .csrf(AbstractHttpConfigurer::disable) // CSRF protection is not required for stateless REST APIs using JWT
             .authorizeHttpRequests(auth -> auth
                 // Public GET endpoints — paths after gateway rewrite (no /api/v1/templates prefix)
                 .requestMatchers(HttpMethod.GET,

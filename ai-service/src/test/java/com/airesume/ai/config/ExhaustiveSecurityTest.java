@@ -19,6 +19,11 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+/**
+ * Exhaustive security and JWT integration tests.
+ * Covers edge cases for JWT claim types, filter chain bypass logic,
+ * and robust parsing of roles and subscription plans.
+ */
 class ExhaustiveSecurityTest {
 
     private JwtService jwtService;
@@ -35,6 +40,9 @@ class ExhaustiveSecurityTest {
         SecurityContextHolder.clearContext();
     }
 
+    /**
+     * Tests JWT user ID extraction across multiple data types (Long, String, etc.).
+     */
     @Test
     void testJwtService_ExtractUserId_Variations() {
         try {
@@ -90,6 +98,9 @@ class ExhaustiveSecurityTest {
         }
     }
 
+    /**
+     * Verifies token validation against expired, tampered, and valid tokens.
+     */
     @Test
     void testJwtService_ValidateToken_Variations() {
         // Case 1: Valid
@@ -113,6 +124,9 @@ class ExhaustiveSecurityTest {
         assertFalse(jwtService.validateToken(invalidToken));
     }
 
+    /**
+     * Verifies extraction of roles and subscription plans from token claims.
+     */
     @Test
     void testJwtService_ExtractRolesAndPlan() {
         java.util.Map<String, Object> claims = new java.util.HashMap<>();
@@ -131,6 +145,9 @@ class ExhaustiveSecurityTest {
         assertEquals("PREMIUM", jwtService.extractPlan(token));
     }
 
+    /**
+     * Ensures the JWT filter bypasses validation if a security context already exists.
+     */
     @Test
     void testJwtAuthenticationFilter_AlreadyAuthenticated() throws Exception {
         JwtService mockJwtService = mock(JwtService.class);
@@ -153,6 +170,9 @@ class ExhaustiveSecurityTest {
         verify(filterChain, times(1)).doFilter(request, response);
     }
 
+    /**
+     * Tests the filter's behavior with various Authorization header formats.
+     */
     @Test
     void testJwtAuthenticationFilter_HeaderVariations() throws Exception {
         JwtService mockJwtService = mock(JwtService.class);

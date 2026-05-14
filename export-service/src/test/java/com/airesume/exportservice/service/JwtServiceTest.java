@@ -15,6 +15,10 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Unit tests for JwtService in Export Service.
+ * Verifies claim extraction and robust token validation including expiration and signature checks.
+ */
 class JwtServiceTest {
 
     private JwtService jwtService;
@@ -42,18 +46,27 @@ class JwtServiceTest {
                 .compact();
     }
 
+    /**
+     * Verifies successful extraction of the username from a valid token.
+     */
     @Test
     void testExtractUsername() {
         String token = generateToken("user@example.com", 1L, List.of("ROLE_USER"), "FREE");
         assertEquals("user@example.com", jwtService.extractUsername(token));
     }
 
+    /**
+     * Verifies successful extraction of the user ID from a valid token.
+     */
     @Test
     void testExtractUserId() {
         String token = generateToken("user@example.com", 1L, List.of("ROLE_USER"), "FREE");
         assertEquals(1L, jwtService.extractUserId(token));
     }
 
+    /**
+     * Verifies successful extraction of roles from a valid token.
+     */
     @Test
     void testExtractRoles() {
         String token = generateToken("user@example.com", 1L, List.of("ROLE_USER", "ROLE_ADMIN"), "FREE");
@@ -63,18 +76,27 @@ class JwtServiceTest {
         assertTrue(roles.contains("ROLE_ADMIN"));
     }
 
+    /**
+     * Verifies successful extraction of the subscription plan from a valid token.
+     */
     @Test
     void testExtractPlan() {
         String token = generateToken("user@example.com", 1L, List.of("ROLE_USER"), "PREMIUM");
         assertEquals("PREMIUM", jwtService.extractPlan(token));
     }
 
+    /**
+     * Verifies that a properly signed, non-expired token is considered valid.
+     */
     @Test
     void testValidateToken_Valid() {
         String token = generateToken("user@example.com", 1L, List.of("ROLE_USER"), "FREE");
         assertTrue(jwtService.validateToken(token));
     }
 
+    /**
+     * Verifies that tokens with tampered signatures are rejected.
+     */
     @Test
     void testValidateToken_InvalidSignature() {
         String token = generateToken("user@example.com", 1L, List.of("ROLE_USER"), "FREE");
@@ -82,11 +104,17 @@ class JwtServiceTest {
         assertFalse(jwtService.validateToken(token));
     }
 
+    /**
+     * Verifies that malformed token strings are rejected.
+     */
     @Test
     void testValidateToken_Malformed() {
         assertFalse(jwtService.validateToken("not.a.real.token"));
     }
 
+    /**
+     * Verifies that tokens are rejected once they surpass their expiration timestamp.
+     */
     @Test
     void testValidateToken_Expired() {
         String expiredToken = Jwts.builder()
@@ -99,6 +127,9 @@ class JwtServiceTest {
         assertFalse(jwtService.validateToken(expiredToken));
     }
 
+    /**
+     * Verifies user ID extraction across various data types and edge cases (nulls, blanks, non-numeric strings).
+     */
     @Test
     void testExtractUserId_EdgeCases() {
         // String type but blank

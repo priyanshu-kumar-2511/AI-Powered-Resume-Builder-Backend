@@ -52,9 +52,10 @@ public class SecurityConfig {
     }
 
     @Bean
+    @SuppressWarnings("java:S4502") // CSRF is disabled because we use JWT and the API is stateless
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(AbstractHttpConfigurer::disable)
+            .csrf(AbstractHttpConfigurer::disable) // CSRF protection is not required for stateless REST APIs using JWT
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
                     "/api/v1/auth/register/**",
@@ -72,7 +73,7 @@ public class SecurityConfig {
             )
             .oauth2Login(oauth2 -> oauth2
                 .authorizationEndpoint(authorization -> authorization
-                    .authorizationRequestResolver(linkedinAwareAuthorizationRequestResolver())
+                    .authorizationRequestResolver(customAuthorizationRequestResolver())
                 )
                 .successHandler(oAuth2SuccessHandler)
                 .failureHandler((request, response, exception) -> {
@@ -104,36 +105,62 @@ public class SecurityConfig {
         return http.build();
     }
 
-    private OAuth2AuthorizationRequestResolver linkedinAwareAuthorizationRequestResolver() {
+    private OAuth2AuthorizationRequestResolver customAuthorizationRequestResolver() {
         DefaultOAuth2AuthorizationRequestResolver delegate =
                 new DefaultOAuth2AuthorizationRequestResolver(clientRegistrationRepository, "/oauth2/authorization");
 
         return new OAuth2AuthorizationRequestResolver() {
             @Override
             public OAuth2AuthorizationRequest resolve(HttpServletRequest request) {
-                return removeLinkedInNonce(delegate.resolve(request));
+                return customizeAuthorizationRequest(delegate.resolve(request));
             }
 
             @Override
             public OAuth2AuthorizationRequest resolve(HttpServletRequest request, String clientRegistrationId) {
-                return removeLinkedInNonce(delegate.resolve(request, clientRegistrationId));
+                return customizeAuthorizationRequest(delegate.resolve(request, clientRegistrationId));
             }
         };
     }
 
-    OAuth2AuthorizationRequest removeLinkedInNonce(OAuth2AuthorizationRequest authorizationRequest) {
-        if (authorizationRequest == null || !isLinkedInRequest(authorizationRequest)) {
-            return authorizationRequest;
+    /**
+     * Customizes the OAuth2 authorization request before redirecting to the provider.
+     * Logic for LinkedIn: Removes OIDC nonce to avoid "Missing nonce" errors.
+     * Logic for Google: Adds "prompt=select_account" to force account selection.
+     */
+    OAuth2AuthorizationRequest customizeAuthorizationRequest(OAuth2AuthorizationRequest authorizationRequest) {
+        if (authorizationRequest == null) {
+            return null;
         }
 
-        return OAuth2AuthorizationRequest.from(authorizationRequest)
-                .attributes(attributes -> attributes.remove(OidcParameterNames.NONCE))
-                .additionalParameters(parameters -> parameters.remove(OidcParameterNames.NONCE))
-                .build();
+        if (isLinkedInRequest(authorizationRequest)) {
+            return OAuth2AuthorizationRequest.from(authorizationRequest)
+                    .attributes(attributes -> attributes.remove(OidcParameterNames.NONCE))
+                    .additionalParameters(parameters -> parameters.remove(OidcParameterNames.NONCE))
+                    .build();
+        }
+
+        if (isGoogleRequest(authorizationRequest)) {
+            return OAuth2AuthorizationRequest.from(authorizationRequest)
+                    .additionalParameters(params -> params.put("prompt", "select_account"))
+                    .build();
+        }
+
+        return authorizationRequest;
     }
 
+    /**
+     * Checks if the authorization request is intended for LinkedIn.
+     */
     boolean isLinkedInRequest(OAuth2AuthorizationRequest authorizationRequest) {
-        String authorizationUri = authorizationRequest.getAuthorizationUri();
-        return authorizationUri != null && authorizationUri.contains("linkedin.com");
+        String uri = authorizationRequest.getAuthorizationUri();
+        return uri != null && uri.contains("linkedin.com");
+    }
+
+    /**
+     * Checks if the authorization request is intended for Google.
+     */
+    boolean isGoogleRequest(OAuth2AuthorizationRequest authorizationRequest) {
+        String uri = authorizationRequest.getAuthorizationUri();
+        return uri != null && uri.contains("accounts.google.com");
     }
 }

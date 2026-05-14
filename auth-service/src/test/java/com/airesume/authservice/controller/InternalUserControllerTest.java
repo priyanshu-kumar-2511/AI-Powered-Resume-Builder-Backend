@@ -20,6 +20,10 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+/**
+ * Unit tests for the Internal User Controller.
+ * Verifies inter-service API calls for subscription updates and automated plan synchronization.
+ */
 @WebMvcTest(InternalUserController.class)
 class InternalUserControllerTest {
 
@@ -35,6 +39,9 @@ class InternalUserControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    /**
+     * Verifies that internal services can trigger a user plan update and receive a refreshed token.
+     */
     @Test
     @WithMockUser
     void testUpdatePlan() throws Exception {

@@ -11,6 +11,11 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+/**
+ * Security configuration for the Export Service.
+ * Ensures PDF and document generation requests are authenticated.
+ * Handles internal service calls for resume content retrieval.
+ */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -19,10 +24,18 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
+    /**
+     * Configures the security filter chain.
+     * - Disables CSRF for stateless processing.
+     * - Restricts global export management to ADMIN.
+     * - Permits internal endpoints (ideally restricted by IP/Network in production).
+     * - Authenticates all other document generation requests.
+     */
     @Bean
+    @SuppressWarnings("java:S4502") // CSRF is disabled because we use JWT and the API is stateless
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(AbstractHttpConfigurer::disable)
+                .csrf(AbstractHttpConfigurer::disable) // CSRF protection is not required for stateless REST APIs using JWT
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/v3/api-docs", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/actuator/**").permitAll()
                         .requestMatchers("/exports/admin/**").hasRole("ADMIN")

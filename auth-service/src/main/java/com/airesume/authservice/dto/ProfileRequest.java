@@ -10,6 +10,10 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Data Transfer Object for profile update requests.
+ * Contains demographic information like full name, age, and mobile number.
+ */
 @Data
 @Builder(toBuilder = true)
 @NoArgsConstructor

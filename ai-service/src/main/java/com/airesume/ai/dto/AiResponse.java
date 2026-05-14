@@ -8,6 +8,11 @@ import lombok.NoArgsConstructor;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Data Transfer Object for AI Generation Responses.
+ * Returns the generated text, optimized bullet points, or 
+ * calculated ATS scores along with relevant metadata.
+ */
 @Data
 @Builder(toBuilder = true)
 @NoArgsConstructor

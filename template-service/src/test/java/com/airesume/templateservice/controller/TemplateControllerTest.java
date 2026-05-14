@@ -53,6 +53,9 @@ public class TemplateControllerTest {
     @Autowired
     private ObjectMapper objectMapper; // For converting objects to JSON
 
+    /**
+     * Verifies that all active templates are publicly accessible.
+     */
     @Test
     @DisplayName("API: GET /api/v1/templates - Should return list of templates (Public)")
     void getAllTemplates_ShouldReturnList() throws Exception {
@@ -74,6 +77,9 @@ public class TemplateControllerTest {
                 .andExpect(jsonPath("$[0].category").value("MODERN"));
     }
 
+    /**
+     * Verifies that administrative users have the authority to create new templates.
+     */
     @Test
     @WithMockUser(roles = "ADMIN") // Mocking an authenticated Admin user
     @DisplayName("API: POST /api/v1/templates - Admin should be able to create")
@@ -107,6 +113,9 @@ public class TemplateControllerTest {
                 .andExpect(status().isForbidden()); // Expecting 403 Forbidden
     }
 
+    /**
+     * Verifies retrieval of a specific template by its ID, including HTML layout details.
+     */
     @Test
     @DisplayName("API: GET /api/v1/templates/{id} - Should return full template layout")
     void getTemplateById_ShouldReturnFullTemplate() throws Exception {
@@ -123,6 +132,9 @@ public class TemplateControllerTest {
                 .andExpect(jsonPath("$.htmlLayout").value("<html></html>"));
     }
 
+    /**
+     * Verifies that administrators can retrieve the complete list of all templates (active and inactive).
+     */
     @Test
     @WithMockUser(roles = "ADMIN")
     @DisplayName("API: GET /api/v1/templates/admin - Admin should see all templates")
@@ -135,6 +147,9 @@ public class TemplateControllerTest {
                 .andExpect(jsonPath("$[0].name").value("Admin Template"));
     }
 
+    /**
+     * Verifies filtering of templates by the FREE tier.
+     */
     @Test
     @DisplayName("API: GET /api/v1/templates/free - Should return free templates")
     void getFreeTemplates_ShouldReturnList() throws Exception {
@@ -146,6 +161,9 @@ public class TemplateControllerTest {
                 .andExpect(jsonPath("$[0].name").value("Free"));
     }
 
+    /**
+     * Verifies filtering of templates by the PREMIUM tier.
+     */
     @Test
     @WithMockUser(roles = "USER")
     @DisplayName("API: GET /api/v1/templates/premium - User should see premium templates")
@@ -158,6 +176,9 @@ public class TemplateControllerTest {
                 .andExpect(jsonPath("$[0].name").value("Premium"));
     }
 
+    /**
+     * Verifies filtering of templates by their design category (e.g., MODERN, PROFESSIONAL).
+     */
     @Test
     @DisplayName("API: GET /api/v1/templates/category/{category} - Should filter by category")
     void getTemplatesByCategory_ShouldReturnList() throws Exception {
@@ -169,6 +190,9 @@ public class TemplateControllerTest {
                 .andExpect(jsonPath("$[0].name").value("Modern"));
     }
 
+    /**
+     * Verifies retrieval of the most popular templates based on usage metrics.
+     */
     @Test
     @DisplayName("API: GET /api/v1/templates/popular - Should return popular templates")
     void getPopularTemplates_ShouldReturnList() throws Exception {
@@ -180,6 +204,9 @@ public class TemplateControllerTest {
                 .andExpect(jsonPath("$[0].name").value("Popular"));
     }
 
+    /**
+     * Verifies that administrators can update an existing template's details.
+     */
     @Test
     @WithMockUser(roles = "ADMIN")
     @DisplayName("API: PUT /api/v1/templates/{id} - Admin should be able to update")
@@ -195,6 +222,9 @@ public class TemplateControllerTest {
                 .andExpect(jsonPath("$.name").value("Updated"));
     }
 
+    /**
+     * Verifies that administrators can deactivate a template to hide it from users.
+     */
     @Test
     @WithMockUser(roles = "ADMIN")
     @DisplayName("API: PUT /api/v1/templates/{id}/deactivate - Admin should be able to deactivate")
@@ -203,6 +233,9 @@ public class TemplateControllerTest {
                 .andExpect(status().isNoContent());
     }
 
+    /**
+     * Verifies that the global usage count for a template can be incremented.
+     */
     @Test
     @DisplayName("API: PUT /api/v1/templates/{id}/increment-usage - Should increment count")
     void incrementUsage_ShouldReturnOk() throws Exception {

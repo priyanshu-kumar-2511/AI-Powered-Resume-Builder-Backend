@@ -23,6 +23,13 @@ public class NotificationController {
 
     // ── Per-user endpoints ────────────────────────────────────────────────
 
+    /**
+     * Retrieves a paginated list of notifications for a specific user.
+     * 
+     * @param userId the ID of the recipient user
+     * @param pageable pagination parameters
+     * @return a page of notification responses
+     */
     @GetMapping("/recipient/{userId}")
     @Operation(summary = "Get all notifications for a recipient (paginated)")
     public ResponseEntity<Page<NotificationResponse>> getUserNotifications(
@@ -30,12 +37,24 @@ public class NotificationController {
         return ResponseEntity.ok(notificationService.getNotificationsForUser(userId, pageable));
     }
 
+    /**
+     * Returns the count of unread notifications for a specific user.
+     * 
+     * @param userId the ID of the user
+     * @return the count of unread notifications
+     */
     @GetMapping("/recipient/{userId}/unread-count")
     @Operation(summary = "Get count of unread notifications for a user")
     public ResponseEntity<Long> getUnreadCount(@PathVariable Long userId) {
         return ResponseEntity.ok(notificationService.getUnreadCount(userId));
     }
 
+    /**
+     * Marks a specific notification as read.
+     * 
+     * @param notificationId the unique ID of the notification
+     * @return a 204 No Content response
+     */
     @PutMapping("/{notificationId}/mark-read")
     @Operation(summary = "Mark a notification as read")
     public ResponseEntity<Void> markAsRead(@PathVariable Long notificationId) {

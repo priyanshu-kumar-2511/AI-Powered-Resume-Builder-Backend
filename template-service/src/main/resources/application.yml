@@ -12,6 +12,7 @@ spring:
         url: ${ADMIN_SERVER_URL:http://localhost:9090}
         username: ${ADMIN_USERNAME}
         password: ${ADMIN_PASSWORD}
+        enabled: false
         instance:
           service-base-url: ${TEMPLATE_SERVICE_URL:http://localhost:8082}
           name: TEMPLATE-SERVICE
@@ -24,18 +25,23 @@ spring:
   
   # Persistence Layer
   datasource:
-    url: jdbc:mysql://${TEMPLATE_DB_HOST:localhost}:${TEMPLATE_DB_PORT:3306}/${TEMPLATE_DB_NAME:airesume_template}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&autoReconnect=true
+    url: jdbc:mysql://${TEMPLATE_DB_HOST:localhost}:${TEMPLATE_DB_PORT:3306}/${TEMPLATE_DB_NAME:airesume_templates}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&autoReconnect=true
     username: ${TEMPLATE_DB_USERNAME:root}
     password: ${TEMPLATE_DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
   
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 1
+    locations: classpath:db/migration
+  
   sql:
     init:
-      mode: always
+      mode: never
   jpa:
     hibernate:
-      ddl-auto: update
-    defer-datasource-initialization: true
+      ddl-auto: validate
     show-sql: true
     properties:
       hibernate:

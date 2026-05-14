@@ -15,6 +15,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+/**
+ * Unit tests for SecurityConfig internal logic.
+ * Mocks necessary beans to avoid full security context overhead.
+ */
 @SpringBootTest
 @ActiveProfiles("test")
 class SecurityConfigTest {
@@ -31,6 +35,9 @@ class SecurityConfigTest {
     @MockBean
     private JwtAuthenticationFilter jwtAuthenticationFilter;
 
+    /**
+     * Validates that the system correctly identifies LinkedIn authorization URIs.
+     */
     @Test
     void testIsLinkedInRequest() {
         OAuth2AuthorizationRequest req = mock(OAuth2AuthorizationRequest.class);
@@ -45,17 +52,16 @@ class SecurityConfigTest {
         assertFalse(securityConfig.isLinkedInRequest(req));
     }
 
+    /**
+     * Tests the modification of OAuth2 requests for different providers.
+     * Verifies LinkedIn nonce removal and Google account-selection prompt addition.
+     */
     @Test
-    void testRemoveLinkedInNonce() {
+    void testCustomizeAuthorizationRequest() {
         // Case: null request
-        assertNull(securityConfig.removeLinkedInNonce(null));
+        assertNull(securityConfig.customizeAuthorizationRequest(null));
         
-        // Case: non-LinkedIn request
-        OAuth2AuthorizationRequest googleReq = mock(OAuth2AuthorizationRequest.class);
-        when(googleReq.getAuthorizationUri()).thenReturn("https://google.com");
-        assertEquals(googleReq, securityConfig.removeLinkedInNonce(googleReq));
-        
-        // Case: LinkedIn request
+        // Case: LinkedIn request (should remove nonce)
         OAuth2AuthorizationRequest linkedinReq = OAuth2AuthorizationRequest.authorizationCode()
                 .authorizationUri("https://linkedin.com")
                 .clientId("id")
@@ -63,8 +69,17 @@ class SecurityConfigTest {
                 .additionalParameters(m -> m.put(OidcParameterNames.NONCE, "abc"))
                 .build();
         
-        OAuth2AuthorizationRequest result = securityConfig.removeLinkedInNonce(linkedinReq);
+        OAuth2AuthorizationRequest result = securityConfig.customizeAuthorizationRequest(linkedinReq);
         assertFalse(result.getAttributes().containsKey(OidcParameterNames.NONCE));
         assertFalse(result.getAdditionalParameters().containsKey(OidcParameterNames.NONCE));
+
+        // Case: Google request (should add select_account prompt)
+        OAuth2AuthorizationRequest googleReq = OAuth2AuthorizationRequest.authorizationCode()
+                .authorizationUri("https://accounts.google.com/o/oauth2/v2/auth")
+                .clientId("google-id")
+                .build();
+        
+        OAuth2AuthorizationRequest googleResult = securityConfig.customizeAuthorizationRequest(googleReq);
+        assertEquals("select_account", googleResult.getAdditionalParameters().get("prompt"));
     }
 }

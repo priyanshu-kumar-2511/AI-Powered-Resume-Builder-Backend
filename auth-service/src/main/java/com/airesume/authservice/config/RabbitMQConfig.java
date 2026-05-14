@@ -8,12 +8,21 @@ import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * Configuration for RabbitMQ Messaging Infrastructure.
+ * Defines exchange names, routing keys, and JSON message converters for 
+ * asynchronous inter-service communication (e.g., sending emails).
+ */
 @Configuration
 public class RabbitMQConfig {
 
     public static final String EXCHANGE_NAME = "x.airesume";
     public static final String EMAIL_ROUTING_KEY = "email.send";
 
+    /**
+     * Configures a JSON converter to automatically serialize/deserialize 
+     * message payloads (DTOs) sent over RabbitMQ.
+     */
     @Bean
     public MessageConverter messageConverter() {
         return new Jackson2JsonMessageConverter();

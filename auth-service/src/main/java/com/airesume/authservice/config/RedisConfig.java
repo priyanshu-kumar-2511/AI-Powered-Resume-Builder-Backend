@@ -13,10 +13,17 @@ import org.springframework.data.redis.serializer.RedisSerializationContext;
 
 import java.time.Duration;
 
+/**
+ * Configuration for Redis Caching.
+ * Enables high-performance caching for user profiles and authentication states.
+ */
 @Configuration
 @EnableCaching
 public class RedisConfig {
 
+    /**
+     * Configures the default Redis cache behavior, including TTL and JSON serialization.
+     */
     @Bean
     public RedisCacheConfiguration cacheConfiguration() {
         ObjectMapper objectMapper = new ObjectMapper();

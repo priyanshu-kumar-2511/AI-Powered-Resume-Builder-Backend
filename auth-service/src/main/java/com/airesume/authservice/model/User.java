@@ -69,6 +69,7 @@ public class User {
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private LocalDateTime premiumExpiresAt;
 
     @PrePersist
     protected void onCreate() {

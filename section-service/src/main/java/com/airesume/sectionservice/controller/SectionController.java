@@ -2,6 +2,7 @@ package com.airesume.sectionservice.controller;
 
 import com.airesume.sectionservice.model.Section;
 import com.airesume.sectionservice.model.SectionType;
+import com.airesume.sectionservice.dto.SectionDTO;
 import com.airesume.sectionservice.service.SectionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -35,8 +36,10 @@ public class SectionController {
      */
     @PostMapping
     @Operation(summary = "Create a new resume section")
-    public ResponseEntity<Section> addSection(@RequestBody Section section) {
-        return new ResponseEntity<>(sectionService.addSection(section), HttpStatus.CREATED);
+    public ResponseEntity<SectionDTO> addSection(@RequestBody SectionDTO sectionDto) {
+        Section section = sectionDto.toEntity();
+        Section savedSection = sectionService.addSection(section);
+        return new ResponseEntity<>(SectionDTO.fromEntity(savedSection), HttpStatus.CREATED);
     }
 
     /**
@@ -47,8 +50,11 @@ public class SectionController {
      */
     @GetMapping("/resume/{resumeId}")
     @Operation(summary = "Get all sections for a resume")
-    public ResponseEntity<List<Section>> getSectionsByResume(@PathVariable Long resumeId) {
-        return ResponseEntity.ok(sectionService.getSectionsByResume(resumeId));
+    public ResponseEntity<List<SectionDTO>> getSectionsByResume(@PathVariable Long resumeId) {
+        List<SectionDTO> sections = sectionService.getSectionsByResume(resumeId).stream()
+                .map(SectionDTO::fromEntity)
+                .toList();
+        return ResponseEntity.ok(sections);
     }
 
     /**
@@ -59,8 +65,8 @@ public class SectionController {
      */
     @GetMapping("/{sectionId}")
     @Operation(summary = "Get a single section by ID")
-    public ResponseEntity<Section> getSectionById(@PathVariable Long sectionId) {
-        return ResponseEntity.ok(sectionService.getSectionById(sectionId));
+    public ResponseEntity<SectionDTO> getSectionById(@PathVariable Long sectionId) {
+        return ResponseEntity.ok(SectionDTO.fromEntity(sectionService.getSectionById(sectionId)));
     }
 
     /**
@@ -72,8 +78,11 @@ public class SectionController {
      */
     @GetMapping("/resume/{resumeId}/type/{type}")
     @Operation(summary = "Get resume sections filtered by type")
-    public ResponseEntity<List<Section>> getSectionsByType(@PathVariable Long resumeId, @PathVariable SectionType type) {
-        return ResponseEntity.ok(sectionService.getSectionsByType(resumeId, type));
+    public ResponseEntity<List<SectionDTO>> getSectionsByType(@PathVariable Long resumeId, @PathVariable SectionType type) {
+        List<SectionDTO> sections = sectionService.getSectionsByType(resumeId, type).stream()
+                .map(SectionDTO::fromEntity)
+                .toList();
+        return ResponseEntity.ok(sections);
     }
 
     /**
@@ -84,8 +93,11 @@ public class SectionController {
      */
     @GetMapping("/resume/{resumeId}/ai-generated")
     @Operation(summary = "Get AI-generated/optimized sections for a resume")
-    public ResponseEntity<List<Section>> getAiGeneratedSections(@PathVariable Long resumeId) {
-        return ResponseEntity.ok(sectionService.getAiGeneratedSections(resumeId));
+    public ResponseEntity<List<SectionDTO>> getAiGeneratedSections(@PathVariable Long resumeId) {
+        List<SectionDTO> sections = sectionService.getAiGeneratedSections(resumeId).stream()
+                .map(SectionDTO::fromEntity)
+                .toList();
+        return ResponseEntity.ok(sections);
     }
 
     /**
@@ -97,8 +109,9 @@ public class SectionController {
      */
     @PutMapping("/{sectionId}")
     @Operation(summary = "Update an existing section")
-    public ResponseEntity<Section> updateSection(@PathVariable Long sectionId, @RequestBody Section section) {
-        return ResponseEntity.ok(sectionService.updateSection(sectionId, section));
+    public ResponseEntity<SectionDTO> updateSection(@PathVariable Long sectionId, @RequestBody SectionDTO sectionDto) {
+        Section updatedSection = sectionService.updateSection(sectionId, sectionDto.toEntity());
+        return ResponseEntity.ok(SectionDTO.fromEntity(updatedSection));
     }
 
     /**
@@ -109,8 +122,8 @@ public class SectionController {
      */
     @PutMapping("/{sectionId}/toggle-visibility")
     @Operation(summary = "Toggle visibility of a section")
-    public ResponseEntity<Section> toggleVisibility(@PathVariable Long sectionId) {
-        return ResponseEntity.ok(sectionService.toggleVisibility(sectionId));
+    public ResponseEntity<SectionDTO> toggleVisibility(@PathVariable Long sectionId) {
+        return ResponseEntity.ok(SectionDTO.fromEntity(sectionService.toggleVisibility(sectionId)));
     }
 
     /**
@@ -136,8 +149,12 @@ public class SectionController {
      */
     @PutMapping("/bulk-update")
     @Operation(summary = "Bulk update multiple sections")
-    public ResponseEntity<List<Section>> bulkUpdate(@RequestBody List<Section> sections) {
-        return ResponseEntity.ok(sectionService.bulkUpdate(sections));
+    public ResponseEntity<List<SectionDTO>> bulkUpdate(@RequestBody List<SectionDTO> sectionDtos) {
+        List<Section> sections = sectionDtos.stream().map(SectionDTO::toEntity).toList();
+        List<SectionDTO> updatedSections = sectionService.bulkUpdate(sections).stream()
+                .map(SectionDTO::fromEntity)
+                .toList();
+        return ResponseEntity.ok(updatedSections);
     }
 
     /**

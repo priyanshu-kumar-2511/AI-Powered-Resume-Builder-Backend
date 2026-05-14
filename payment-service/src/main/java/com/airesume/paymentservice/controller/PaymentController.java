@@ -20,6 +20,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
+/**
+ * Controller for handling subscription payments and order management.
+ * Integrates with Razorpay to facilitate plan upgrades and status tracking.
+ */
 @RestController
 @RequestMapping("/api/v1/payments")
 @RequiredArgsConstructor
@@ -28,6 +32,12 @@ public class PaymentController {
 
     private final PaymentService paymentService;
 
+    /**
+     * Initiates a new payment order with Razorpay.
+     * 
+     * @param request the order details including billing cycle
+     * @return the created order details including order ID and amount
+     */
     @PostMapping("/create-order")
     @Operation(summary = "Create a new payment order")
     public ResponseEntity<CreateOrderResponse> createOrder(
@@ -35,6 +45,12 @@ public class PaymentController {
         return ResponseEntity.ok(paymentService.createOrder(request.getBillingCycle()));
     }
 
+    /**
+     * Verifies the payment signature from Razorpay and activates the user subscription.
+     * 
+     * @param request the payment verification details from the frontend
+     * @return the result of the verification process
+     */
     @PostMapping("/verify")
     @Operation(summary = "Verify a payment and activate subscription")
     public ResponseEntity<VerifyPaymentResponse> verifyPayment(
@@ -49,6 +65,12 @@ public class PaymentController {
         return ResponseEntity.ok(paymentService.completeDevPayment(request.getBillingCycle()));
     }
 
+    /**
+     * Retrieves the current subscription status and plan details for the authenticated user.
+     * 
+     * @param auth the current security context
+     * @return the user's subscription metadata
+     */
     @GetMapping("/status")
     @Operation(summary = "Get current subscription status of logged-in user")
     public ResponseEntity<SubscriptionStatusResponse> getStatus(Authentication auth) {

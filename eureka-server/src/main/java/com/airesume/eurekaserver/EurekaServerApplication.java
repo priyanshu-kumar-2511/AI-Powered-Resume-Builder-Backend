@@ -13,7 +13,13 @@ import org.springframework.cloud.netflix.eureka.server.EnableEurekaServer;
 @EnableEurekaServer
 public class EurekaServerApplication {
 
-	public static void main(String[] args) {
+    /**
+     * Entry point for the Eureka Discovery Server.
+     * Bootstrap the service registry with environmental configurations.
+     * 
+     * @param args command line arguments
+     */
+    public static void main(String[] args) {
 		io.github.cdimascio.dotenv.Dotenv dotenv = io.github.cdimascio.dotenv.Dotenv.configure()
 				.directory("../")
 				.ignoreIfMissing()

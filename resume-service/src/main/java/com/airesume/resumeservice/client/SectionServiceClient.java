@@ -7,6 +7,11 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * Feign Client for communicating with the Section Service.
+ * Used for initializing, retrieving, and deleting resume sections 
+ * (Personal Info, Experience, Skills, etc.) during the resume lifecycle.
+ */
 @FeignClient(name = "section-service", configuration = FeignAuthForwardingConfig.class)
 public interface SectionServiceClient {
 

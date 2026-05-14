@@ -39,6 +39,11 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
+/**
+ * Comprehensive unit tests for PaymentServiceImpl.
+ * Covers Razorpay integration, cryptographic signature verification,
+ * subscription lifecycle states, and financial analytics.
+ */
 @ExtendWith(MockitoExtension.class)
 class PaymentServiceTest {
 
@@ -65,6 +70,9 @@ class PaymentServiceTest {
 
     // ── createOrder ──────────────────────────────────────────────────────────
 
+    /**
+     * Verifies that a Monthly Razorpay order is correctly created with the right amount (5000 paise).
+     */
     @Test
     void testCreateOrder_Monthly() {
         try (MockedConstruction<RazorpayClient> mocked = mockConstruction(RazorpayClient.class, (mock, context) -> {
@@ -81,6 +89,9 @@ class PaymentServiceTest {
         }
     }
 
+    /**
+     * Verifies that a Yearly Razorpay order is correctly created with the right amount (50000 paise).
+     */
     @Test
     void testCreateOrder_Yearly() {
         try (MockedConstruction<RazorpayClient> mocked = mockConstruction(RazorpayClient.class, (mock, context) -> {
@@ -95,6 +106,9 @@ class PaymentServiceTest {
         }
     }
 
+    /**
+     * Verifies that Razorpay API failures are correctly handled and wrapped.
+     */
     @Test
     void testCreateOrder_Failure() {
         try (MockedConstruction<RazorpayClient> mocked = mockConstruction(RazorpayClient.class, (mock, context) -> {
@@ -107,6 +121,9 @@ class PaymentServiceTest {
 
     // ── verifyAndActivate ─────────────────────────────────────────────────────
 
+    /**
+     * Ensures that invalid cryptographic signatures result in payment rejection.
+     */
     @Test
     void testVerifyAndActivate_InvalidSignature_ReturnsFalse() {
         VerifyPaymentRequest request = VerifyPaymentRequest.builder()
@@ -123,6 +140,9 @@ class PaymentServiceTest {
         verify(subscriptionRepository, never()).save(any());
     }
 
+    /**
+     * Ensures that re-processing an already existing payment ID is blocked.
+     */
     @Test
     void testVerifyAndActivate_DuplicatePayment() {
         VerifyPaymentRequest request = VerifyPaymentRequest.builder()
@@ -140,6 +160,9 @@ class PaymentServiceTest {
         assertEquals("This payment has already been processed.", response.getMessage());
     }
 
+    /**
+     * Tests the full success flow of verifying a payment and activating a Monthly plan.
+     */
     @Test
     void testVerifyAndActivate_Monthly_Success() {
         String signature = "13f113268a0357923e6390e6773754dc39c991f05a999bcaf04c161c59aeaaf8";
@@ -160,6 +183,9 @@ class PaymentServiceTest {
         verify(subscriptionRepository).save(any(Subscription.class));
     }
 
+    /**
+     * Tests the full success flow of verifying a payment and activating a Yearly plan.
+     */
     @Test
     void testVerifyAndActivate_Yearly_Success() {
         String signature = "13f113268a0357923e6390e6773754dc39c991f05a999bcaf04c161c59aeaaf8";
@@ -179,6 +205,9 @@ class PaymentServiceTest {
         assertEquals("new_token_yearly", response.getNewToken());
     }
 
+    /**
+     * Verifies that signature validation fails if the order ID is missing.
+     */
     @Test
     void testIsValidSignature_NullOrderId_ThrowsAndReturnsFalse() {
         VerifyPaymentRequest request = VerifyPaymentRequest.builder()
@@ -192,6 +221,9 @@ class PaymentServiceTest {
         assertFalse(response.isSuccess());
     }
 
+    /**
+     * Verifies that signature validation fails if the Razorpay secret is not configured.
+     */
     @Test
     void testIsValidSignature_NullSecret_ThrowsAndReturnsFalse() {
         ReflectionTestUtils.setField(paymentService, "razorpayKeySecret", null);
@@ -208,12 +240,18 @@ class PaymentServiceTest {
 
     // ── completeDevPayment ────────────────────────────────────────────────────
 
+    /**
+     * Ensures that dev-mode payment simulation is blocked if live Razorpay keys are detected.
+     */
     @Test
     void testCompleteDevPayment_NotAllowed_LiveKey() {
         ReflectionTestUtils.setField(paymentService, "razorpayKeyId", "rzp_live_123");
         assertThrows(RuntimeException.class, () -> paymentService.completeDevPayment("MONTHLY"));
     }
 
+    /**
+     * Verifies simulation of a successful Monthly payment in development mode.
+     */
     @Test
     void testCompleteDevPayment_Monthly_Success() {
         when(subscriptionRepository.existsByRazorpayPaymentId(anyString())).thenReturn(false);
@@ -226,6 +264,9 @@ class PaymentServiceTest {
         verify(subscriptionRepository).save(any(Subscription.class));
     }
 
+    /**
+     * Verifies simulation of a successful Yearly payment in development mode.
+     */
     @Test
     void testCompleteDevPayment_Yearly_Success() {
         when(subscriptionRepository.existsByRazorpayPaymentId(anyString())).thenReturn(false);
@@ -237,6 +278,9 @@ class PaymentServiceTest {
         verify(subscriptionRepository).save(any(Subscription.class));
     }
 
+    /**
+     * Verifies that duplicate payment IDs are rejected during dev-mode simulation.
+     */
     @Test
     void testCompleteDevPayment_Duplicate() {
         when(subscriptionRepository.existsByRazorpayPaymentId(anyString())).thenReturn(true);
@@ -250,6 +294,9 @@ class PaymentServiceTest {
 
     // ── getStatus ─────────────────────────────────────────────────────────────
 
+    /**
+     * Verifies that users without a premium subscription are correctly identified as having a FREE plan.
+     */
     @Test
     void testGetStatus_FreeUser_NoSubscription() {
         when(subscriptionRepository.findTopByUsernameAndStatusOrderByStartDateDesc(anyString(), any()))
@@ -260,6 +307,9 @@ class PaymentServiceTest {
         assertEquals(PlanType.FREE, response.getPlan());
     }
 
+    /**
+     * Verifies that the complete subscription metadata is returned for active premium users.
+     */
     @Test
     void testGetStatus_PremiumUser_AllFields() {
         Subscription subscription = Subscription.builder()
@@ -286,6 +336,9 @@ class PaymentServiceTest {
 
     // ── cancelSubscription ────────────────────────────────────────────────────
 
+    /**
+     * Tests the cancellation flow and verified user demotion in Auth Service.
+     */
     @Test
     void testCancelSubscription_Success() {
         Subscription subscription = Subscription.builder()
@@ -304,6 +357,9 @@ class PaymentServiceTest {
         verify(authServiceClient).updatePlan(any());
     }
 
+    /**
+     * Verifies that attempting to cancel a non-existent subscription results in a RuntimeException.
+     */
     @Test
     void testCancelSubscription_NotFound() {
         when(subscriptionRepository.findTopByUsernameAndStatusOrderByStartDateDesc(anyString(), any()))
@@ -313,6 +369,9 @@ class PaymentServiceTest {
 
     // ── getStats ──────────────────────────────────────────────────────────────
 
+    /**
+     * Verifies that the statistics report handles empty subscription datasets gracefully.
+     */
     @Test
     void testGetStats_Empty() {
         when(subscriptionRepository.findAll()).thenReturn(List.of());
@@ -326,6 +385,9 @@ class PaymentServiceTest {
         assertTrue(stats.getPlanDistribution().isEmpty());
     }
 
+    /**
+     * Verifies that revenue and distribution stats are calculated correctly across mixed subscription states.
+     */
     @Test
     void testGetStats_WithMixedSubscriptions() {
         Subscription active = Subscription.builder()
@@ -354,6 +416,9 @@ class PaymentServiceTest {
         assertEquals(1L, stats.getPlanDistribution().get("YEARLY"));  // cancelled
     }
 
+    /**
+     * Verifies that aggregate revenue is calculated correctly for multiple yearly subscriptions.
+     */
     @Test
     void testGetStats_AllActiveYearly() {
         Subscription s1 = Subscription.builder()
@@ -375,6 +440,9 @@ class PaymentServiceTest {
 
     // ── getSubscriptions ──────────────────────────────────────────────────────
 
+    /**
+     * Tests the admin paginated retrieval of all subscription records.
+     */
     @Test
     void testGetSubscriptions_ReturnsPage() {
         Subscription sub = Subscription.builder()
@@ -403,6 +471,9 @@ class PaymentServiceTest {
         assertEquals("pay_1", item.getRazorpayPaymentId());
     }
 
+    /**
+     * Verifies that an empty page is returned when no subscriptions exist in the system.
+     */
     @Test
     void testGetSubscriptions_Empty() {
         Page<Subscription> emptyPage = new PageImpl<>(List.of());

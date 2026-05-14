@@ -7,6 +7,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class DtoTest {
 
+    /**
+     * Verifies the basic notification request DTO fields.
+     */
     @Test
     void testNotificationRequest() {
         NotificationRequest req = new NotificationRequest();
@@ -21,6 +24,9 @@ class DtoTest {
         assertEquals(NotificationType.INFO, req.getType());
     }
 
+    /**
+     * Verifies the bulk notification request DTO fields and tier mapping.
+     */
     @Test
     void testBulkNotificationRequest() {
         BulkNotificationRequest req = new BulkNotificationRequest();
@@ -35,6 +41,9 @@ class DtoTest {
         assertEquals(NotificationTier.PREMIUM, req.getTier());
     }
 
+    /**
+     * Verifies the notification response DTO fields and builder.
+     */
     @Test
     void testNotificationResponse() {
         NotificationResponse res = NotificationResponse.builder()
@@ -53,6 +62,9 @@ class DtoTest {
         assertNotNull(res.toString());
     }
 
+    /**
+     * Verifies the email delivery request payload fields.
+     */
     @Test
     void testEmailRequest() {
         EmailRequest req = new EmailRequest();
@@ -67,6 +79,9 @@ class DtoTest {
         assertTrue(req.isHtml());
     }
 
+    /**
+     * Verifies the administrative user DTO mapping used for bulk targeting.
+     */
     @Test
     void testAdminUserDto() {
         AdminUserDto dto = new AdminUserDto();
@@ -79,6 +94,9 @@ class DtoTest {
         assertTrue(dto.isActive());
     }
 
+    /**
+     * Verifies the persistence model for notifications, including custom getter logic.
+     */
     @Test
     void testNotificationModel() {
         com.airesume.notificationservice.model.Notification notification = 
@@ -102,6 +120,9 @@ class DtoTest {
         assertEquals("Test Title", notification.getTitleManual());
     }
 
+    /**
+     * Verifies that the notification entity's creation timestamp is correctly initialized.
+     */
     @Test
     void testNotificationOnCreate() {
         com.airesume.notificationservice.model.Notification notification = 

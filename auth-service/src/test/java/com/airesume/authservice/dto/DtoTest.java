@@ -7,8 +7,15 @@ import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Unit tests for Authentication Data Transfer Objects (DTOs).
+ * Verifies data integrity, builder patterns, and equality logic for auth-related payloads.
+ */
 class DtoTest {
 
+    /**
+     * Verifies the login request DTO fields and builder.
+     */
     @Test
     void testLoginRequest() {
         LoginRequest req = new LoginRequest("user", "pass");
@@ -22,6 +29,9 @@ class DtoTest {
         assertTrue(req.equals(req2));
     }
 
+    /**
+     * Verifies the user registration request DTO fields.
+     */
     @Test
     void testRegisterRequest() {
         RegisterRequest req = RegisterRequest.builder()
@@ -41,6 +51,9 @@ class DtoTest {
         assertEquals("user", req2.getUsername());
     }
 
+    /**
+     * Verifies the user profile response DTO data mapping.
+     */
     @Test
     void testUserProfileResponse() {
         UserProfileResponse res = UserProfileResponse.builder()

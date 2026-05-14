@@ -11,6 +11,11 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Unit tests for the PDF Generator Service.
+ * Verifies that HTML/CSS layouts are correctly converted to PDF bytes
+ * with template variable substitution.
+ */
 class PdfGeneratorServiceTest {
 
     private PdfGeneratorService pdfGeneratorService;
@@ -21,12 +26,18 @@ class PdfGeneratorServiceTest {
         pdfGeneratorService = new PdfGeneratorService(objectMapper);
     }
 
+    /**
+     * Verifies that PDF generation fails if the template is null.
+     */
     @Test
     void testGeneratePdf_NullTemplate() {
         ResumeResponseDTO resume = new ResumeResponseDTO();
         assertThrows(IllegalArgumentException.class, () -> pdfGeneratorService.generatePdf(resume, null, null));
     }
 
+    /**
+     * Verifies that PDF generation fails if the template's HTML layout is missing.
+     */
     @Test
     void testGeneratePdf_NullHtmlLayout() {
         ResumeResponseDTO resume = new ResumeResponseDTO();
@@ -34,6 +45,9 @@ class PdfGeneratorServiceTest {
         assertThrows(IllegalArgumentException.class, () -> pdfGeneratorService.generatePdf(resume, template, null));
     }
 
+    /**
+     * Tests a complete successful PDF generation cycle with a mock resume and template.
+     */
     @Test
     void testGeneratePdf_Success() throws Exception {
         // Setup Resume
@@ -73,6 +87,9 @@ class PdfGeneratorServiceTest {
         assertTrue(pdfBytes.length > 0);
     }
 
+    /**
+     * Verifies that invalid customization JSON is gracefully handled without failing the export.
+     */
     @Test
     void testGeneratePdf_InvalidCustomizations() throws Exception {
         ResumeResponseDTO resume = new ResumeResponseDTO();
@@ -89,6 +106,9 @@ class PdfGeneratorServiceTest {
         assertTrue(pdfBytes.length > 0);
     }
 
+    /**
+     * Verifies that PDF generation succeeds even with empty customizations.
+     */
     @Test
     void testGeneratePdf_EmptyCustomizations() throws Exception {
         ResumeResponseDTO resume = new ResumeResponseDTO();
@@ -105,6 +125,9 @@ class PdfGeneratorServiceTest {
         assertTrue(pdfBytes.length > 0);
     }
 
+    /**
+     * Verifies that malformed JSON in a resume section does not crash the PDF generator.
+     */
     @Test
     void testGeneratePdf_InvalidSectionContent() throws Exception {
         ResumeResponseDTO resume = new ResumeResponseDTO();
@@ -124,6 +147,9 @@ class PdfGeneratorServiceTest {
         assertTrue(pdfBytes.length > 0);
     }
 
+    /**
+     * Verifies that blank section content is handled gracefully during PDF generation.
+     */
     @Test
     void testGeneratePdf_BlankSectionContent() throws Exception {
         ResumeResponseDTO resume = new ResumeResponseDTO();
@@ -141,6 +167,9 @@ class PdfGeneratorServiceTest {
         assertTrue(pdfBytes.length > 0);
     }
 
+    /**
+     * Verifies that null section content is handled gracefully during PDF generation.
+     */
     @Test
     void testGeneratePdf_NullSectionContent() throws Exception {
         ResumeResponseDTO resume = new ResumeResponseDTO();

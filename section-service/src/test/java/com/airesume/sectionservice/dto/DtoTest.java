@@ -8,8 +8,15 @@ import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Unit tests for Section domain models and types.
+ * Verifies entity data binding, builder patterns, and enum consistency.
+ */
 public class DtoTest {
 
+    /**
+     * Verifies the Section entity data mapping and builder functionality.
+     */
     @Test
     void testSectionModel() {
         Section section = new Section();
@@ -54,6 +61,9 @@ public class DtoTest {
         assertTrue(section2.getAiGenerated());
     }
 
+    /**
+     * Verifies the SectionType enum constants and string mapping.
+     */
     @Test
     void testSectionTypeEnum() {
         assertEquals("VOLUNTEER", SectionType.VOLUNTEER.name());

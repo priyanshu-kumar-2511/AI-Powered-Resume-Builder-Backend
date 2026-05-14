@@ -15,6 +15,10 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Unit tests for JwtService in Ai Service.
+ * Verifies extraction of custom claims (roles, userId, plan) from JWT tokens.
+ */
 class JwtServiceTest {
 
     private JwtService jwtService;
@@ -26,6 +30,9 @@ class JwtServiceTest {
         ReflectionTestUtils.setField(jwtService, "jwtSecret", secret);
     }
 
+    /**
+     * Verifies that the service can correctly extract the username, roles, user ID, and plan from a valid token.
+     */
     @Test
     void testExtractClaims() {
         SecretKey key = Keys.hmacShaKeyFor(io.jsonwebtoken.io.Decoders.BASE64.decode(secret));
@@ -49,6 +56,9 @@ class JwtServiceTest {
         assertTrue(jwtService.validateToken(token));
     }
 
+    /**
+     * Verifies that malformed or invalid tokens are rejected by the validator.
+     */
     @Test
     void testInvalidToken() {
         assertFalse(jwtService.validateToken("invalid.token.string"));

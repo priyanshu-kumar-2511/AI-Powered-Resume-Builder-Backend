@@ -9,8 +9,16 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Unit tests for Authentication service Data Transfer Objects and Domain Models.
+ * Verifies correct property binding, builder patterns, and manual getters/setters 
+ * for identity management and registration flows.
+ */
 class DtoAndModelTest {
 
+    /**
+     * Verifies the user registration request data mapping.
+     */
     @Test
     void testRegisterRequest() {
         RegisterRequest request = RegisterRequest.builder()
@@ -42,6 +50,9 @@ class DtoAndModelTest {
         assertNotNull(request.toString());
     }
 
+    /**
+     * Verifies the login request DTO fields.
+     */
     @Test
     void testLoginRequest() {
         LoginRequest request = LoginRequest.builder()
@@ -176,6 +187,9 @@ class DtoAndModelTest {
         assertEquals(request, other);
     }
 
+    /**
+     * Verifies User entity property mapping and JPA lifecycle callbacks.
+     */
     @Test
     void testUserEntity() throws Exception {
         User user = User.builder()

@@ -26,6 +26,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Implementation of ExportService that handles document generation requests.
+ * Orchestrates asynchronous processing via RabbitMQ and manages file storage.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -41,6 +45,12 @@ public class ExportServiceImpl implements ExportService {
     @Value("${app.export.pdf.free-limit-daily:10}")
     private int freeLimitDaily;
 
+    /**
+     * Submits a new export job (PDF/DOCX).
+     * 1. Validates user quota (Free vs Premium).
+     * 2. Persists a QUEUED job record.
+     * 3. Publishes a message to RabbitMQ for async processing.
+     */
     @Override
     public ExportJob submitExportJob(Long userId, Long resumeId, ExportFormat format, String customizations, String authorizationHeader) {
         // 1. Validate Tier & Quota
@@ -78,6 +88,9 @@ public class ExportServiceImpl implements ExportService {
         return job;
     }
 
+    /**
+     * Retrieves the current status of an export job (QUEUED, PROCESSING, COMPLETED, FAILED).
+     */
     @Override
     public ExportJob getJobStatus(String jobId) {
         return repository.findById(jobId)
@@ -117,6 +130,9 @@ public class ExportServiceImpl implements ExportService {
         repository.delete(job);
     }
 
+    /**
+     * Periodically cleans up files and database records for expired export jobs.
+     */
     @Override
     public void cleanupExpiredExports() {
         List<ExportJob> expired = repository.findByExpiresAtBefore(LocalDateTime.now());
@@ -159,6 +175,11 @@ public class ExportServiceImpl implements ExportService {
         return repository.countPdfExportsByUserIdSince(userId, LocalDate.now().atStartOfDay());
     }
 
+    /**
+     * Enforces usage limits based on user tier.
+     * Free users: PDF only, daily limit applies.
+     * Premium users: Unlimited access to all formats.
+     */
     private void validateQuota(Long userId, ExportFormat format) {
         boolean isPremium = currentUserService.isPremium();
 

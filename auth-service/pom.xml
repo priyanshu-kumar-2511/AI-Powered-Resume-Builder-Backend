@@ -22,6 +22,13 @@
 		<jjwt.version>0.12.6</jjwt.version>
 		<spring-boot-admin.version>3.5.8</spring-boot-admin.version>
 		<lombok.version>1.18.30</lombok.version>
+
+		<!-- SonarQube Configuration -->
+		<sonar.projectKey>Ai-Resume-Builder-auth-service-</sonar.projectKey>
+		<sonar.projectName>Ai-Resume-Builder(auth-service)</sonar.projectName>
+		<sonar.host.url>http://localhost:9000</sonar.host.url>
+		<sonar.java.binaries>target/classes</sonar.java.binaries>
+		<sonar.coverage.jacoco.xmlReportPaths>${project.build.directory}/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
 	</properties>
 
 	<dependencies>
@@ -146,6 +153,16 @@
 			<artifactId>h2</artifactId>
 			<scope>test</scope>
 		</dependency>
+
+		<!-- Database Migration -->
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-core</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-mysql</artifactId>
+		</dependency>
 	</dependencies>
 
 	<dependencyManagement>
@@ -211,6 +228,30 @@
 						<goals>
 							<goal>report</goal>
 						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.sonarsource.scanner.maven</groupId>
+				<artifactId>sonar-maven-plugin</artifactId>
+				<version>4.0.0.4121</version>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>properties-maven-plugin</artifactId>
+				<version>1.2.1</version>
+				<executions>
+					<execution>
+						<phase>validate</phase>
+						<goals>
+							<goal>read-project-properties</goal>
+						</goals>
+						<configuration>
+							<files>
+								<file>${project.basedir}/../.env</file>
+							</files>
+							<quiet>true</quiet>
+						</configuration>
 					</execution>
 				</executions>
 			</plugin>

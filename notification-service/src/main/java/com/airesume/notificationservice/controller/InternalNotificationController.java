@@ -12,6 +12,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Controller for internal service-to-service notification requests.
+ * Provides endpoints for other microservices (like Auth or Payment) to trigger 
+ * transactional email dispatch.
+ */
 @RestController
 @RequestMapping("")
 @RequiredArgsConstructor
@@ -20,6 +25,9 @@ public class InternalNotificationController {
 
     private final EmailService emailService;
 
+    /**
+     * Dispatches an email request received from another microservice.
+     */
     @PostMapping("/internal/email")
     @Operation(summary = "Send email notifications (Internal)")
     public ResponseEntity<Void> sendEmail(@Valid @RequestBody EmailRequest request) {

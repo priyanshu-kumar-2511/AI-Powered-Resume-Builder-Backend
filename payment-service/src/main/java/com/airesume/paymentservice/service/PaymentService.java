@@ -33,6 +33,11 @@ import java.util.UUID;
 
 import com.airesume.paymentservice.client.AuthServiceClient;
 
+/**
+ * Service handling all payment-related operations via Razorpay integration.
+ * Manages order creation, payment verification, and subscription lifecycle.
+ * Coordinates with Auth Service to upgrade/demote user tiers upon payment.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -56,6 +61,10 @@ public class PaymentService {
     /**
      * Step 1: Create a Razorpay Order.
      * This is called by the frontend before opening the Razorpay checkout popup.
+     * 
+     * @param billingCycle the chosen billing cycle (MONTHLY/YEARLY)
+     * @return the created order details for the frontend checkout
+     * @throws RuntimeException if order creation fails at Razorpay
      */
     public CreateOrderResponse createOrder(String billingCycle) {
         long amount = "YEARLY".equalsIgnoreCase(billingCycle)
@@ -90,6 +99,9 @@ public class PaymentService {
      * Step 2: Verify the payment and activate the subscription.
      * Called after the user completes the payment in the Razorpay popup.
      * Uses HMAC-SHA256 signature verification for security.
+     * 
+     * @param request the verification request from the frontend
+     * @return the activation result including success status and new JWT
      */
     @Transactional
     public VerifyPaymentResponse verifyAndActivate(VerifyPaymentRequest request) {
@@ -144,6 +156,14 @@ public class PaymentService {
                 .build();
     }
 
+    /**
+     * Development bypass to automatically complete a payment order.
+     * Only allowed when using Razorpay test keys.
+     * 
+     * @param billingCycle the billing cycle to activate
+     * @return a simulated success response
+     * @throws RuntimeException if used with production keys
+     */
     @Transactional
     public VerifyPaymentResponse completeDevPayment(String billingCycle) {
         if (!razorpayKeyId.startsWith("rzp_test_")) {
@@ -156,6 +176,13 @@ public class PaymentService {
         return activatePremiumSubscription(billingCycle, simulatedOrderId, simulatedPaymentId);
     }
 
+    /**
+     * Fetches the current active subscription status for a specific user.
+     * Defaults to PlanType.FREE if no active subscription exists.
+     * 
+     * @param username the username to check
+     * @return the current subscription status response
+     */
     public SubscriptionStatusResponse getStatus(String username) {
         return subscriptionRepository
                 .findTopByUsernameAndStatusOrderByStartDateDesc(username, SubscriptionStatus.ACTIVE)
@@ -172,6 +199,13 @@ public class PaymentService {
                         .build());
     }
 
+    /**
+     * Cancels an active subscription and demotes the user in Auth Service.
+     * 
+     * @param username the username whose subscription should be cancelled
+     * @return a success confirmation message
+     * @throws RuntimeException if no active subscription is found
+     */
     @Transactional
     public String cancelSubscription(String username) {
         Subscription subscription = subscriptionRepository
@@ -188,6 +222,9 @@ public class PaymentService {
         return "Subscription cancelled successfully.";
     }
 
+    /**
+     * Admin method to retrieve all subscriptions with pagination.
+     */
     public Page<AdminSubscriptionResponse> getSubscriptions(Pageable pageable) {
         return subscriptionRepository.findAll(pageable)
                 .map(s -> AdminSubscriptionResponse.builder()
@@ -205,6 +242,9 @@ public class PaymentService {
                         .build());
     }
 
+    /**
+     * Calculates and returns global subscription statistics for the admin dashboard.
+     */
     public SubscriptionStats getStats() {
         java.util.List<Subscription> all = subscriptionRepository.findAll();
         
@@ -229,6 +269,10 @@ public class PaymentService {
                 .build();
     }
 
+    /**
+     * Cryptographically validates the Razorpay signature using HmacSHA256.
+     * Ensures the payment notification truly came from Razorpay.
+     */
     private boolean isValidSignature(String orderId, String paymentId, String signature) {
         try {
             String data = orderId + "|" + paymentId;

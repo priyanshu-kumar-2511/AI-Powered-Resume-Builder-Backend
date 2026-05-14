@@ -58,6 +58,9 @@ public class AuthControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    /**
+     * Tests the initiation of user registration (Step 1).
+     */
     @Test
     void initiateRegistration_ShouldReturnSuccess() throws Exception {
         com.airesume.authservice.dto.RegisterInitiateRequest request = new com.airesume.authservice.dto.RegisterInitiateRequest("Test Name", 25, "+919999999999", "test@example.com");
@@ -66,6 +69,9 @@ public class AuthControllerTest {
                 .andExpect(status().isOk());
     }
 
+    /**
+     * Tests the verification of registration OTP (Step 2).
+     */
     @Test
     void verifyRegistrationOtp_ShouldReturnSuccess() throws Exception {
         OtpVerificationRequest request = new OtpVerificationRequest("test@e.com", "123456", null);
@@ -74,6 +80,9 @@ public class AuthControllerTest {
                 .andExpect(status().isOk());
     }
 
+    /**
+     * Tests final user registration after OTP verification (Step 3).
+     */
     @Test
     void register_ShouldReturnSuccess() throws Exception {
         RegisterRequest request = RegisterRequest.builder()
@@ -90,6 +99,9 @@ public class AuthControllerTest {
                 .andExpect(status().isOk());
     }
 
+    /**
+     * Verifies that the login endpoint returns a 200 OK status on success.
+     */
     @Test
     void login_ShouldReturnToken() throws Exception {
         LoginRequest request = new LoginRequest("testuser", "Password@123");
@@ -98,6 +110,9 @@ public class AuthControllerTest {
                 .andExpect(status().isOk());
     }
 
+    /**
+     * Verifies that an authenticated user can retrieve their profile.
+     */
     @Test
     @WithMockUser(username = "testuser")
     void getProfile_ShouldReturnProfile() throws Exception {
@@ -106,6 +121,9 @@ public class AuthControllerTest {
         mockMvc.perform(get("/api/v1/auth/profile")).andExpect(status().isOk());
     }
 
+    /**
+     * Tests the password reset initiation flow.
+     */
     @Test
     void initiatePasswordReset_ShouldReturnSuccess() throws Exception {
         PasswordResetInitiateRequest request = new PasswordResetInitiateRequest("test@e.com");
@@ -114,6 +132,9 @@ public class AuthControllerTest {
                 .andExpect(status().isOk());
     }
 
+    /**
+     * Verifies that a user can update their own profile details.
+     */
     @Test
     @WithMockUser(username = "testuser")
     void updateProfile_Success() throws Exception {
@@ -122,12 +143,18 @@ public class AuthControllerTest {
                 .andExpect(status().isOk());
     }
 
+    /**
+     * Verifies that a valid JWT token can be parsed to retrieve the associated username.
+     */
     @Test
     void validateToken_Success() throws Exception {
         when(authService.validateToken(anyString())).thenReturn("testuser");
         mockMvc.perform(get("/api/v1/auth/validate").param("token", "t")).andExpect(status().isOk());
     }
 
+    /**
+     * Tests the token refresh endpoint for authenticated users.
+     */
     @Test
     @WithMockUser(username = "testuser")
     void refreshToken_Success() throws Exception {
@@ -135,6 +162,9 @@ public class AuthControllerTest {
         mockMvc.perform(get("/api/v1/auth/refresh")).andExpect(status().isOk());
     }
 
+    /**
+     * Tests the username recovery initiation.
+     */
     @Test
     void initiateUsernameRecovery_Success() throws Exception {
         com.airesume.authservice.dto.UsernameRecoveryRequest req = new com.airesume.authservice.dto.UsernameRecoveryRequest("test@test.com", "password");
@@ -143,6 +173,9 @@ public class AuthControllerTest {
                 .andExpect(status().isOk());
     }
 
+    /**
+     * Verifies that the username recovery OTP is correctly validated.
+     */
     @Test
     void verifyUsernameRecovery_Success() throws Exception {
         OtpVerificationRequest req = new OtpVerificationRequest("test@test.com", "123456", null);
@@ -151,6 +184,9 @@ public class AuthControllerTest {
                 .andExpect(status().isOk());
     }
 
+    /**
+     * Tests the final password reset after OTP verification.
+     */
     @Test
     void resetPassword_Success() throws Exception {
         OtpVerificationRequest req = new OtpVerificationRequest("test@test.com", "123456", "Password@123");
@@ -159,6 +195,9 @@ public class AuthControllerTest {
                 .andExpect(status().isOk());
     }
 
+    /**
+     * Verifies that a user can permanently delete their own account.
+     */
     @Test
     @WithMockUser(username = "testuser")
     void deleteOwnAccount_Success() throws Exception {

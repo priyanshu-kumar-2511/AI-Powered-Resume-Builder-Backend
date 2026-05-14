@@ -19,6 +19,10 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+/**
+ * Unit tests for the JWT Authentication Filter in Export Service.
+ * Verifies that incoming HTTP requests are correctly authenticated based on the Authorization header.
+ */
 class JwtAuthenticationFilterTest {
 
     @Mock
@@ -41,6 +45,9 @@ class JwtAuthenticationFilterTest {
         SecurityContextHolder.clearContext();
     }
 
+    /**
+     * Verifies that requests without an Authorization header proceed through the filter chain without authentication.
+     */
     @Test
     void testDoFilterInternal_NoHeader() throws ServletException, IOException {
         when(request.getHeader("Authorization")).thenReturn(null);
@@ -51,6 +58,9 @@ class JwtAuthenticationFilterTest {
         assertNull(SecurityContextHolder.getContext().getAuthentication());
     }
 
+    /**
+     * Verifies that a valid JWT token results in a populated SecurityContext with the correct user details.
+     */
     @Test
     void testDoFilterInternal_ValidToken() throws ServletException, IOException {
         String token = "valid-token";
@@ -68,6 +78,9 @@ class JwtAuthenticationFilterTest {
         assertEquals("user@example.com", SecurityContextHolder.getContext().getAuthentication().getPrincipal());
     }
 
+    /**
+     * Verifies that invalid tokens do not populate the SecurityContext.
+     */
     @Test
     void testDoFilterInternal_InvalidToken() throws ServletException, IOException {
         String token = "invalid-token";
@@ -80,6 +93,9 @@ class JwtAuthenticationFilterTest {
         assertNull(SecurityContextHolder.getContext().getAuthentication());
     }
 
+    /**
+     * Verifies that malformed Authorization headers (e.g., missing "Bearer " prefix) are ignored.
+     */
     @Test
     void testDoFilterInternal_MalformedHeader() throws ServletException, IOException {
         when(request.getHeader("Authorization")).thenReturn("MalformedHeader");
@@ -90,6 +106,9 @@ class JwtAuthenticationFilterTest {
         assertNull(SecurityContextHolder.getContext().getAuthentication());
     }
 
+    /**
+     * Verifies that if a request is already authenticated, the filter does not overwrite it or re-validate the token.
+     */
     @Test
     void testDoFilterInternal_AlreadyAuthenticated() throws ServletException, IOException {
         org.springframework.security.authentication.UsernamePasswordAuthenticationToken existingAuth =
@@ -106,6 +125,9 @@ class JwtAuthenticationFilterTest {
         verify(jwtService, never()).validateToken(any());
     }
 
+    /**
+     * Verifies that tokens with missing usernames are rejected during filter processing.
+     */
     @Test
     void testDoFilterInternal_NullUsername() throws ServletException, IOException {
         String token = "valid-token";
@@ -120,6 +142,9 @@ class JwtAuthenticationFilterTest {
         assertNull(SecurityContextHolder.getContext().getAuthentication());
     }
 
+    /**
+     * Verifies that tokens with missing role information are rejected during filter processing.
+     */
     @Test
     void testDoFilterInternal_NullRoles() throws ServletException, IOException {
         String token = "valid-token";

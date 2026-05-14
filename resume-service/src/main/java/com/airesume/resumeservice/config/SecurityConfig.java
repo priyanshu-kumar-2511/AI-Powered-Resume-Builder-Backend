@@ -12,6 +12,11 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+/**
+ * Security configuration for the Resume Service.
+ * Defines the security filter chain, stateless session management,
+ * and endpoint-level authorization rules (RBAC).
+ */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -20,10 +25,18 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
+    /**
+     * Configures the security filter chain for all HTTP requests.
+     * 1. Disables CSRF (stateless API)
+     * 2. Permits public GET access for resumes
+     * 3. Restricted admin paths to ROLE_ADMIN
+     * 4. Enforces JWT authentication for all other requests
+     */
     @Bean
+    @SuppressWarnings("java:S4502") // CSRF is disabled because we use JWT and the API is stateless
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(AbstractHttpConfigurer::disable)
+                .csrf(AbstractHttpConfigurer::disable) // CSRF protection is not required for stateless REST APIs using JWT
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.GET, "/public", "/api/v1/resumes/public").permitAll()
                         .requestMatchers(HttpMethod.PUT, "/*/view-count", "/api/v1/resumes/*/view-count").permitAll()

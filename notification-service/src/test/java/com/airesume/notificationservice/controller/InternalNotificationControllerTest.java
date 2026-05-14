@@ -16,6 +16,10 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/**
+ * Unit tests for the Internal Notification Controller.
+ * Verifies inter-service email dispatch requests and payload validation.
+ */
 @WebMvcTest(InternalNotificationController.class)
 class InternalNotificationControllerTest {
 
@@ -31,6 +35,9 @@ class InternalNotificationControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    /**
+     * Verifies that internal services can trigger email delivery via the notification microservice.
+     */
     @Test
     @WithMockUser
     void testSendEmail() throws Exception {

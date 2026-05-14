@@ -12,6 +12,10 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Unit tests for JwtService in Section Service.
+ * Verifies claim extraction and token validation logic.
+ */
 public class JwtServiceTest {
 
     private JwtService jwtService;
@@ -47,6 +51,9 @@ public class JwtServiceTest {
                 .compact();
     }
 
+    /**
+     * Verifies successful extraction of the username (subject) from a valid token.
+     */
     @Test
     void extractUsername_ShouldReturnUsername() {
         String token = generateTestToken("testuser", 1L);
@@ -54,6 +61,9 @@ public class JwtServiceTest {
         assertEquals("testuser", username);
     }
 
+    /**
+     * Verifies that user roles are correctly extracted from the token's claims.
+     */
     @Test
     void extractRoles_ShouldReturnRoles() {
         String token = generateTestToken("testuser", 1L);
@@ -62,6 +72,9 @@ public class JwtServiceTest {
         assertTrue(roles.contains("ROLE_USER"));
     }
 
+    /**
+     * Verifies successful extraction of the user ID when stored as a numeric value.
+     */
     @Test
     void extractUserId_ShouldReturnUserId() {
         String token = generateTestToken("testuser", 1L);
@@ -69,6 +82,9 @@ public class JwtServiceTest {
         assertEquals(1L, userId);
     }
 
+    /**
+     * Verifies that the user ID can be extracted even if it's stored as a string in the token.
+     */
     @Test
     void extractUserId_WithStringVar_ShouldReturnUserId() {
         byte[] keyBytes = io.jsonwebtoken.io.Decoders.BASE64.decode(jwtSecret);
@@ -80,6 +96,9 @@ public class JwtServiceTest {
         assertEquals(2L, userId);
     }
 
+    /**
+     * Verifies successful extraction of the subscription plan from the token's claims.
+     */
     @Test
     void extractPlan_ShouldReturnPlan() {
         String token = generateTestToken("testuser", 1L);
@@ -87,18 +106,27 @@ public class JwtServiceTest {
         assertEquals("FREE", plan);
     }
 
+    /**
+     * Verifies that a valid token passes the validation check.
+     */
     @Test
     void validateToken_ShouldReturnTrue() {
         String token = generateTestToken("testuser", 1L);
         assertTrue(jwtService.validateToken(token));
     }
 
+    /**
+     * Verifies that expired tokens fail the validation check.
+     */
     @Test
     void validateToken_ShouldReturnFalse_WhenExpired() {
         String token = generateExpiredToken();
         assertFalse(jwtService.validateToken(token));
     }
 
+    /**
+     * Verifies that custom claims can be extracted using specific claim retrieval functions.
+     */
     @Test
     void extractClaim_ShouldExtractCustomClaim() {
         String token = generateTestToken("testuser", 1L);
@@ -106,6 +134,9 @@ public class JwtServiceTest {
         assertEquals("testuser", sub);
     }
 
+    /**
+     * Verifies that missing user ID claims result in a null return.
+     */
     @Test
     void extractUserId_ShouldReturnNull_WhenMissing() {
         byte[] keyBytes = io.jsonwebtoken.io.Decoders.BASE64.decode(jwtSecret);
@@ -116,6 +147,9 @@ public class JwtServiceTest {
         assertNull(jwtService.extractUserId(token));
     }
 
+    /**
+     * Verifies that blank user ID strings result in a null return.
+     */
     @Test
     void extractUserId_ShouldReturnNull_WhenBlankString() {
         byte[] keyBytes = io.jsonwebtoken.io.Decoders.BASE64.decode(jwtSecret);
@@ -127,6 +161,9 @@ public class JwtServiceTest {
         assertNull(jwtService.extractUserId(token));
     }
 
+    /**
+     * Verifies that unsupported data types for user ID result in a null return.
+     */
     @Test
     void extractUserId_ShouldReturnNull_WhenUnsupportedType() {
         byte[] keyBytes = io.jsonwebtoken.io.Decoders.BASE64.decode(jwtSecret);

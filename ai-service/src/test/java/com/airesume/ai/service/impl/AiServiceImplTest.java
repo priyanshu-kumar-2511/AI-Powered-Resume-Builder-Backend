@@ -30,13 +30,17 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.awt.image.BufferedImage;
-import java.io.IOException;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+/**
+ * Comprehensive unit tests for AiServiceImpl.
+ * Covers AI content generation, quota management, RabbitMQ background processing,
+ * and PDF template extraction logic.
+ */
 @ExtendWith(MockitoExtension.class)
 class AiServiceImplTest {
 
@@ -67,6 +71,9 @@ class AiServiceImplTest {
 
     // ── BASIC AI TESTS ────────────────────────────────────────────────────────
 
+    /**
+     * Tests successful summary generation and quota decrement.
+     */
     @Test
     void testGenerateSummary_Success() {
         AiRequest request = AiRequest.builder().userId("user1").build();
@@ -81,6 +88,9 @@ class AiServiceImplTest {
         verify(userQuotaRepository).save(any());
     }
 
+    /**
+     * Verifies that the AI can successfully generate resume experience bullets.
+     */
     @Test
     void testGenerateBullets_Success() {
         AiRequest request = AiRequest.builder().userId("user1").build();
@@ -93,6 +103,9 @@ class AiServiceImplTest {
         assertNotNull(result.get("content"));
     }
 
+    /**
+     * Verifies the ATS compatibility check logic and JSON parsing.
+     */
     @Test
     void testCheckAtsCompatibility_Success() {
         AiRequest request = AiRequest.builder().userId("user1").build();
@@ -106,6 +119,9 @@ class AiServiceImplTest {
         assertEquals(85, result.get("score"));
     }
 
+    /**
+     * Verifies that the AI can suggest relevant skills based on job context.
+     */
     @Test
     void testSuggestSkills_Success() {
         Generation gen = new Generation(new AssistantMessage("Java, Python, AWS"));
@@ -116,6 +132,9 @@ class AiServiceImplTest {
         assertTrue(skills.contains("Java"));
     }
 
+    /**
+     * Verifies the quota retrieval logic for premium users.
+     */
     @Test
     void testGetUserQuota_Premium() {
         when(userQuotaRepository.findById("user1")).thenReturn(Optional.of(UserQuota.builder().userId("user1").build()));
@@ -125,6 +144,9 @@ class AiServiceImplTest {
         assertTrue((Boolean) quota.get("isPremium"));
     }
 
+    /**
+     * Verifies that the AI can successfully generate a cover letter.
+     */
     @Test
     void testGenerateCoverLetter_Success() {
         AiRequest request = AiRequest.builder().userId("user1").build();
@@ -138,6 +160,9 @@ class AiServiceImplTest {
         assertEquals("Letter", result.get("content"));
     }
 
+    /**
+     * Verifies the AI's ability to improve specific resume sections.
+     */
     @Test
     void testImproveSection_Success() {
         AiRequest request = AiRequest.builder().userId("user1").build();
@@ -153,6 +178,9 @@ class AiServiceImplTest {
 
     // ── RABBITMQ & BACKGROUND JOBS ──────────────────────────────────────────
 
+    /**
+     * Verifies that resume tailoring is correctly queued for asynchronous processing.
+     */
     @Test
     void testTailorResume_Queued() {
         AiRequest request = AiRequest.builder().userId("user1").build();
@@ -164,6 +192,9 @@ class AiServiceImplTest {
         verify(rabbitTemplate).convertAndSend(anyString(), anyString(), any(AiJobMessage.class));
     }
 
+    /**
+     * Verifies that the system falls back to synchronous AI processing if RabbitMQ queueing fails.
+     */
     @Test
     void testTailorResume_FallbackToSync() {
         AiRequest request = AiRequest.builder().userId("user1").build();
@@ -179,6 +210,9 @@ class AiServiceImplTest {
         assertEquals("Sync response", result.get("content"));
     }
 
+    /**
+     * Verifies that resume translation requests are successfully queued.
+     */
     @Test
     void testTranslateResume_Queued() {
         AiRequest request = AiRequest.builder().userId("user1").targetLanguage("Spanish").build();
@@ -190,6 +224,9 @@ class AiServiceImplTest {
         verify(rabbitTemplate).convertAndSend(anyString(), anyString(), any(AiJobMessage.class));
     }
 
+    /**
+     * Verifies successful execution of a background AI task and history persistence.
+     */
     @Test
     void testProcessBackgroundAiJob_Success() {
         Generation gen = new Generation(new AssistantMessage("Bg result"));
@@ -199,6 +236,9 @@ class AiServiceImplTest {
         verify(aiHistoryRepository).save(any(AiHistory.class));
     }
 
+    /**
+     * Verifies synchronous fallback for translation requests when the message broker is unavailable.
+     */
     @Test
     void testTranslateResume_FallbackToSync() {
         AiRequest request = AiRequest.builder().userId("user1").targetLanguage("French").build();
@@ -216,8 +256,12 @@ class AiServiceImplTest {
 
     // ── PDF EXTRACTION TESTS ────────────────────────────────────────────────
 
+    /**
+     * Tests the extraction of HTML/CSS layouts from a mock PDF file.
+     * Uses static mocks for PDFBox and ImageIO.
+     */
     @Test
-    void testExtractTemplateFromPdf_Success() throws IOException {
+    void testExtractTemplateFromPdf_Success() {
         MockMultipartFile file = new MockMultipartFile("file", "test.pdf", "application/pdf", "dummy data".getBytes());
 
         try (MockedStatic<Loader> loaderMock = mockStatic(Loader.class);
@@ -246,8 +290,11 @@ class AiServiceImplTest {
         }
     }
 
+    /**
+     * Verifies that malformed JSON responses from the AI are handled gracefully during PDF extraction.
+     */
     @Test
-    void testExtractTemplateFromPdf_AiJsonMalformedFallback() throws IOException {
+    void testExtractTemplateFromPdf_AiJsonMalformedFallback() {
         MockMultipartFile file = new MockMultipartFile("file", "test.pdf", "application/pdf", "dummy data".getBytes());
 
         try (MockedStatic<Loader> loaderMock = mockStatic(Loader.class);
@@ -273,10 +320,71 @@ class AiServiceImplTest {
 
             assertNotNull(response);
             assertTrue(response.getHtmlLayout().contains("missing quotes"));
-            assertTrue(response.getCssStyles().contains("AI failed to separate CSS"));
+            assertTrue(response.getCssStyles().contains("AI returned raw content or malformed JSON"));
         }
     }
 
+    /**
+     * Verifies that AI responses using backticks (JS-style template literals) are correctly parsed.
+     */
+    @Test
+    void testExtractTemplateFromPdf_BackticksRegex() {
+        MockMultipartFile file = new MockMultipartFile("file", "test.pdf", "application/pdf", "data".getBytes());
+        try (MockedStatic<Loader> loaderMock = mockStatic(Loader.class);
+             MockedStatic<javax.imageio.ImageIO> imageIoMock = mockStatic(javax.imageio.ImageIO.class);
+             MockedConstruction<PDFTextStripper> stripperMock = mockConstruction(PDFTextStripper.class, (mock, context) -> {
+                 when(mock.getText(any())).thenReturn("Text");
+             });
+             MockedConstruction<PDFRenderer> rendererMock = mockConstruction(PDFRenderer.class, (mock, context) -> {
+                 when(mock.renderImageWithDPI(anyInt(), anyInt())).thenReturn(new BufferedImage(1,1,1));
+             })) {
+            
+            PDDocument doc = mock(PDDocument.class);
+            loaderMock.when(() -> Loader.loadPDF(any(byte[].class))).thenReturn(doc);
+            
+            // AI returns JSON with backticks
+            String aiResponse = "{\"html\": `<div class='backtick'>Content</div>`, \"css\": `.test { color: red; }`}";
+            Generation gen = new Generation(new AssistantMessage(aiResponse));
+            when(chatModel.call(any(Prompt.class))).thenReturn(new ChatResponse(List.of(gen)));
+            
+            var resp = aiService.extractTemplateFromPdf(file);
+            assertEquals("<div class='backtick'>Content</div>", resp.getHtmlLayout());
+            assertEquals(".test { color: red; }", resp.getCssStyles());
+        }
+    }
+
+    /**
+     * Verifies that AI responses using single quotes for JSON keys/values are correctly handled.
+     */
+    @Test
+    void testExtractTemplateFromPdf_SingleQuotesRegex() {
+        MockMultipartFile file = new MockMultipartFile("file", "test.pdf", "application/pdf", "data".getBytes());
+        try (MockedStatic<Loader> loaderMock = mockStatic(Loader.class);
+             MockedStatic<javax.imageio.ImageIO> imageIoMock = mockStatic(javax.imageio.ImageIO.class);
+             MockedConstruction<PDFTextStripper> stripperMock = mockConstruction(PDFTextStripper.class, (mock, context) -> {
+                 when(mock.getText(any())).thenReturn("Text");
+             });
+             MockedConstruction<PDFRenderer> rendererMock = mockConstruction(PDFRenderer.class, (mock, context) -> {
+                 when(mock.renderImageWithDPI(anyInt(), anyInt())).thenReturn(new BufferedImage(1,1,1));
+             })) {
+            
+            PDDocument doc = mock(PDDocument.class);
+            loaderMock.when(() -> Loader.loadPDF(any(byte[].class))).thenReturn(doc);
+            
+            // AI returns JSON with single quotes
+            String aiResponse = "{'html': '<div>Single</div>', 'css': '.single {}'}";
+            Generation gen = new Generation(new AssistantMessage(aiResponse));
+            when(chatModel.call(any(Prompt.class))).thenReturn(new ChatResponse(List.of(gen)));
+            
+            var resp = aiService.extractTemplateFromPdf(file);
+            assertEquals("<div>Single</div>", resp.getHtmlLayout());
+            assertEquals(".single {}", resp.getCssStyles());
+        }
+    }
+
+    /**
+     * Verifies that PDF extraction failures (e.g., corrupt files) result in a RuntimeException.
+     */
     @Test
     void testExtractTemplateFromPdf_Failure() {
         MockMultipartFile file = new MockMultipartFile("file", "test.pdf", "application/pdf", "bad data".getBytes());
@@ -534,7 +642,7 @@ class AiServiceImplTest {
     }
 
     @Test
-    void testExtractTemplateFromPdf_NoJsonMarkers() throws IOException {
+    void testExtractTemplateFromPdf_NoJsonMarkers() {
         MockMultipartFile file = new MockMultipartFile("file", "test.pdf", "application/pdf", "data".getBytes());
         try (MockedStatic<Loader> loaderMock = mockStatic(Loader.class);
              MockedStatic<javax.imageio.ImageIO> imageIoMock = mockStatic(javax.imageio.ImageIO.class);
@@ -558,7 +666,7 @@ class AiServiceImplTest {
     }
 
     @Test
-    void testExtractTemplateFromPdf_IncompleteJsonMarkers() throws IOException {
+    void testExtractTemplateFromPdf_IncompleteJsonMarkers() {
         MockMultipartFile file = new MockMultipartFile("file", "test.pdf", "application/pdf", "data".getBytes());
         try (MockedStatic<Loader> loaderMock = mockStatic(Loader.class);
              MockedStatic<javax.imageio.ImageIO> imageIoMock = mockStatic(javax.imageio.ImageIO.class);
@@ -578,6 +686,33 @@ class AiServiceImplTest {
             
             var resp = aiService.extractTemplateFromPdf(file);
             assertEquals("Only { bracket", resp.getHtmlLayout());
+        }
+    }
+
+    /**
+     * Verifies that completely empty AI responses result in a friendly error template.
+     */
+    @Test
+    void testExtractTemplateFromPdf_EmptyAiResponse() {
+        MockMultipartFile file = new MockMultipartFile("file", "test.pdf", "application/pdf", "data".getBytes());
+        try (MockedStatic<Loader> loaderMock = mockStatic(Loader.class);
+             MockedStatic<javax.imageio.ImageIO> imageIoMock = mockStatic(javax.imageio.ImageIO.class);
+             MockedConstruction<PDFTextStripper> stripperMock = mockConstruction(PDFTextStripper.class, (mock, context) -> {
+                 when(mock.getText(any())).thenReturn("Text");
+             });
+             MockedConstruction<PDFRenderer> rendererMock = mockConstruction(PDFRenderer.class, (mock, context) -> {
+                 when(mock.renderImageWithDPI(anyInt(), anyInt())).thenReturn(new BufferedImage(1,1,1));
+             })) {
+            
+            PDDocument doc = mock(PDDocument.class);
+            loaderMock.when(() -> Loader.loadPDF(any(byte[].class))).thenReturn(doc);
+            
+            // AI returns empty response
+            Generation gen = new Generation(new AssistantMessage(""));
+            when(chatModel.call(any(Prompt.class))).thenReturn(new ChatResponse(List.of(gen)));
+            
+            var resp = aiService.extractTemplateFromPdf(file);
+            assertTrue(resp.getHtmlLayout().contains("Template generation failed"));
         }
     }
 

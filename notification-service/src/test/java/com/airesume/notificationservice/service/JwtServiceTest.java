@@ -15,6 +15,10 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Unit tests for JwtService in Notification Service.
+ * Verifies claim extraction and token validation logic.
+ */
 class JwtServiceTest {
 
     private JwtService jwtService;
@@ -39,12 +43,18 @@ class JwtServiceTest {
                 .compact();
     }
 
+    /**
+     * Verifies that the username can be extracted from a valid token.
+     */
     @Test
     void testExtractUsername() {
         String token = createToken("user1", Map.of(), 1000 * 60);
         assertEquals("user1", jwtService.extractUsername(token));
     }
 
+    /**
+     * Verifies that roles can be extracted from a valid token.
+     */
     @Test
     void testExtractRoles() {
         String token = createToken("user1", Map.of("roles", List.of("ROLE_USER")), 1000 * 60);
@@ -53,6 +63,9 @@ class JwtServiceTest {
         assertEquals("ROLE_USER", roles.get(0));
     }
 
+    /**
+     * Verifies that the user ID can be extracted from various claim formats (Long, String).
+     */
     @Test
     void testExtractUserId() {
         String token = createToken("user1", Map.of("userId", 123L), 1000 * 60);
@@ -71,12 +84,18 @@ class JwtServiceTest {
         assertNull(jwtService.extractUserId(tokenUnsupported));
     }
 
+    /**
+     * Verifies that the subscription plan can be extracted from a valid token.
+     */
     @Test
     void testExtractPlan() {
         String token = createToken("user1", Map.of("subscriptionPlan", "PREMIUM"), 1000 * 60);
         assertEquals("PREMIUM", jwtService.extractPlan(token));
     }
 
+    /**
+     * Verifies token validation logic, including expiration and malformed string handling.
+     */
     @Test
     void testValidateToken() {
         String token = createToken("user1", Map.of(), 1000 * 60);

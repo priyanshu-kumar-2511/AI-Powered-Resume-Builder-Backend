@@ -13,7 +13,13 @@ import org.springframework.cloud.config.server.EnableConfigServer;
 @EnableConfigServer
 public class ConfigServerApplication {
 
-	public static void main(String[] args) {
+    /**
+     * Entry point for the Config Server.
+     * Loads system-level environment variables before serving configurations.
+     * 
+     * @param args command line arguments
+     */
+    public static void main(String[] args) {
 		io.github.cdimascio.dotenv.Dotenv dotenv = io.github.cdimascio.dotenv.Dotenv.configure()
 				.directory("../")
 				.ignoreIfMissing()

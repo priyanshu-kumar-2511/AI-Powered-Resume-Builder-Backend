@@ -5,8 +5,15 @@ import java.util.Collections;
 import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Exhaustive unit tests for AI Service DTOs.
+ * Verifies complex builder patterns, equality, and hashcode consistency across all property variations.
+ */
 class ExhaustiveAiDtoTest {
 
+    /**
+     * Verifies all fields of the AI request DTO, including deep equality for list collections.
+     */
     @Test
     void testAiRequestExhaustive() {
         AiRequest r1 = AiRequest.builder()
@@ -41,6 +48,9 @@ class ExhaustiveAiDtoTest {
         assertNotEquals(r1, r1.toBuilder().tone("tone2").build());
     }
 
+    /**
+     * Verifies all fields of the AI response DTO and its builder states.
+     */
     @Test
     void testAiResponseExhaustive() {
         AiResponse r1 = AiResponse.builder()

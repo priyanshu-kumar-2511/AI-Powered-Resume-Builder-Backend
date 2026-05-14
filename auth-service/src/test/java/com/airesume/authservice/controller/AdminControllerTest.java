@@ -31,6 +31,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+/**
+ * Tests for AdminController using MockMvc and a minimal security configuration.
+ * Focuses on privileged administrative operations.
+ */
 @WebMvcTest(AdminController.class)
 @Import(AdminControllerTest.MinimalSecurityConfig.class)
 class AdminControllerTest {
@@ -56,6 +60,9 @@ class AdminControllerTest {
     @MockitoBean
     private JwtService jwtService;
 
+    /**
+     * Verifies that admins can retrieve a list of all users.
+     */
     @Test
     @WithMockUser(roles = "ADMIN")
     void testGetAllUsers() throws Exception {
@@ -66,6 +73,9 @@ class AdminControllerTest {
                 .andExpect(content().json("[]"));
     }
 
+    /**
+     * Verifies that admins can suspend a user account with a reason.
+     */
     @Test
     @WithMockUser(roles = "ADMIN")
     void testSuspendUser() throws Exception {
@@ -79,6 +89,9 @@ class AdminControllerTest {
                 .andExpect(jsonPath("$.message").value("User suspended"));
     }
 
+    /**
+     * Verifies that a user can still be suspended even if no specific reason is provided in the request.
+     */
     @Test
     @WithMockUser(roles = "ADMIN")
     void testSuspendUser_NoReason() throws Exception {
@@ -91,6 +104,9 @@ class AdminControllerTest {
                 .andExpect(status().isOk());
     }
 
+    /**
+     * Verifies that admins can change a user's role (e.g., from USER to ADMIN).
+     */
     @Test
     @WithMockUser(roles = "ADMIN")
     void testUpdateRole() throws Exception {
@@ -104,6 +120,9 @@ class AdminControllerTest {
                 .andExpect(jsonPath("$.message").value("Role updated"));
     }
 
+    /**
+     * Verifies that admins can retrieve platform audit logs.
+     */
     @Test
     @WithMockUser(roles = "ADMIN")
     void testGetAuditLogs() throws Exception {
@@ -122,6 +141,9 @@ class AdminControllerTest {
                 .andExpect(status().isForbidden());
     }
 */
+    /**
+     * Verifies that admins can reactivate a suspended user account.
+     */
     @Test
     @WithMockUser(roles = "ADMIN")
     void testReactivateUser() throws Exception {
@@ -130,6 +152,9 @@ class AdminControllerTest {
                 .andExpect(status().isOk());
     }
 
+    /**
+     * Verifies that admins can manually override a user's subscription plan.
+     */
     @Test
     @WithMockUser(roles = "ADMIN")
     void testUpdatePlanById() throws Exception {
@@ -140,6 +165,9 @@ class AdminControllerTest {
                 .andExpect(status().isOk());
     }
 
+    /**
+     * Verifies that admins can permanently delete a user account.
+     */
     @Test
     @WithMockUser(roles = "ADMIN")
     void testDeleteUser() throws Exception {

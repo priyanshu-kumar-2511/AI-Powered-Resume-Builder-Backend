@@ -4,8 +4,16 @@ import org.junit.jupiter.api.Test;
 import java.time.LocalDateTime;
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Exhaustive unit tests for AI Service entities.
+ * Verifies detailed equality logic, hashcode stability, and JPA lifecycle callbacks 
+ * for persistence models.
+ */
 class ExhaustiveAiEntityTest {
 
+    /**
+     * Verifies all fields of the AI history entity, including deep equality and hashcode branches.
+     */
     @Test
     void testAiHistoryExhaustive() {
         LocalDateTime now = LocalDateTime.now();
@@ -41,6 +49,9 @@ class ExhaustiveAiEntityTest {
         assertEquals(h1, h1);
     }
 
+    /**
+     * Verifies all fields of the user quota entity and JPA lifecycle (@PrePersist) callbacks.
+     */
     @Test
     void testUserQuotaExhaustive() {
         LocalDateTime now = LocalDateTime.now();

@@ -11,6 +11,11 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
+/**
+ * Main Controller for Authentication and Identity Management.
+ * Handles the full lifecycle of a user account: registration (3-step), login,
+ * password/username recovery, and profile CRUD operations.
+ */
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor

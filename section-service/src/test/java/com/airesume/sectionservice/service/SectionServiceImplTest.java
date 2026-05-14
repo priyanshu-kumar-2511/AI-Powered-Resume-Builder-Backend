@@ -20,6 +20,11 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+/**
+ * Comprehensive unit tests for SectionServiceImpl.
+ * Verifies business logic for section ordering, inter-service resume access validation,
+ * and robust error handling for Feign client failures.
+ */
 @ExtendWith(MockitoExtension.class)
 public class SectionServiceImplTest {
 
@@ -47,6 +52,9 @@ public class SectionServiceImplTest {
         sampleSection.setAiGenerated(false);
     }
 
+    /**
+     * Verifies that adding a section with an explicit display order preserves that order.
+     */
     @Test
     void addSection_ShouldReturnSavedSection_WhenDisplayOrderIsNotNull() {
         lenient().when(resumeServiceClient.getResumeById(10L)).thenReturn(null);
@@ -56,6 +64,9 @@ public class SectionServiceImplTest {
         assertEquals("Work Experience", result.getTitle());
     }
 
+    /**
+     * Verifies that the service automatically assigns a display order when none is provided.
+     */
     @Test
     void addSection_ShouldSetDisplayOrder_WhenNull() {
         sampleSection.setDisplayOrder(null);
@@ -67,6 +78,9 @@ public class SectionServiceImplTest {
         assertEquals(5, sampleSection.getDisplayOrder());
     }
 
+    /**
+     * Verifies that sections retrieved for a resume are returned in ascending display order.
+     */
     @Test
     void getSectionsByResume_ShouldReturnOrderedList() {
         lenient().when(resumeServiceClient.getResumeById(10L)).thenReturn(null);
@@ -80,6 +94,9 @@ public class SectionServiceImplTest {
         assertEquals(2, results.size());
     }
 
+    /**
+     * Verifies that a section can be retrieved successfully if it exists.
+     */
     @Test
     void getSectionById_ShouldReturnSectionIfExists() {
         lenient().when(resumeServiceClient.getResumeById(10L)).thenReturn(null);
@@ -89,6 +106,9 @@ public class SectionServiceImplTest {
         assertEquals(1L, result.getSectionId());
     }
 
+    /**
+     * Ensures that a 404 Not Found error is thrown when requesting a non-existent section.
+     */
     @Test
     void getSectionById_ShouldThrowNotFound() {
         when(sectionRepository.findById(1L)).thenReturn(Optional.empty());
@@ -97,6 +117,9 @@ public class SectionServiceImplTest {
         });
     }
 
+    /**
+     * Verifies filtering of sections by their type.
+     */
     @Test
     void getSectionsByType_ShouldReturnList() {
         lenient().when(resumeServiceClient.getResumeById(10L)).thenReturn(null);
@@ -106,6 +129,9 @@ public class SectionServiceImplTest {
         assertEquals(1, result.size());
     }
 
+    /**
+     * Verifies retrieval of all sections that were marked as AI-generated.
+     */
     @Test
     void getAiGeneratedSections_ShouldReturnList() {
         lenient().when(resumeServiceClient.getResumeById(10L)).thenReturn(null);
@@ -115,6 +141,9 @@ public class SectionServiceImplTest {
         assertEquals(1, result.size());
     }
 
+    /**
+     * Verifies that an existing section can be updated with new metadata.
+     */
     @Test
     void updateSection_ShouldUpdateAndReturn() {
         lenient().when(resumeServiceClient.getResumeById(10L)).thenReturn(null);
@@ -133,6 +162,9 @@ public class SectionServiceImplTest {
         assertEquals("Updated Title", result.getTitle());
     }
 
+    /**
+     * Verifies that a section's resume ownership cannot be changed during an update.
+     */
     @Test
     void updateSection_ShouldThrowIfOwnershipChanges() {
         lenient().when(resumeServiceClient.getResumeById(10L)).thenReturn(null);
@@ -146,6 +178,9 @@ public class SectionServiceImplTest {
         });
     }
 
+    /**
+     * Verifies the visibility toggle logic, ensuring the state is inverted and saved.
+     */
     @Test
     void toggleVisibility_ShouldInvertIsVisibleAndSave() {
         lenient().when(resumeServiceClient.getResumeById(10L)).thenReturn(null);
@@ -156,6 +191,9 @@ public class SectionServiceImplTest {
         assertFalse(result.getIsVisible());
     }
 
+    /**
+     * Tests the reordering logic, ensuring display order values are updated correctly in the database.
+     */
     @Test
     void reorderSections_ShouldUpdateDisplayOrders() {
         lenient().when(resumeServiceClient.getResumeById(10L)).thenReturn(null);
@@ -170,6 +208,9 @@ public class SectionServiceImplTest {
         assertEquals(0, s2.getDisplayOrder());
     }
 
+    /**
+     * Verifies that multiple sections can be saved in a single batch operation.
+     */
     @Test
     void bulkUpdate_ShouldSaveAll() {
         lenient().when(resumeServiceClient.getResumeById(10L)).thenReturn(null);
@@ -178,6 +219,9 @@ public class SectionServiceImplTest {
         verify(sectionRepository, times(1)).saveAll(any());
     }
 
+    /**
+     * Verifies that a section can be deleted if it exists.
+     */
     @Test
     void deleteSection_ShouldDelete() {
         lenient().when(resumeServiceClient.getResumeById(10L)).thenReturn(null);
@@ -186,6 +230,9 @@ public class SectionServiceImplTest {
         verify(sectionRepository, times(1)).deleteById(1L);
     }
 
+    /**
+     * Verifies that all sections associated with a resume ID can be deleted in a single call.
+     */
     @Test
     void deleteAllSectionsByResume_ShouldDeleteAll() {
         lenient().when(resumeServiceClient.getResumeById(10L)).thenReturn(null);
@@ -193,6 +240,9 @@ public class SectionServiceImplTest {
         verify(sectionRepository, times(1)).deleteByResumeId(10L);
     }
 
+    /**
+     * Verifies the count of sections for a specific resume.
+     */
     @Test
     void countSections_ShouldReturnCount() {
         lenient().when(resumeServiceClient.getResumeById(10L)).thenReturn(null);
@@ -200,6 +250,9 @@ public class SectionServiceImplTest {
         assertEquals(5L, sectionService.countSections(10L));
     }
 
+    /**
+     * Verifies that Feign client "Not Found" errors are correctly mapped to local ResponseStatusExceptions.
+     */
     @Test
     void verifyResumeAccess_ShouldHandleFeignNotFound() {
         feign.Request request = feign.Request.create(feign.Request.HttpMethod.GET, "url", java.util.Collections.emptyMap(), null, new feign.RequestTemplate());
@@ -209,6 +262,9 @@ public class SectionServiceImplTest {
         assertThrows(org.springframework.web.server.ResponseStatusException.class, () -> sectionService.getSectionsByResume(10L));
     }
 
+    /**
+     * Verifies that Feign "Forbidden" (403) errors are correctly mapped to local ResponseStatusExceptions.
+     */
     @Test
     void verifyResumeAccess_ShouldHandleFeignForbidden() {
         feign.Request request = feign.Request.create(feign.Request.HttpMethod.GET, "url", java.util.Collections.emptyMap(), null, new feign.RequestTemplate());
@@ -218,6 +274,9 @@ public class SectionServiceImplTest {
         assertThrows(org.springframework.web.server.ResponseStatusException.class, () -> sectionService.getSectionsByResume(10L));
     }
 
+    /**
+     * Verifies that Feign "Unauthorized" (401) errors are correctly mapped to local ResponseStatusExceptions.
+     */
     @Test
     void verifyResumeAccess_ShouldHandleFeignUnauthorized() {
         feign.Request request = feign.Request.create(feign.Request.HttpMethod.GET, "url", java.util.Collections.emptyMap(), null, new feign.RequestTemplate());
@@ -227,6 +286,9 @@ public class SectionServiceImplTest {
         assertThrows(org.springframework.web.server.ResponseStatusException.class, () -> sectionService.getSectionsByResume(10L));
     }
 
+    /**
+     * Verifies that generic runtime exceptions during inter-service calls result in a 500 Internal Server Error mapping.
+     */
     @Test
     void verifyResumeAccess_ShouldHandleGenericException() {
         when(resumeServiceClient.getResumeById(10L)).thenThrow(new RuntimeException("Error"));
@@ -234,6 +296,9 @@ public class SectionServiceImplTest {
         assertThrows(org.springframework.web.server.ResponseStatusException.class, () -> sectionService.getSectionsByResume(10L));
     }
 
+    /**
+     * Verifies that partial updates preserve existing section data when null values are provided in the request.
+     */
     @Test
     void updateSection_ShouldKeepOriginalValues_WhenUpdatesAreNull() {
         lenient().when(resumeServiceClient.getResumeById(10L)).thenReturn(null);
@@ -250,6 +315,9 @@ public class SectionServiceImplTest {
         assertFalse(result.getAiGenerated());
     }
 
+    /**
+     * Verifies that the reordering logic handles invalid section IDs without crashing.
+     */
     @Test
     void reorderSections_ShouldIgnoreNullSections() {
         lenient().when(resumeServiceClient.getResumeById(10L)).thenReturn(null);
@@ -263,6 +331,9 @@ public class SectionServiceImplTest {
         verify(sectionRepository, times(2)).save(any(Section.class)); // only s2 and sampleSection are saved
     }
 
+    /**
+     * Verifies that existing ResponseStatusExceptions from the Feign client are propagated without modification.
+     */
     @Test
     void verifyResumeAccess_ShouldHandleResponseStatusException() {
         org.springframework.web.server.ResponseStatusException ex = new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Direct response status");

@@ -8,8 +8,15 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Unit tests for Template Service models and data transfer objects.
+ * Verifies entity mapping, response formatting, and enum consistency.
+ */
 class DtoAndModelTest {
 
+    /**
+     * Verifies the Template entity data mapping and builder.
+     */
     @Test
     void testTemplateModel() {
         Template template = Template.builder()
@@ -43,6 +50,9 @@ class DtoAndModelTest {
         assertNotNull(template.toString());
     }
 
+    /**
+     * Verifies the Template response DTO fields.
+     */
     @Test
     void testTemplateResponseDTO() {
         TemplateResponseDTO dto = TemplateResponseDTO.builder()
@@ -65,6 +75,9 @@ class DtoAndModelTest {
         assertEquals("T2", dto2.getName());
     }
 
+    /**
+     * Verifies that the template category and tier enums have correctly defined constants.
+     */
     @Test
     void testEnums() {
         assertNotNull(Category.valueOf("MODERN"));

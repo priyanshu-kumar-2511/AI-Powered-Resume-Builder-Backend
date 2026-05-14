@@ -81,6 +81,9 @@ class AuthServiceTest {
                 .build();
     }
 
+    /**
+     * Verifies that registration initiation (Step 1) correctly generates and sends an OTP.
+     */
     @Test
     @DisplayName("Test: Initiate Registration - Success")
     void initiateRegistration_Success() {
@@ -96,6 +99,10 @@ class AuthServiceTest {
         verify(emailService, times(1)).sendOtpEmail(eq("new@example.com"), eq("123456"), anyString());
     }
 
+    /**
+     * Verifies that initiating registration for an existing inactive user correctly cleans up 
+     * their previous session before starting a new one.
+     */
     @Test
     @DisplayName("Test: Initiate Registration - Inactive User Cleanup")
     void initiateRegistration_InactiveUserCleanup() {
@@ -115,6 +122,9 @@ class AuthServiceTest {
         verify(userRepository).save(any(User.class));
     }
 
+    /**
+     * Verifies that the registration OTP is correctly validated (Step 2).
+     */
     @Test
     @DisplayName("Test: Verify Registration OTP - Success")
     void verifyRegistrationOtp_Success() {
@@ -127,6 +137,9 @@ class AuthServiceTest {
         assertEquals("OTP verified successfully", result);
     }
 
+    /**
+     * Ensures that OTP verification fails if the user account is already active.
+     */
     @Test
     @DisplayName("Test: Verify Registration OTP - Active User")
     void verifyRegistrationOtp_ActiveUser() {
@@ -136,6 +149,9 @@ class AuthServiceTest {
         assertThrows(RuntimeException.class, () -> authService.verifyRegistrationOtp("new@example.com", "123456"));
     }
 
+    /**
+     * Verifies that OTP verification fails if the corresponding user record is not found.
+     */
     @Test
     @DisplayName("Test: Verify Registration OTP - Session Not Found")
     void verifyRegistrationOtp_NotFound() {
@@ -143,6 +159,9 @@ class AuthServiceTest {
         assertThrows(RuntimeException.class, () -> authService.verifyRegistrationOtp("none@e.com", "123456"));
     }
 
+    /**
+     * Verifies that an incorrect OTP is properly rejected during the registration flow.
+     */
     @Test
     @DisplayName("Test: Verify Registration OTP - Invalid OTP")
     void verifyRegistrationOtp_InvalidOtp() {
@@ -153,6 +172,9 @@ class AuthServiceTest {
         assertThrows(RuntimeException.class, () -> authService.verifyRegistrationOtp("new@example.com", "wrong"));
     }
 
+    /**
+     * Verifies final user account creation after valid OTP submission (Step 3).
+     */
     @Test
     @DisplayName("Test: Register User (Step 3) - Success")
     void register_Success() {
@@ -170,6 +192,9 @@ class AuthServiceTest {
         verify(userQuotaRepository, times(1)).save(any(UserQuota.class));
     }
 
+    /**
+     * Ensures final registration fails if the user context is missing.
+     */
     @Test
     @DisplayName("Test: Register User (Step 3) - Session Not Found")
     void register_SessionNotFound() {
@@ -177,6 +202,9 @@ class AuthServiceTest {
         assertThrows(RuntimeException.class, () -> authService.register(registerRequest));
     }
 
+    /**
+     * Ensures that a user cannot complete registration if their email is already associated with an active account.
+     */
     @Test
     @DisplayName("Test: Register User (Step 3) - Already Active")
     void register_AlreadyActive() {
@@ -185,6 +213,9 @@ class AuthServiceTest {
         assertThrows(RuntimeException.class, () -> authService.register(registerRequest));
     }
 
+    /**
+     * Tests successful user login and JWT generation.
+     */
     @Test
     @DisplayName("Test: User Login - Success")
     void login_Success() {
@@ -198,6 +229,9 @@ class AuthServiceTest {
         assertEquals("mockJwtToken", token);
     }
 
+    /**
+     * Verifies that the username recovery flow sends the correct OTP.
+     */
     @Test
     @DisplayName("Test: Initiate Username Recovery")
     void initiateUsernameRecovery_Success() {
@@ -212,6 +246,9 @@ class AuthServiceTest {
         verify(emailService, times(1)).sendOtpEmail(eq("test@example.com"), eq("123456"), anyString());
     }
 
+    /**
+     * Verifies that the username recovery OTP is correctly validated before sending the username email.
+     */
     @Test
     @DisplayName("Test: Verify Username Recovery")
     void verifyUsernameRecovery_Success() {
@@ -225,6 +262,9 @@ class AuthServiceTest {
         verify(emailService, times(1)).sendUsernameEmail("test@example.com", "testuser");
     }
 
+    /**
+     * Verifies that a user can deactivate their own account.
+     */
     @Test
     @DisplayName("Test: Deactivate Account")
     void deactivateAccount_Success() {
@@ -236,6 +276,9 @@ class AuthServiceTest {
         assertFalse(testUser.isActive());
     }
 
+    /**
+     * Verifies that login fails when an incorrect password is provided.
+     */
     @Test
     @DisplayName("Test: Login - Incorrect Password")
     void login_IncorrectPassword() {
@@ -246,6 +289,9 @@ class AuthServiceTest {
         assertThrows(RuntimeException.class, () -> authService.login(loginRequest));
     }
 
+    /**
+     * Verifies that login fails for accounts that have been suspended by an administrator.
+     */
     @Test
     @DisplayName("Test: Login - Suspended Account")
     void login_SuspendedAccount() {
@@ -258,6 +304,9 @@ class AuthServiceTest {
         assertEquals("ACCOUNT_SUSPENDED", ex.getMessage());
     }
 
+    /**
+     * Verifies that registration fails if the chosen username is already taken by another active user.
+     */
     @Test
     @DisplayName("Test: Register - Username Taken")
     void register_UsernameTaken() {
@@ -270,6 +319,9 @@ class AuthServiceTest {
         assertThrows(RuntimeException.class, () -> authService.register(registerRequest));
     }
 
+    /**
+     * Verifies that user profile metadata can be successfully updated.
+     */
     @Test
     @DisplayName("Test: Update Profile")
     void updateProfile_Success() {
@@ -286,6 +338,9 @@ class AuthServiceTest {
         assertEquals("New Name", testUser.getFullName());
     }
 
+    /**
+     * Verifies that an admin can permanently delete a user and their associated data.
+     */
     @Test
     @DisplayName("Test: Delete Own Account")
     void deleteOwnAccount_Success() {
@@ -392,6 +447,9 @@ class AuthServiceTest {
         assertTrue(ex.getMessage().contains("Role not found"));
     }
 
+    /**
+     * Tests the initiation of the password reset process.
+     */
     @Test
     @DisplayName("Test: Initiate Password Reset")
     void initiatePasswordReset_Success() {
@@ -465,6 +523,9 @@ class AuthServiceTest {
 
         assertEquals("USER_SUSPENDED", logs.get(0).get("actionType"));
     }
+    /**
+     * Verifies that the validateToken method correctly identifies valid JWTs.
+     */
     @Test
     @DisplayName("Test: Validate Token - Success")
     void validateToken_Success() {

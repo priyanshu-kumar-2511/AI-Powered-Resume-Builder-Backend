@@ -5,8 +5,15 @@ import java.util.List;
 import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Unit tests for AI Service Data Transfer Objects (DTOs).
+ * Verifies correct data mapping, builder functionality, and property accessors.
+ */
 class DtoTest {
 
+    /**
+     * Verifies the AI generation request payload and builder.
+     */
     @Test
     void testAiRequest() {
         AiRequest req = AiRequest.builder()
@@ -38,6 +45,9 @@ class DtoTest {
         assertEquals("user456", req2.getUserId());
     }
 
+    /**
+     * Verifies the AI generation response data structure.
+     */
     @Test
     void testAiResponse() {
         AiResponse resp = new AiResponse("content", List.of("b1"), 80, Map.of("key", "val"));

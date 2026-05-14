@@ -23,6 +23,12 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 @EnableFeignClients
 public class AuthServiceApplication {
 
+    /**
+     * Entry point for the Authentication Service.
+     * Initializes environment variables and starts the application context.
+     * 
+     * @param args command line arguments
+     */
     public static void main(String[] args) {
         // Load .env file from the project root
         io.github.cdimascio.dotenv.Dotenv dotenv = io.github.cdimascio.dotenv.Dotenv.configure()

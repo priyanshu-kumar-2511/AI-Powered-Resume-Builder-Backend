@@ -5,8 +5,15 @@ import com.airesume.paymentservice.model.SubscriptionStatus;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Unit tests for Payment Data Transfer Objects (DTOs) and Models.
+ * Verifies correct data binding, builder patterns, and manual getters/setters.
+ */
 class DtoTest {
 
+    /**
+     * Verifies the integrity of the order creation request DTO.
+     */
     @Test
     void testCreateOrderRequest() {
         CreateOrderRequest req = new CreateOrderRequest();
@@ -17,6 +24,9 @@ class DtoTest {
         assertEquals("YEARLY", req2.getBillingCycle());
     }
 
+    /**
+     * Tests the builder and getter methods of the order creation response.
+     */
     @Test
     void testCreateOrderResponse() {
         CreateOrderResponse res = CreateOrderResponse.builder()
@@ -41,6 +51,9 @@ class DtoTest {
         assertEquals("o", res3.getOrderId());
     }
 
+    /**
+     * Verifies the payment verification request payload.
+     */
     @Test
     void testVerifyPaymentRequest() {
         VerifyPaymentRequest req = new VerifyPaymentRequest();
@@ -53,6 +66,9 @@ class DtoTest {
         assertEquals("sig", req.getRazorpaySignature());
     }
 
+    /**
+     * Verifies the data mapping for payment verification responses.
+     */
     @Test
     void testVerifyPaymentResponse() {
         VerifyPaymentResponse res = VerifyPaymentResponse.builder()
@@ -73,6 +89,9 @@ class DtoTest {
         assertTrue(res3.isSuccess());
     }
 
+    /**
+     * Verifies the subscription status response DTO fields.
+     */
     @Test
     void testSubscriptionStatusResponse() {
         SubscriptionStatusResponse res = SubscriptionStatusResponse.builder()
@@ -88,6 +107,9 @@ class DtoTest {
         assertEquals(PlanType.FREE, res2.getPlan());
     }
 
+    /**
+     * Verifies the Subscription domain model property mapping and JPA lifecycle.
+     */
     @Test
     void testSubscriptionModel() {
         com.airesume.paymentservice.model.Subscription sub = com.airesume.paymentservice.model.Subscription.builder()
@@ -117,6 +139,9 @@ class DtoTest {
         assertNotNull(sub.toString());
     }
 
+    /**
+     * Verifies that the payment-related enums have consistent naming.
+     */
     @Test
     void testEnums() {
         assertEquals("MONTHLY", com.airesume.paymentservice.model.BillingCycle.MONTHLY.name());

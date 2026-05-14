@@ -1,5 +1,7 @@
 package com.airesume.templateservice.controller;
 
+import java.util.Objects;
+import com.airesume.templateservice.dto.TemplateDTO;
 import com.airesume.templateservice.dto.TemplateResponseDTO;
 import com.airesume.templateservice.model.Category;
 import com.airesume.templateservice.model.Template;
@@ -30,19 +32,25 @@ public class TemplateController {
     private final TemplateService templateService;
 
     /**
-     * POST /api/v1/templates
-     * Creates a new template. Restricted to ADMIN users.
+     * Creates a new resume template. 
+     * Access is restricted to users with the ADMIN role.
+     * 
+     * @param templateDto the template details including HTML/CSS source
+     * @return the created template metadata and content
      */
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Create new template (Admin only)")
-    public ResponseEntity<Template> createTemplate(@RequestBody Template template) {
-        return new ResponseEntity<>(templateService.createTemplate(template), HttpStatus.CREATED);
+    public ResponseEntity<TemplateDTO> createTemplate(@RequestBody TemplateDTO templateDto) {
+        Template template = templateDto.toEntity();
+        return new ResponseEntity<>(TemplateDTO.fromEntity(templateService.createTemplate(template)), HttpStatus.CREATED);
     }
 
     /**
-     * GET /api/v1/templates
-     * Returns a list of all active templates (Public).
+     * Retrieves all active templates available for public use.
+     * Lightweight DTOs are returned without full HTML/CSS content.
+     * 
+     * @return a list of active template summaries
      */
     @GetMapping
     @Operation(summary = "Get all active templates (Public)")
@@ -50,7 +58,7 @@ public class TemplateController {
         List<TemplateResponseDTO> templates = templateService.getAllActiveTemplates()
                 .stream()
                 .map(this::convertToDTO)
-                .collect(Collectors.toList());
+                .toList();
         return ResponseEntity.ok(templates);
     }
 
@@ -61,8 +69,12 @@ public class TemplateController {
     @GetMapping("/admin")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Get all templates including inactive (Admin only)")
-    public ResponseEntity<List<Template>> getAllTemplatesForAdmin() {
-        return ResponseEntity.ok(templateService.getAllTemplates());
+    public ResponseEntity<List<TemplateDTO>> getAllTemplatesForAdmin() {
+        List<TemplateDTO> templates = templateService.getAllTemplates()
+                .stream()
+                .map(TemplateDTO::fromEntity)
+                .toList();
+        return ResponseEntity.ok(templates);
     }
 
     /**
@@ -75,7 +87,7 @@ public class TemplateController {
         List<TemplateResponseDTO> templates = templateService.getTemplatesByTier(Tier.FREE)
                 .stream()
                 .map(this::convertToDTO)
-                .collect(Collectors.toList());
+                .toList();
         return ResponseEntity.ok(templates);
     }
 
@@ -90,18 +102,20 @@ public class TemplateController {
         List<TemplateResponseDTO> templates = templateService.getTemplatesByTier(Tier.PREMIUM)
                 .stream()
                 .map(this::convertToDTO)
-                .collect(Collectors.toList());
+                .toList();
         return ResponseEntity.ok(templates);
     }
 
     /**
-     * GET /api/v1/templates/{templateId}
-     * Returns full details (including HTML/CSS) of a single template (Public).
+     * Retrieves full details of a specific template, including its layout and styles.
+     * 
+     * @param templateId the unique ID of the template
+     * @return the complete template DTO
      */
     @GetMapping("/{templateId}")
     @Operation(summary = "Get single template with full HTML/CSS (Public)")
-    public ResponseEntity<Template> getTemplateById(@PathVariable Long templateId) {
-        return ResponseEntity.ok(templateService.getTemplateById(templateId));
+    public ResponseEntity<TemplateDTO> getTemplateById(@PathVariable Long templateId) {
+        return ResponseEntity.ok(TemplateDTO.fromEntity(templateService.getTemplateById(templateId)));
     }
 
     /**
@@ -114,13 +128,15 @@ public class TemplateController {
         List<TemplateResponseDTO> templates = templateService.getTemplatesByCategory(category)
                 .stream()
                 .map(this::convertToDTO)
-                .collect(Collectors.toList());
+                .toList();
         return ResponseEntity.ok(templates);
     }
 
     /**
-     * GET /api/v1/templates/popular
-     * Returns templates sorted by usage count (Public).
+     * Returns a list of templates sorted by their usage count.
+     * Useful for displaying 'Trending' or 'Most Used' templates.
+     * 
+     * @return a list of popular template summaries
      */
     @GetMapping("/popular")
     @Operation(summary = "Get templates sorted by popularity (Public)")
@@ -128,7 +144,7 @@ public class TemplateController {
         List<TemplateResponseDTO> templates = templateService.getPopularTemplates()
                 .stream()
                 .map(this::convertToDTO)
-                .collect(Collectors.toList());
+                .toList();
         return ResponseEntity.ok(templates);
     }
 
@@ -139,8 +155,9 @@ public class TemplateController {
     @PutMapping("/{templateId}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Update template details (Admin only)")
-    public ResponseEntity<Template> updateTemplate(@PathVariable Long templateId, @RequestBody Template template) {
-        return ResponseEntity.ok(templateService.updateTemplate(templateId, template));
+    public ResponseEntity<TemplateDTO> updateTemplate(@PathVariable Long templateId, @RequestBody TemplateDTO templateDto) {
+        Template template = templateDto.toEntity();
+        return ResponseEntity.ok(TemplateDTO.fromEntity(templateService.updateTemplate(templateId, template)));
     }
 
     /**
@@ -167,6 +184,18 @@ public class TemplateController {
     }
 
     /**
+     * DELETE /api/v1/templates/{templateId}
+     * Permanently deletes a template. Restricted to ADMIN users.
+     */
+    @DeleteMapping("/{templateId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Permanently delete a template (Admin only)")
+    public ResponseEntity<Void> deleteTemplate(@PathVariable Long templateId) {
+        templateService.deleteTemplate(templateId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
      * Helper method to convert Entity to a lightweight DTO.
      */
     private TemplateResponseDTO convertToDTO(Template template) {
@@ -178,7 +207,7 @@ public class TemplateController {
                 .category(template.getCategory())
                 .tier(template.getTier())
                 .usageCount(template.getUsageCount())
-                .isActive(template.getIsActive())
+                .isActive(Objects.requireNonNullElse(template.getIsActive(), true))
                 .build();
     }
 }

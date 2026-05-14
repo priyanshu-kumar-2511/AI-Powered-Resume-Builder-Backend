@@ -7,8 +7,16 @@ import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Unit tests for Resume service Data Transfer Objects.
+ * Verifies property mapping for resume creation, update requests, 
+ * and ATS score synchronization models.
+ */
 class DtoTest {
 
+    /**
+     * Verifies that the ResumeResponse DTO correctly maps all fields from a Resume entity.
+     */
     @Test
     void resumeResponse_ShouldMapFieldsFromResume() {
         Resume resume = Resume.builder()
@@ -38,6 +46,9 @@ class DtoTest {
         assertEquals(5, response.getViewCount());
     }
 
+    /**
+     * Verifies the data integrity of a resume creation request.
+     */
     @Test
     void resumeCreateRequest_ShouldSetGetFields() {
         ResumeCreateRequest req = new ResumeCreateRequest();
@@ -54,6 +65,9 @@ class DtoTest {
         assertEquals("fr", req.getLanguage());
     }
 
+    /**
+     * Verifies the data integrity of a resume update request.
+     */
     @Test
     void resumeUpdateRequest_ShouldSetGetFields() {
         ResumeUpdateRequest req = new ResumeUpdateRequest();
@@ -68,6 +82,9 @@ class DtoTest {
         assertEquals("COMPLETE", req.getStatus());
     }
 
+    /**
+     * Verifies that the ATS score update DTO correctly captures and returns score data.
+     */
     @Test
     void atsUpdateDTO_ShouldSetGetFields() {
         AtsUpdateDTO dto = new AtsUpdateDTO();
@@ -76,6 +93,9 @@ class DtoTest {
         assertEquals(90, dto.getAtsScore());
     }
 
+    /**
+     * Verifies that the ResumeResponse DTO can be instantiated correctly even if only partial metadata is available.
+     */
     @Test
     void resumeResponse_ShouldHandleTimestamps() {
         LocalDateTime now = LocalDateTime.now();

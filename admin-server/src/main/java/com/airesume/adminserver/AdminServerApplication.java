@@ -13,6 +13,12 @@ import de.codecentric.boot.admin.server.config.EnableAdminServer;
 @EnableAdminServer
 public class AdminServerApplication {
 
+    /**
+     * Entry point for the Admin Server.
+     * Loads environment variables from .env file before starting the Spring context.
+     * 
+     * @param args command line arguments
+     */
     public static void main(String[] args) {
         io.github.cdimascio.dotenv.Dotenv dotenv = io.github.cdimascio.dotenv.Dotenv.configure()
                 .directory("../")

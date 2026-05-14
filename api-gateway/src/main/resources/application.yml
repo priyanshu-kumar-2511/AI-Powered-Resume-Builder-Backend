@@ -6,7 +6,7 @@ spring:
     name: API-GATEWAY
   config:
     import:
-      - optional:configserver:http://localhost:8888
+      - optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888}
       - optional:file:../.env
   cloud:
     gateway:
@@ -16,8 +16,8 @@ spring:
             cors-configurations:
               '[/**]':
                 allowedOrigins:
-                  - "http://localhost:4200"
-                  - "http://127.0.0.1:4200"
+                  - "${FRONTEND_PUBLIC_ORIGIN:http://localhost:4200}"
+                  - "${FRONTEND_PUBLIC_ORIGIN_ALT:http://127.0.0.1:4200}"
                 allowedMethods:
                   - GET
                   - POST
@@ -30,7 +30,7 @@ spring:
           routes:
             # Separate docs route so AUTH-SERVICE spec does not collide with gateway docs
             - id: auth-swagger-route
-              uri: http://localhost:8081
+              uri: ${AUTH_SERVICE_URI:http://localhost:8081}
               predicates:
                 - Path=/api/v1/auth/v3/api-docs, /api/v1/auth/v3/api-docs/**
               filters:
@@ -39,7 +39,7 @@ spring:
 
             # Route for Authentication and Admin (AUTH-SERVICE)
             - id: auth-api-route
-              uri: http://localhost:8081
+              uri: ${AUTH_SERVICE_URI:http://localhost:8081}
               predicates:
                 - Path=/api/v1/auth/**, /api/v1/admin/users, /api/v1/admin/users/**, /api/v1/admin/audit-logs, /api/v1/admin/audit-logs/**
 
@@ -57,13 +57,13 @@ spring:
 
             # Route for OAuth2 Login and Callbacks
             - id: oauth2-route
-              uri: http://localhost:8081
+              uri: ${AUTH_SERVICE_URI:http://localhost:8081}
               predicates:
                 - Path=/oauth2/**, /login/**
 
             # Route for Documentation
             - id: swagger-route
-              uri: http://localhost:8081
+              uri: ${AUTH_SERVICE_URI:http://localhost:8081}
               predicates:
                 - Path=/swagger-ui/**, /v3/api-docs/**, /swagger-ui.html
 
@@ -108,7 +108,7 @@ spring:
                 - SetRequestHeader=X-Forwarded-Prefix, /api/v1/exports
 
             - id: notification-service
-              uri: http://localhost:8087
+              uri: ${NOTIFICATION_SERVICE_URI:http://localhost:8087}
               predicates:
                 - Path=/api/v1/notifications/**
               filters:
@@ -118,9 +118,9 @@ spring:
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka/}
   instance:
-    hostname: localhost
+    hostname: ${HOSTNAME:localhost}
     instance-id: ${spring.application.name}:${server.port}
     appname: API-GATEWAY
 

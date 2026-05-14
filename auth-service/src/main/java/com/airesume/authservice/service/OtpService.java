@@ -22,6 +22,11 @@ public class OtpService {
 
     /**
      * Generates a new 6-digit numeric OTP and saves it to the database.
+     * Cleans up any existing OTPs for the user before saving the new one.
+     * 
+     * @param user the user for whom the OTP is being generated
+     * @param type the purpose of the OTP (REGISTRATION, RECOVERY, etc.)
+     * @return the generated 6-digit code
      */
     @Transactional
     public String generateAndSaveOtp(User user, VerificationOtp.OtpType type) {
@@ -43,6 +48,11 @@ public class OtpService {
 
     /**
      * Validates if the provided OTP is correct and hasn't expired.
+     * 
+     * @param user the user whose OTP is being validated
+     * @param code the code provided by the user
+     * @param type the expected type of the OTP
+     * @return true if the OTP is valid and active, false otherwise
      */
     public boolean validateOtp(User user, String code, VerificationOtp.OtpType type) {
         return otpRepository.findByOtpCodeAndUserAndType(code, user, type)

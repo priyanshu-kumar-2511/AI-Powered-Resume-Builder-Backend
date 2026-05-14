@@ -1,6 +1,7 @@
 package com.airesume.authservice.dto;
 
 import com.airesume.authservice.model.PlanType;
+import java.time.LocalDateTime;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,6 +10,11 @@ import lombok.NoArgsConstructor;
 
 import java.util.Set;
 
+
+/**
+ * Data Transfer Object for returning user profile details.
+ * Encapsulates identity, subscription status, roles, and account timestamps.
+ */
 @Data
 @Builder(toBuilder = true)
 @NoArgsConstructor
@@ -25,4 +31,7 @@ public class UserProfileResponse {
     
     @JsonProperty("isActive")
     private boolean isActive;
+    
+    private LocalDateTime createdAt;
+    private LocalDateTime premiumExpiresAt;
 }

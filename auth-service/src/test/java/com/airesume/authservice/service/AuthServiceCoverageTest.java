@@ -17,6 +17,11 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+/**
+ * Exhaustive edge-case unit tests for the Authentication Service.
+ * Verifies failure modes, boundary conditions, and complex state transitions 
+ * for account management, security tokens, and administrative overrides.
+ */
 @ExtendWith(MockitoExtension.class)
 @org.mockito.junit.jupiter.MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
 class AuthServiceCoverageTest {
@@ -63,6 +68,9 @@ class AuthServiceCoverageTest {
                 .build();
     }
 
+    /**
+     * Verifies that registration fails if the default user role is missing from the system.
+     */
     @Test
     void register_DefaultRoleNotFound_ThrowsException() {
         RegisterRequest request = RegisterRequest.builder()
@@ -76,6 +84,9 @@ class AuthServiceCoverageTest {
         assertThrows(RuntimeException.class, () -> authService.register(request));
     }
 
+    /**
+     * Ensures that login attempts for suspended accounts are correctly blocked.
+     */
     @Test
     void login_AccountSuspended_ThrowsException() {
         sampleUser.setActive(false);
@@ -86,6 +97,9 @@ class AuthServiceCoverageTest {
         assertThrows(RuntimeException.class, () -> authService.login(request));
     }
 
+    /**
+     * Verifies that invalid security tokens result in a validation exception.
+     */
     @Test
     void validateToken_InvalidToken_ThrowsException() {
         when(jwtService.validateToken("invalidToken")).thenReturn(false);
@@ -93,6 +107,9 @@ class AuthServiceCoverageTest {
         assertThrows(RuntimeException.class, () -> authService.validateToken("invalidToken"));
     }
 
+    /**
+     * Verifies successful deactivation of a user account.
+     */
     @Test
     void deactivateAccount_Success() {
         when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(sampleUser));
@@ -104,6 +121,9 @@ class AuthServiceCoverageTest {
         verify(userRepository).save(sampleUser);
     }
 
+    /**
+     * Verifies that account deactivation fails if the username is not found.
+     */
     @Test
     void deactivateAccount_NotFound() {
         when(userRepository.findByUsername("none")).thenReturn(Optional.empty());
@@ -111,6 +131,9 @@ class AuthServiceCoverageTest {
         assertThrows(RuntimeException.class, () -> authService.deactivateAccount("none"));
     }
 
+    /**
+     * Verifies that a user's subscription plan can be successfully updated.
+     */
     @Test
     void updateSubscription_Success() {
         when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(sampleUser));
@@ -121,6 +144,9 @@ class AuthServiceCoverageTest {
         assertEquals(PlanType.PREMIUM, sampleUser.getSubscriptionPlan());
     }
 
+    /**
+     * Verifies that subscription updates fail if the user account does not exist.
+     */
     @Test
     void updateSubscription_NotFound() {
         when(userRepository.findByUsername("none")).thenReturn(Optional.empty());
@@ -128,6 +154,9 @@ class AuthServiceCoverageTest {
         assertThrows(RuntimeException.class, () -> authService.updateSubscription("none", PlanType.PREMIUM));
     }
 
+    /**
+     * Verifies that an administrator can manually update a user's active status.
+     */
     @Test
     void updateUserStatus_Success() {
         when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(sampleUser));
@@ -138,6 +167,9 @@ class AuthServiceCoverageTest {
         assertFalse(sampleUser.isActive());
     }
 
+    /**
+     * Verifies that manual status updates fail if the target user is not found.
+     */
     @Test
     void updateUserStatus_NotFound() {
         when(userRepository.findByUsername("none")).thenReturn(Optional.empty());
@@ -145,6 +177,9 @@ class AuthServiceCoverageTest {
         assertThrows(RuntimeException.class, () -> authService.updateUserStatus("none", false));
     }
 
+    /**
+     * Verifies that an administrator can successfully change a user's role.
+     */
     @Test
     void updateUserRole_Success() {
         when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(sampleUser));
@@ -157,6 +192,9 @@ class AuthServiceCoverageTest {
         assertTrue(sampleUser.getRoles().contains(role));
     }
 
+    /**
+     * Verifies that role updates fail if the target user is missing.
+     */
     @Test
     void updateUserRole_NotFound() {
         when(userRepository.findByUsername("none")).thenReturn(Optional.empty());

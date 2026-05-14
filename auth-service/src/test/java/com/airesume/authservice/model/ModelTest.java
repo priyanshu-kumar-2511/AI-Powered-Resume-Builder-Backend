@@ -6,8 +6,15 @@ import java.util.HashSet;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Unit tests for Authentication service persistence models.
+ * Verifies entity mapping, relationship initialization, and builder patterns for users and roles.
+ */
 class ModelTest {
 
+    /**
+     * Verifies the User entity fields and builder functionality.
+     */
     @Test
     void testUser() {
         User user = User.builder()
@@ -24,6 +31,9 @@ class ModelTest {
         assertEquals(1L, user2.getId());
     }
 
+    /**
+     * Verifies the Role entity data mapping.
+     */
     @Test
     void testRole() {
         Role role = new Role(1, "R");
@@ -35,6 +45,9 @@ class ModelTest {
         assertEquals(role.hashCode(), role2.hashCode());
     }
 
+    /**
+     * Verifies the User Quota entity properties.
+     */
     @Test
     void testUserQuota() {
         UserQuota q = UserQuota.builder().id(1L).aiCallsUsed(10).build();

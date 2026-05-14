@@ -66,6 +66,9 @@ class ResumeServiceImplTest {
                 .build();
     }
 
+    /**
+     * Verifies that a resume can be created successfully when under the limit.
+     */
     @Test
     void testCreateResume_Success() {
         ResumeCreateRequest request = new ResumeCreateRequest(100L, "Software Engineer", 10L, "Backend Developer", "en");
@@ -81,6 +84,9 @@ class ResumeServiceImplTest {
         verify(sectionServiceClient, times(6)).addSection(any(SectionPayload.class));
     }
 
+    /**
+     * Ensures that creating a resume automatically initializes the 6 required sections.
+     */
     @Test
     void testCreateResume_InitializesSupportedDefaultSectionsWithExpectedContent() {
         ResumeCreateRequest request = new ResumeCreateRequest(100L, "Software Engineer", 10L, "Backend Developer", "en");
@@ -101,6 +107,9 @@ class ResumeServiceImplTest {
         assertEquals(List.of("SUMMARY", "EXPERIENCE", "EDUCATION", "SKILLS", "PROJECTS", "CERTIFICATIONS"), types);
     }
 
+    /**
+     * Verifies that FREE users cannot exceed the 3-resume limit.
+     */
     @Test
     void testCreateResume_FailsLimitForFreeUser() {
         ResumeCreateRequest request = new ResumeCreateRequest(100L, "Software Engineer", 10L, "Backend Developer", "en");
@@ -113,6 +122,9 @@ class ResumeServiceImplTest {
         assertEquals(org.springframework.http.HttpStatus.FORBIDDEN, exception.getStatusCode());
     }
 
+    /**
+     * Verifies that resume creation is rolled back if section initialization via Feign fails.
+     */
     @Test
     void testCreateResume_FailsSectionInit() {
         ResumeCreateRequest request = new ResumeCreateRequest(100L, "Software Engineer", 10L, "Backend Developer", "en");
@@ -128,6 +140,9 @@ class ResumeServiceImplTest {
         verify(resumeRepository).deleteById(1L);
     }
 
+    /**
+     * Tests basic retrieval of a resume by its ID.
+     */
     @Test
     void testGetResumeById_Success() {
         when(resumeRepository.findById(1L)).thenReturn(Optional.of(sampleResume));
@@ -138,6 +153,9 @@ class ResumeServiceImplTest {
         assertEquals(1L, response.getResumeId());
     }
 
+    /**
+     * Ensures that a 404 Not Found error is returned for non-existent resume IDs.
+     */
     @Test
     void testGetResumeById_NotFound() {
         when(resumeRepository.findById(99L)).thenReturn(Optional.empty());
@@ -149,6 +167,9 @@ class ResumeServiceImplTest {
         assertEquals(org.springframework.http.HttpStatus.NOT_FOUND, exception.getStatusCode());
     }
 
+    /**
+     * Verifies that a user cannot access another user's private resume.
+     */
     @Test
     void testGetResumeById_Forbidden() {
         when(resumeRepository.findById(1L)).thenReturn(Optional.of(sampleResume));
@@ -161,6 +182,9 @@ class ResumeServiceImplTest {
         assertEquals(org.springframework.http.HttpStatus.FORBIDDEN, exception.getStatusCode());
     }
 
+    /**
+     * Verifies that public resumes can be retrieved even by users who do not own them.
+     */
     @Test
     void testGetResumeById_PublicIsAllowed() {
         sampleResume.setPublic(true);
@@ -171,6 +195,9 @@ class ResumeServiceImplTest {
         assertNotNull(response);
     }
 
+    /**
+     * Verifies that administrative users can bypass ownership checks for any resume.
+     */
     @Test
     void testGetResumeById_AdminIsAllowed() {
         when(resumeRepository.findById(1L)).thenReturn(Optional.of(sampleResume));
@@ -181,6 +208,9 @@ class ResumeServiceImplTest {
         assertNotNull(response);
     }
 
+    /**
+     * Tests the update logic for resume metadata (title, status, etc.).
+     */
     @Test
     void testUpdateResume_Success() {
         ResumeUpdateRequest request = new ResumeUpdateRequest("Senior Dev", "Lead", "fr", "COMPLETE", null);
@@ -192,6 +222,9 @@ class ResumeServiceImplTest {
         assertEquals("Senior Dev", sampleResume.getTitle());
     }
 
+    /**
+     * Verifies that the ATS score update correctly updates the repository.
+     */
     @Test
     void testUpdateAtsScore_Success() {
         AtsUpdateDTO request = new AtsUpdateDTO(85);
@@ -203,6 +236,9 @@ class ResumeServiceImplTest {
         assertEquals(85, sampleResume.getAtsScore());
     }
 
+    /**
+     * Verifies retrieval of all resumes belonging to the authenticated user.
+     */
     @Test
     void testGetResumesByUser_Success() {
         when(resumeRepository.findByUserId(100L)).thenReturn(Arrays.asList(sampleResume));
@@ -212,6 +248,9 @@ class ResumeServiceImplTest {
         assertEquals(1, responses.size());
     }
 
+    /**
+     * Verifies that a user cannot retrieve resumes belonging to a different user.
+     */
     @Test
     void testGetResumesByUser_Forbidden() {
         when(currentUserService.requireUserId()).thenReturn(200L);
@@ -221,6 +260,9 @@ class ResumeServiceImplTest {
         });
     }
 
+    /**
+     * Verifies retrieval of all resumes associated with a specific template ID (Admin only).
+     */
     @Test
     void testGetResumesByTemplate() {
         when(resumeRepository.findByTemplateId(10L)).thenReturn(List.of(sampleResume));
@@ -231,6 +273,9 @@ class ResumeServiceImplTest {
         verify(currentUserService).requireAdmin();
     }
 
+    /**
+     * Verifies retrieval of all resumes marked as public.
+     */
     @Test
     void testGetPublicResumes() {
         when(resumeRepository.findByIsPublic(true)).thenReturn(List.of(sampleResume));
@@ -240,6 +285,9 @@ class ResumeServiceImplTest {
         assertEquals(1, responses.size());
     }
 
+    /**
+     * Verifies that duplicating a resume correctly copies all sections to the new ID.
+     */
     @Test
     void testDuplicateResume_Success() {
         when(resumeRepository.findById(1L)).thenReturn(Optional.of(sampleResume));
@@ -257,6 +305,9 @@ class ResumeServiceImplTest {
         verify(sectionServiceClient).addSection(any(SectionPayload.class));
     }
 
+    /**
+     * Verifies that resume duplication is rolled back if section copying via Feign fails.
+     */
     @Test
     void testDuplicateResume_FailsSectionInit() {
         when(resumeRepository.findById(1L)).thenReturn(Optional.of(sampleResume));
@@ -274,6 +325,9 @@ class ResumeServiceImplTest {
         verify(resumeRepository).deleteById(2L);
     }
 
+    /**
+     * Verifies the publishing workflow, ensuring the resume is marked as public and status is set to COMPLETE.
+     */
     @Test
     void testPublishResume() {
         when(resumeRepository.findById(1L)).thenReturn(Optional.of(sampleResume));
@@ -285,6 +339,9 @@ class ResumeServiceImplTest {
         assertEquals("COMPLETE", sampleResume.getStatus());
     }
 
+    /**
+     * Verifies the unpublishing workflow, ensuring the resume is no longer marked as public.
+     */
     @Test
     void testUnpublishResume() {
         sampleResume.setPublic(true);
@@ -296,6 +353,9 @@ class ResumeServiceImplTest {
         assertFalse(sampleResume.isPublic());
     }
 
+    /**
+     * Verifies that the view count is incremented only for public resumes.
+     */
     @Test
     void testIncrementViewCount_Success() {
         sampleResume.setPublic(true);
@@ -307,6 +367,9 @@ class ResumeServiceImplTest {
         verify(resumeRepository).save(sampleResume);
     }
 
+    /**
+     * Ensures that view count increments are blocked for private resumes.
+     */
     @Test
     void testIncrementViewCount_NotPublic() {
         when(resumeRepository.findById(1L)).thenReturn(Optional.of(sampleResume));
@@ -433,6 +496,9 @@ class ResumeServiceImplTest {
         assertEquals("New Title", response.getTitle());
     }
 
+    /**
+     * Verifies that PREMIUM users are not restricted by the FREE tier limits.
+     */
     @Test
     void testCreateResume_PremiumUser_BypassesLimit() {
         ResumeCreateRequest request = new ResumeCreateRequest(100L, "Software Engineer", 10L, "Backend Developer", "en");

@@ -7,8 +7,15 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
+/**
+ * Entity representing the history of AI interactions.
+ * Stores audit logs of prompts, responses, model details, and token usage 
+ * for analytics and user history tracking.
+ */
 @Entity
-@Table(name = "ai_history")
+@Table(name = "ai_history", indexes = {
+    @Index(name = "idx_ai_history_userid", columnList = "userId")
+})
 @Data
 @Builder(toBuilder = true)
 @NoArgsConstructor

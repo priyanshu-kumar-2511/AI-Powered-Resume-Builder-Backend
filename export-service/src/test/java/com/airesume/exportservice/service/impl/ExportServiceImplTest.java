@@ -63,6 +63,9 @@ class ExportServiceImplTest {
         job.setFileUrl(tempFile.toAbsolutePath().toString());
     }
 
+    /**
+     * Verifies successful submission of a PDF export job for a free user within their daily limit.
+     */
     @Test
     void testSubmitExportJob_Success() {
         when(currentUserService.isPremium()).thenReturn(false);
@@ -75,6 +78,9 @@ class ExportServiceImplTest {
         verify(rabbitTemplate).convertAndSend(eq("x.airesume"), eq("pdf.export"), any(ExportMessage.class));
     }
 
+    /**
+     * Ensures that free users are blocked from exporting once their daily PDF limit is reached.
+     */
     @Test
     void testSubmitExportJob_FreeLimitReached() {
         when(currentUserService.isPremium()).thenReturn(false);
@@ -86,6 +92,9 @@ class ExportServiceImplTest {
         assertEquals(HttpStatus.TOO_MANY_REQUESTS, ex.getStatusCode());
     }
 
+    /**
+     * Verifies that premium-only formats like DOCX are restricted for free users.
+     */
     @Test
     void testSubmitExportJob_PremiumRequiredForNonPdf() {
         when(currentUserService.isPremium()).thenReturn(false);
@@ -96,6 +105,9 @@ class ExportServiceImplTest {
         assertEquals(HttpStatus.FORBIDDEN, ex.getStatusCode());
     }
 
+    /**
+     * Verifies retrieval of an existing export job's status.
+     */
     @Test
     void testGetJobStatus_Success() {
         when(repository.findById("job-123")).thenReturn(Optional.of(job));
@@ -103,6 +115,9 @@ class ExportServiceImplTest {
         assertEquals("job-123", result.getJobId());
     }
 
+    /**
+     * Verifies that requesting a non-existent job ID returns a 404 NOT FOUND status.
+     */
     @Test
     void testGetJobStatus_NotFound() {
         when(repository.findById("job-123")).thenReturn(Optional.empty());
@@ -111,6 +126,9 @@ class ExportServiceImplTest {
         assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
     }
 
+    /**
+     * Verifies retrieval of all export jobs for a specific user ID.
+     */
     @Test
     void testGetExportsByUser() {
         when(repository.findByUserId(1L)).thenReturn(List.of(job));
@@ -118,6 +136,9 @@ class ExportServiceImplTest {
         assertEquals(1, result.size());
     }
 
+    /**
+     * Verifies that completed export files can be successfully read from the filesystem.
+     */
     @Test
     void testDownloadFile_Success() {
         when(repository.findById("job-123")).thenReturn(Optional.of(job));
@@ -126,6 +147,9 @@ class ExportServiceImplTest {
         assertTrue(bytes.length > 0);
     }
 
+    /**
+     * Verifies that attempting to download a file while it is still processing returns a 400 Bad Request.
+     */
     @Test
     void testDownloadFile_NotReady() {
         job.setStatus(ExportStatus.PROCESSING);
@@ -136,6 +160,9 @@ class ExportServiceImplTest {
         assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
     }
 
+    /**
+     * Verifies that filesystem errors during download result in a 500 Internal Server Error mapping.
+     */
     @Test
     void testDownloadFile_IOException() {
         job.setFileUrl("path/that/does/not/exist.pdf");
@@ -146,6 +173,9 @@ class ExportServiceImplTest {
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, ex.getStatusCode());
     }
 
+    /**
+     * Verifies that deleting an export job also removes its associated file from storage.
+     */
     @Test
     void testDeleteExport() {
         when(repository.findById("job-123")).thenReturn(Optional.of(job));
@@ -156,6 +186,9 @@ class ExportServiceImplTest {
         verify(repository).delete(job);
     }
 
+    /**
+     * Verifies that the internal cleanup task identifies and removes expired export records and files.
+     */
     @Test
     void testCleanupExpiredExports() {
         when(repository.findByExpiresAtBefore(any())).thenReturn(List.of(job));
@@ -166,6 +199,9 @@ class ExportServiceImplTest {
         verify(repository).delete(job);
     }
 
+    /**
+     * Verifies that user-specific export counters are aggregated correctly for statistics.
+     */
     @Test
     void testGetUserStats() {
         when(repository.countByUserId(1L)).thenReturn(20L);
@@ -182,6 +218,9 @@ class ExportServiceImplTest {
         assertEquals(20L, stats.getCountByFormat().get("PDF"));
     }
 
+    /**
+     * Verifies that administrators can retrieve global export counts grouped by file format.
+     */
     @Test
     void testGetAdminStats() {
         Object[] arr = new Object[]{"PDF", 100L};
@@ -192,6 +231,9 @@ class ExportServiceImplTest {
         assertEquals(100L, stats.get("PDF"));
     }
 
+    /**
+     * Verifies that premium users can bypass daily limits and access premium formats (DOCX).
+     */
     @Test
     void testSubmitExportJob_PremiumUser() {
         when(currentUserService.isPremium()).thenReturn(true);
@@ -203,6 +245,9 @@ class ExportServiceImplTest {
         verify(rabbitTemplate).convertAndSend(eq("x.airesume"), eq("pdf.export"), any(ExportMessage.class));
     }
 
+    /**
+     * Verifies that premium users can also submit standard PDF exports without limit constraints.
+     */
     @Test
     void testSubmitExportJob_PremiumUser_Pdf() {
         when(currentUserService.isPremium()).thenReturn(true);
@@ -214,6 +259,9 @@ class ExportServiceImplTest {
         verify(rabbitTemplate).convertAndSend(eq("x.airesume"), eq("pdf.export"), any(ExportMessage.class));
     }
 
+    /**
+     * Verifies that missing file URLs result in a 400 Bad Request during download attempts.
+     */
     @Test
     void testDownloadFile_FileUrlNull() {
         job.setFileUrl(null);
@@ -224,6 +272,9 @@ class ExportServiceImplTest {
         assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
     }
 
+    /**
+     * Verifies that export records can be deleted even if the physical file URL is already null.
+     */
     @Test
     void testDeleteExport_FileUrlNull() {
         job.setFileUrl(null);
@@ -234,6 +285,9 @@ class ExportServiceImplTest {
         verify(repository).delete(job);
     }
 
+    /**
+     * Verifies that failures during physical file deletion do not prevent the database record from being cleaned up.
+     */
     @Test
     void testDeleteExport_IOException() throws Exception {
         // Create a non-empty directory. Attempting to delete this with Files.deleteIfExists will fail and throw DirectoryNotEmptyException (which extends IOException)

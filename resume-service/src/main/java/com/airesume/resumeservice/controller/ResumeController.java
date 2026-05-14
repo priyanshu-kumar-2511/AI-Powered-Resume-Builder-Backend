@@ -28,7 +28,11 @@ public class ResumeController {
     private final ResumeService resumeService;
 
     /**
-     * 1. Creates a new resume from a template.
+     * Creates a new resume for the authenticated user based on a template.
+     * Enforces plan-based limits on the total number of resumes.
+     * 
+     * @param request the resume creation details
+     * @return the created resume metadata
      */
     @PostMapping
     @Operation(summary = "Create a new resume from a template")
@@ -37,7 +41,11 @@ public class ResumeController {
     }
 
     /**
-     * 2. Retrieves a specific resume by ID.
+     * Retrieves a specific resume by its unique ID.
+     * Enforces ownership and visibility (public/private) constraints.
+     * 
+     * @param resumeId the ID of the resume to fetch
+     * @return the resume details
      */
     @GetMapping("/{resumeId}")
     @Operation(summary = "Get detailed information of a specific resume")
@@ -46,7 +54,10 @@ public class ResumeController {
     }
 
     /**
-     * 3. Retrieves all resumes associated with a specific user.
+     * Retrieves all resumes associated with a specific user account.
+     * 
+     * @param userId the ID of the user
+     * @return a list of resume metadata
      */
     @GetMapping("/user/{userId}")
     @Operation(summary = "Get all resumes for a specific user")
@@ -64,7 +75,9 @@ public class ResumeController {
     }
 
     /**
-     * 5. Retrieves all public gallery resumes.
+     * Retrieves all resumes that have been published to the public community gallery.
+     * 
+     * @return a list of public resumes
      */
     @GetMapping("/public")
     @Operation(summary = "Get all resumes published to public gallery")
@@ -133,7 +146,10 @@ public class ResumeController {
     }
 
     /**
-     * 12. Deletes a resume completely.
+     * Permanently deletes a specific resume and its associated sections.
+     * 
+     * @param resumeId the ID of the resume to delete
+     * @return a 204 No Content response
      */
     @DeleteMapping("/{resumeId}")
     @Operation(summary = "Delete a specific resume permanently")

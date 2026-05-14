@@ -19,6 +19,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Service implementation for managing resume content sections.
+ * Handles granular content units like Experience, Education, etc.
+ * Uses Feign client for cross-service authorization checks.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -27,6 +32,10 @@ public class SectionServiceImpl implements SectionService {
     private final SectionRepository sectionRepository;
     private final ResumeServiceClient resumeServiceClient;
 
+    /**
+     * Adds a new section to a resume.
+     * Automatically calculates display order and verifies resume ownership.
+     */
     @Override
     @Transactional
     @CacheEvict(value = "sections_resume", key = "#section.resumeId")
@@ -38,6 +47,9 @@ public class SectionServiceImpl implements SectionService {
         return sectionRepository.save(section);
     }
 
+    /**
+     * Retrieves all sections for a specific resume, ordered by display position.
+     */
     @Override
     @Cacheable(value = "sections_resume", key = "#resumeId")
     public List<Section> getSectionsByResume(Long resumeId) {
@@ -45,6 +57,13 @@ public class SectionServiceImpl implements SectionService {
         return sectionRepository.findByResumeIdOrderByDisplayOrderAsc(resumeId);
     }
 
+    /**
+     * Retrieves a single section by its unique ID.
+     * Verifies resume access before returning the data.
+     * 
+     * @param sectionId the ID of the section to fetch
+     * @return the requested section entity
+     */
     @Override
     @Cacheable(value = "section", key = "#sectionId")
     public Section getSectionById(Long sectionId) {
@@ -54,6 +73,13 @@ public class SectionServiceImpl implements SectionService {
         return section;
     }
 
+    /**
+     * Filters and retrieves sections of a specific type for a resume.
+     * 
+     * @param resumeId the ID of the resume
+     * @param type the category of sections to retrieve
+     * @return a list of matching sections
+     */
     @Override
     @Cacheable(value = "sections_type", key = "#resumeId + '_' + #type")
     public List<Section> getSectionsByType(Long resumeId, SectionType type) {
@@ -61,6 +87,12 @@ public class SectionServiceImpl implements SectionService {
         return sectionRepository.findByResumeIdAndSectionType(resumeId, type);
     }
 
+    /**
+     * Retrieves only those sections that were generated or optimized by AI.
+     * 
+     * @param resumeId the ID of the resume
+     * @return a list of AI-influenced sections
+     */
     @Override
     @Cacheable(value = "sections_ai", key = "#resumeId")
     public List<Section> getAiGeneratedSections(Long resumeId) {
@@ -94,6 +126,13 @@ public class SectionServiceImpl implements SectionService {
         return sectionRepository.save(section);
     }
 
+    /**
+     * Toggles the 'isVisible' flag of a section.
+     * Useful for excluding specific sections from the final rendered document.
+     * 
+     * @param sectionId the ID of the section to toggle
+     * @return the updated section
+     */
     @Override
     @Transactional
     @CacheEvict(value = {"section", "sections_resume", "sections_type", "sections_ai"}, allEntries = true)
@@ -103,6 +142,9 @@ public class SectionServiceImpl implements SectionService {
         return sectionRepository.save(section);
     }
 
+    /**
+     * Reorders multiple sections for a resume based on a list of IDs.
+     */
     @Override
     @Transactional
     @CacheEvict(value = {"sections_resume", "sections_type", "sections_ai"}, allEntries = true)
@@ -155,6 +197,10 @@ public class SectionServiceImpl implements SectionService {
         return sectionRepository.countByResumeId(resumeId);
     }
 
+    /**
+     * Internal security check: Calls Resume Service via Feign to verify
+     * that the current user owns the resume before allowing modifications.
+     */
     private void verifyResumeAccess(Long resumeId) {
         try {
             resumeServiceClient.getResumeById(resumeId);

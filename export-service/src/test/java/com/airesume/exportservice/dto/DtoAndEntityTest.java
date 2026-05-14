@@ -12,8 +12,16 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Unit tests for Export Service DTOs and entities.
+ * Verifies data mapping for resumes, templates, and sections, 
+ * as well as JPA lifecycle callbacks for background export jobs.
+ */
 class DtoAndEntityTest {
 
+    /**
+     * Verifies the Resume response DTO mapping.
+     */
     @Test
     void testResumeResponseDTO() {
         ResumeResponseDTO dto = new ResumeResponseDTO();
@@ -32,6 +40,9 @@ class DtoAndEntityTest {
         assertNotNull(dto.getSections());
     }
 
+    /**
+     * Verifies the Template DTO data structure.
+     */
     @Test
     void testTemplateDTO() {
         TemplateDTO dto = new TemplateDTO();
@@ -46,6 +57,9 @@ class DtoAndEntityTest {
         assertEquals("css", dto.getCssStyles());
     }
 
+    /**
+     * Verifies the resume section data mapping and visibility flags.
+     */
     @Test
     void testSectionDTO() {
         SectionDTO dto = new SectionDTO();
@@ -64,6 +78,9 @@ class DtoAndEntityTest {
         assertEquals(3, dto.getDisplayOrder());
     }
 
+    /**
+     * Verifies the export statistics structure, including format-based counters.
+     */
     @Test
     void testExportStatsDTO() {
         ExportStatsDTO dto = ExportStatsDTO.builder()
@@ -79,6 +96,9 @@ class DtoAndEntityTest {
         assertNotNull(dto.getCountByFormat());
     }
 
+    /**
+     * Verifies that new ExportJob entities are correctly initialized via the @PrePersist callback.
+     */
     @Test
     void testExportJob_OnCreate_WithNulls() throws Exception {
         ExportJob job = new ExportJob();
@@ -96,6 +116,10 @@ class DtoAndEntityTest {
         assertNotNull(job.getRequestedAt());
     }
 
+    /**
+     * Verifies that existing values in an ExportJob entity are preserved during initialization, 
+     * except for the request timestamp which is refreshed.
+     */
     @Test
     void testExportJob_OnCreate_WithValues() throws Exception {
         ExportJob job = ExportJob.builder()

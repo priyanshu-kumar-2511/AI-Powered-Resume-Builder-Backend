@@ -25,6 +25,9 @@ public class AiController {
 
     /**
      * 1. Generate professional summary
+     * 
+     * @param request the AI request containing job title and existing content
+     * @return a response containing the generated summary
      */
     @PostMapping("/generate-summary")
     @Operation(summary = "Generate professional summary")
@@ -35,6 +38,9 @@ public class AiController {
 
     /**
      * 2. Generate work experience bullet points
+     * 
+     * @param request the AI request with context for bullet generation
+     * @return a response containing optimized bullet points
      */
     @PostMapping("/generate-bullets")
     @Operation(summary = "Generate work experience bullet points")
@@ -45,6 +51,9 @@ public class AiController {
 
     /**
      * 3. ATS compatibility check
+     * 
+     * @param request the AI request containing resume and job description
+     * @return a JSON report with ATS score and suggestions
      */
     @PostMapping("/check-ats")
     @Operation(summary = "Check ATS compatibility and score")
@@ -55,6 +64,10 @@ public class AiController {
 
     /**
      * 4. AI skill suggestions
+     * 
+     * @param resumeId the ID of the resume
+     * @param jobTitle the target job title for skill extraction
+     * @return a list of suggested skills
      */
     @GetMapping("/suggest-skills/{resumeId}")
     @Operation(summary = "Suggest relevant skills for a job title")
@@ -64,6 +77,9 @@ public class AiController {
 
     /**
      * 5. Get remaining quota
+     * 
+     * @param userId the ID of the user
+     * @return the remaining AI call quotas
      */
     @GetMapping("/quota/{userId}")
     @Operation(summary = "Get remaining AI quotas for a user")

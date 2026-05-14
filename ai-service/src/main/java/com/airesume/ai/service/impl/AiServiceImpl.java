@@ -15,6 +15,8 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -47,7 +49,12 @@ public class AiServiceImpl implements AiService {
     @Value("${ai-app.quota.ats-limit:3}")
     private int defaultAtsLimit;
 
+    /**
+     * Generates a professional summary based on job title and existing content.
+     * Validates user quota and caches/evicts history on completion.
+     */
     @Override
+    @CacheEvict(value = "ai_history", key = "#request.userId")
     public Map<String, Object> generateSummary(AiRequest request) {
         validateQuota(request.getUserId(), "SUMMARY");
         String promptText = String.format(
@@ -61,7 +68,12 @@ public class AiServiceImpl implements AiService {
         return result;
     }
 
+    /**
+     * Generates high-impact bullet points for work experience sections.
+     * Uses results-oriented prompting with action verbs.
+     */
     @Override
+    @CacheEvict(value = "ai_history", key = "#request.userId")
     public Map<String, Object> generateBullets(AiRequest request) {
         validateQuota(request.getUserId(), "SUMMARY");
         String promptText = String.format(
@@ -74,20 +86,32 @@ public class AiServiceImpl implements AiService {
         return result;
     }
 
+    /**
+     * Performs an ATS (Applicant Tracking System) check.
+     * Returns a JSON-formatted report with a score, suggestions, and missing keywords.
+     */
     @Override
+    @CacheEvict(value = "ai_history", key = "#request.userId")
     public Map<String, Object> checkAtsCompatibility(AiRequest request) {
         validateQuota(request.getUserId(), "ATS");
         String targetContext = firstNonBlank(request.getJobDescription(), request.getTargetJobTitle(), "the target role");
-        String promptText = String.format(
-                "Analyze this resume content against the following target context: %s. Return strict JSON with keys 'score' (0-100), 'suggestions' (array of short improvement suggestions), and 'missingKeywords' (array of important missing keywords or phrases). Content: %s",
-                targetContext,
-                request.getExistingContent()
-        );
+        String promptText = """
+                You are an expert ATS (Applicant Tracking System) analyzer. Analyze this resume content against the target context: %s. 
+                IMPORTANT: You MUST return ONLY a JSON object. No markdown, no preamble, no explanations outside the JSON.
+                JSON Structure: { "score": 85, "suggestions": ["Add more keywords"], "missingKeywords": ["Java"] }
+                Resume Content: %s""".formatted(targetContext, request.getExistingContent());
         Map<String, Object> raw = callAiAndSaveHistory(promptText, request.getUserId(), "CHECK_ATS");
         consumeQuota(request.getUserId(), "ATS");
         return parseAtsReport(raw);
     }
 
+    /**
+     * Suggests relevant skills for a specific job title.
+     * 
+     * @param resumeId the resume context
+     * @param jobTitle the job title to analyze
+     * @return a list of suggested skill strings
+     */
     @Override
     public List<String> suggestSkills(Long resumeId, String jobTitle) {
         String promptText = "Suggest 10 relevant resume skills for a " + jobTitle + ". Return only a comma-separated list.";
@@ -102,6 +126,13 @@ public class AiServiceImpl implements AiService {
                 .toList();
     }
 
+    /**
+     * Retrieves the remaining AI quotas for a specific user.
+     * Handles premium status check and quota reset logic.
+     * 
+     * @param userId the ID of the user
+     * @return a map containing quota details
+     */
     @Override
     public Map<String, Object> getUserQuota(String userId) {
         UserQuota quota = getOrCreateQuota(userId);
@@ -120,7 +151,14 @@ public class AiServiceImpl implements AiService {
         return response;
     }
 
+    /**
+     * Generates a personalized cover letter based on user content and job details.
+     * 
+     * @param request the request containing user details and job context
+     * @return a map containing the generated cover letter content
+     */
     @Override
+    @CacheEvict(value = "ai_history", key = "#request.userId")
     public Map<String, Object> generateCoverLetter(AiRequest request) {
         validatePremium(request.getUserId());
         String targetContext = firstNonBlank(request.getJobDescription(), request.getTargetJobTitle(), "the target role");
@@ -132,7 +170,14 @@ public class AiServiceImpl implements AiService {
         return callAiAndSaveHistory(promptText, request.getUserId(), "GENERATE_COVER_LETTER");
     }
 
+    /**
+     * Rewrites a specific resume section for professional impact.
+     * 
+     * @param request the request containing section type and content
+     * @return a map containing the improved section text
+     */
     @Override
+    @CacheEvict(value = "ai_history", key = "#request.userId")
     public Map<String, Object> improveSection(AiRequest request) {
         validatePremium(request.getUserId());
         String promptText = String.format(
@@ -143,7 +188,14 @@ public class AiServiceImpl implements AiService {
         return callAiAndSaveHistory(promptText, request.getUserId(), "IMPROVE_SECTION");
     }
 
+    /**
+     * Tailors entire resume content to a specific target job opportunity.
+     * 
+     * @param request the request containing target job description and resume content
+     * @return a map containing either the queued status or the result content
+     */
     @Override
+    @CacheEvict(value = "ai_history", key = "#request.userId")
     public Map<String, Object> tailorResume(AiRequest request) {
         validatePremium(request.getUserId());
         String targetContext = firstNonBlank(request.getJobDescription(), request.getTargetJobTitle(), "the job description");
@@ -175,7 +227,14 @@ public class AiServiceImpl implements AiService {
         }
     }
 
+    /**
+     * Translates resume content to a specified target language.
+     * 
+     * @param request the request containing target language and source content
+     * @return a map containing either the queued status or the translated result
+     */
     @Override
+    @CacheEvict(value = "ai_history", key = "#request.userId")
     public Map<String, Object> translateResume(AiRequest request) {
         validatePremium(request.getUserId());
         String language = firstNonBlank(request.getTargetLanguage(), request.getLanguage());
@@ -207,7 +266,14 @@ public class AiServiceImpl implements AiService {
         }
     }
 
+    /**
+     * Fetches the historical list of AI interactions for a specific user.
+     * 
+     * @param userId the ID of the user
+     * @return a list of maps containing history record details
+     */
     @Override
+    @Cacheable(value = "ai_history", key = "#userId")
     public List<Map<String, Object>> getUserHistory(String userId) {
         if (userId == null) {
             return Collections.emptyList();
@@ -244,9 +310,16 @@ public class AiServiceImpl implements AiService {
         for (AiHistory h : allHistory) {
             String model = h.getModelUsed() != null ? h.getModelUsed() : PROVIDER_MODEL;
             callsByModel.put(model, callsByModel.getOrDefault(model, 0) + 1);
-            
             userCallMap.put(h.getUserId(), userCallMap.getOrDefault(h.getUserId(), 0) + 1);
         }
+
+        // Daily Trend
+        List<Map<String, Object>> dailyTrend = aiHistoryRepository.getDailyStats().stream()
+                .map(row -> Map.<String, Object>of(
+                        "date", row[0].toString(),
+                        "count", row[1]
+                ))
+                .toList();
 
         // Top users by call count
         List<Map<String, Object>> topUsers = userCallMap.entrySet().stream()
@@ -266,7 +339,8 @@ public class AiServiceImpl implements AiService {
                 "totalAiCalls", (long) allHistory.size(),
                 "callsByModel", callsByModel,
                 "topUsersByUsage", topUsers,
-                "totalTokensUsed", 0, // Kept for compatibility but set to 0
+                "dailyTrend", dailyTrend,
+                "totalTokensUsed", 0,
                 "totalCostEstimate", 0.0
         );
     }
@@ -402,27 +476,37 @@ public class AiServiceImpl implements AiService {
 
         try {
             String normalized = text.trim();
-            if (normalized.startsWith("```")) {
+            if (normalized.contains("{")) {
+                normalized = normalized.substring(normalized.indexOf("{"), normalized.lastIndexOf("}") + 1);
                 normalized = normalized.replaceFirst("^```json\\s*", "")
                         .replaceFirst("^```\\s*", "")
                         .replaceFirst("\\s*```$", "");
+                
+                com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                Map<String, Object> parsed = mapper.readValue(normalized, Map.class);
+                return Map.of(
+                        "score", parseScore(parsed.get("score")),
+                        "suggestions", toStringList(parsed.get("suggestions")),
+                        "missingKeywords", toStringList(parsed.get("missingKeywords"))
+                );
+            }
+            throw new IllegalArgumentException("No JSON found");
+        } catch (Exception ex) {
+            log.warn("ATS JSON parsing failed, extracting from text: {}", ex.getMessage());
+            
+            // Extract score using regex if JSON fails
+            int extractedScore = 0;
+            java.util.regex.Matcher m = java.util.regex.Pattern.compile("(?:Score|score):?\\s*(\\d+)").matcher(text);
+            if (m.find()) {
+                extractedScore = Integer.parseInt(m.group(1));
             }
 
-            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
-            Map<String, Object> parsed = mapper.readValue(normalized, Map.class);
             return Map.of(
-                    "score", parseScore(parsed.get("score")),
-                    "suggestions", toStringList(parsed.get("suggestions")),
-                    "missingKeywords", toStringList(parsed.get("missingKeywords"))
-            );
-        } catch (Exception ex) {
-            log.warn("Could not parse ATS JSON response, falling back to plain text parsing: {}", ex.getMessage());
-            return Map.of(
-                    "score", 0,
+                    "score", extractedScore,
                     "suggestions", Arrays.stream(text.split("\\r?\\n"))
                             .map(String::trim)
-                            .filter(line -> !line.isBlank())
-                            .limit(6)
+                            .filter(line -> !line.isBlank() && !line.toLowerCase().contains("score"))
+                            .limit(10)
                             .toList(),
                     "missingKeywords", List.of()
             );
@@ -490,18 +574,23 @@ public class AiServiceImpl implements AiService {
             
             // 2. Extract Text
             org.apache.pdfbox.text.PDFTextStripper stripper = new org.apache.pdfbox.text.PDFTextStripper();
-            String pdfText = stripper.getText(document);
+            stripper.getText(document);
             
             // 3. Generate HTML via Groq AI
-            String systemMessageStr = "You are an expert Frontend Developer. Your task is to convert the following raw resume text into a responsive HTML and CSS template.\n" +
-                    "RULES:\n" +
-                    "1. Separate the HTML structure from the CSS styles.\n" +
-                    "2. Use Mustache placeholders for all dynamic data. Examples: {{personalInfo.fullName}}, {{personalInfo.email}}, {{#experience}} ... {{/experience}}.\n" +
-                    "3. Ensure the layout mimics the structure of the provided text as closely as possible.\n" +
-                    "4. You MUST return ONLY a valid JSON object with EXACTLY two keys: 'html' and 'css'.\n" +
-                    "Example format:\n" +
-                    "{\n  \"html\": \"<div class='resume'>...</div>\",\n  \"css\": \".resume { ... }\"\n}\n\n" +
-                    "RESUME TEXT:\n" + pdfText;
+            String systemMessageStr = """
+                    You are a specialized 'Visual Layout Reverse-Engineer'. Your mission is to REPLICATE the EXACT style and structure of the resume provided in the text as closely as possible.
+
+                    CLONING RULES (CRITICAL):
+                    1. ANALYZE LAYOUT: Look at the text patterns. If headers are centered, center them in HTML. If there are lines (rules) between sections, include them in CSS. If skills are listed horizontally, use a flex-wrap layout.
+                    2. MIMIC TYPOGRAPHY: Observe what text is UPPERCASE or BOLD and replicate that hierarchy exactly. Use professional fonts that match the document's vibe.
+                    3. PRESERVE SPACING: If the document looks dense, use tight margins. If it looks airy, use generous padding.
+                    4. NO GENERIC CARDS: Do NOT use card-based or blog layouts unless the source document specifically looks like one. Stick to a clean, document-like presentation.
+
+                    MUSTACHE PLACEHOLDERS (MANDATORY):
+                    - Profile: {{fullName}}, {{jobTitle}}, {{email}}, {{phone}}, {{location}}, {{linkedin}}, {{github}}, {{website}}, {{summary}}
+                    - Lists: Use {{#experience}}, {{#education}}, {{#skills}}, {{#projects}}, and {{#sections}} for any other parts.
+
+                    FORMAT: Return ONLY a valid JSON object: { "html": "...", "css": "..." }. Do NOT add any extra text or markdown.""";
             
             org.springframework.ai.chat.messages.SystemMessage systemMessage = new org.springframework.ai.chat.messages.SystemMessage(systemMessageStr);
             org.springframework.ai.chat.prompt.Prompt prompt = new org.springframework.ai.chat.prompt.Prompt(List.of(systemMessage));
@@ -509,24 +598,44 @@ public class AiServiceImpl implements AiService {
             org.springframework.ai.chat.model.ChatResponse chatResponse = chatModel.call(prompt);
             String aiContent = chatResponse.getResult().getOutput().getText().trim();
             
-            // Extract the JSON object from the AI response, ignoring conversational text
-            int startIndex = aiContent.indexOf('{');
-            int endIndex = aiContent.lastIndexOf('}');
-            if (startIndex != -1 && endIndex != -1 && startIndex < endIndex) {
-                aiContent = aiContent.substring(startIndex, endIndex + 1);
+            // Clean up AI response if it includes markdown code blocks
+            if (aiContent.contains("```")) {
+                aiContent = aiContent.replace("```json", "").replace("```", "").trim();
             }
-            
+
             String generatedHtml = "";
             String generatedCss = "";
+
+            // Attempt 1: Standard JSON Parsing
             try {
+                String jsonToParse = aiContent;
+                int startIndex = jsonToParse.indexOf('{');
+                int endIndex = jsonToParse.lastIndexOf('}');
+                if (startIndex != -1 && endIndex != -1) {
+                    jsonToParse = jsonToParse.substring(startIndex, endIndex + 1);
+                }
+
                 com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
-                java.util.Map<String, String> parsed = mapper.readValue(aiContent, new com.fasterxml.jackson.core.type.TypeReference<java.util.Map<String, String>>(){});
+                java.util.Map<String, String> parsed = mapper.readValue(jsonToParse, new com.fasterxml.jackson.core.type.TypeReference<java.util.Map<String, String>>(){});
                 generatedHtml = parsed.getOrDefault("html", "");
                 generatedCss = parsed.getOrDefault("css", "");
             } catch (Exception ex) {
-                log.warn("Failed to parse AI JSON response, falling back to raw content. Content: {}", aiContent);
-                generatedHtml = aiContent;
-                generatedCss = "/* AI failed to separate CSS, styles might be inline or in HTML */";
+                log.warn("Standard JSON parsing failed, trying Regex extraction. Content head: {}", aiContent.substring(0, Math.min(100, aiContent.length())));
+                
+                // Attempt 2: Regex Extraction (handles backticks and malformed JSON)
+                generatedHtml = extractByRegex(aiContent, "html");
+                generatedCss = extractByRegex(aiContent, "css");
+            }
+
+            // Final fallback if both failed
+            if (generatedHtml.isEmpty()) {
+                if (!aiContent.isEmpty()) {
+                    generatedHtml = aiContent;
+                    generatedCss = "/* AI returned raw content or malformed JSON. Manual cleanup might be needed. */";
+                } else {
+                    generatedHtml = "<div class='resume'><h1>{{fullName}}</h1><p>Template generation failed. Please try again.</p></div>";
+                    generatedCss = ".resume { padding: 20px; }";
+                }
             }
             
             return com.airesume.ai.dto.TemplateExtractionResponse.builder()
@@ -539,5 +648,28 @@ public class AiServiceImpl implements AiService {
             log.error("Failed to extract template from PDF", e);
             throw new RuntimeException("Failed to process PDF file: " + e.getMessage());
         }
+    }
+
+    private static final java.util.regex.Pattern JSON_KEY_VALUE_PATTERN = 
+            java.util.regex.Pattern.compile("([\"'])(\\w+)\\1\\s*:\\s*([\"'`])(.*?)\\3", java.util.regex.Pattern.DOTALL);
+
+    /**
+     * Extracts content for a specific key from a potentially malformed JSON string using regex.
+     * Supports double quotes, single quotes, and backticks.
+     */
+    private String extractByRegex(String content, String key) {
+        java.util.regex.Matcher matcher = JSON_KEY_VALUE_PATTERN.matcher(content);
+        
+        while (matcher.find()) {
+            if (key.equals(matcher.group(2))) {
+                String value = matcher.group(4);
+                // If it was a double-quoted string, it might have escaped characters
+                if (matcher.group(3).equals("\"")) {
+                    value = value.replace("\\n", "\n").replace("\\\"", "\"").replace("\\t", "\t");
+                }
+                return value;
+            }
+        }
+        return "";
     }
 }

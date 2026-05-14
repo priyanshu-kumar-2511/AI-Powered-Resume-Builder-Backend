@@ -23,6 +23,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/**
+ * Unit tests for the Section Controller.
+ * Verifies the management of resume sections including creation,
+ * retrieval, reordering, and visibility control.
+ */
 @WebMvcTest(SectionController.class)
 @ActiveProfiles("test")
 @AutoConfigureMockMvc(addFilters = false) // Disable security filters for simple controller tests
@@ -40,6 +45,9 @@ public class SectionControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    /**
+     * Verifies that a new section can be successfully added to a resume.
+     */
     @Test
     @DisplayName("API: POST / - Should add a new section")
     void addSection_ShouldReturnCreatedSection() throws Exception {
@@ -66,6 +74,9 @@ public class SectionControllerTest {
                 .andExpect(jsonPath("$.title").value("Summary"));
     }
 
+    /**
+     * Verifies the retrieval of all sections associated with a specific resume ID.
+     */
     @Test
     @DisplayName("API: GET /resume/{resumeId} - Should return sections")
     void getSectionsByResume_ShouldReturnList() throws Exception {
@@ -83,6 +94,9 @@ public class SectionControllerTest {
                 .andExpect(jsonPath("$[0].title").value("Summary"));
     }
 
+    /**
+     * Verifies retrieval of a specific section by its ID.
+     */
     @Test
     @DisplayName("API: GET /{sectionId} - Should return section")
     void getSectionById_ShouldReturnSection() throws Exception {
@@ -99,6 +113,9 @@ public class SectionControllerTest {
                 .andExpect(jsonPath("$.sectionType").value("EXPERIENCE"));
     }
 
+    /**
+     * Verifies filtering of sections by their type for a specific resume.
+     */
     @Test
     @DisplayName("API: GET /resume/{resumeId}/type/{type} - Should return sections by type")
     void getSectionsByType_ShouldReturnList() throws Exception {
@@ -114,6 +131,9 @@ public class SectionControllerTest {
                 .andExpect(jsonPath("$[0].sectionType").value("EDUCATION"));
     }
 
+    /**
+     * Verifies retrieval of all sections that were generated using AI assistance.
+     */
     @Test
     @DisplayName("API: GET /resume/{resumeId}/ai-generated - Should return ai sections")
     void getAiGeneratedSections_ShouldReturnList() throws Exception {
@@ -129,6 +149,9 @@ public class SectionControllerTest {
                 .andExpect(jsonPath("$[0].aiGenerated").value(true));
     }
 
+    /**
+     * Tests the update functionality for section titles and JSON content.
+     */
     @Test
     @DisplayName("API: PUT /{sectionId} - Should update section")
     void updateSection_ShouldReturnUpdated() throws Exception {
@@ -149,6 +172,9 @@ public class SectionControllerTest {
                 .andExpect(jsonPath("$.title").value("New Title"));
     }
 
+    /**
+     * Verifies the visibility toggle functionality for a specific section.
+     */
     @Test
     @DisplayName("API: PUT /{sectionId}/toggle-visibility - Should toggle visibility")
     void toggleVisibility_ShouldReturnUpdated() throws Exception {
@@ -164,6 +190,9 @@ public class SectionControllerTest {
                 .andExpect(jsonPath("$.isVisible").value(false));
     }
 
+    /**
+     * Verifies the reordering of multiple sections for a resume.
+     */
     @Test
     @DisplayName("API: PUT /resume/{resumeId}/reorder - Should reorder sections")
     void reorderSections_ShouldReturnNoContent() throws Exception {
@@ -175,6 +204,9 @@ public class SectionControllerTest {
                 .andExpect(status().isNoContent());
     }
 
+    /**
+     * Verifies bulk update functionality for multiple sections in a single request.
+     */
     @Test
     @DisplayName("API: PUT /bulk-update - Should bulk update sections")
     void bulkUpdate_ShouldReturnUpdatedList() throws Exception {
@@ -190,6 +222,9 @@ public class SectionControllerTest {
                 .andExpect(jsonPath("$[0].sectionId").value(1));
     }
 
+    /**
+     * Verifies that a single section can be permanently removed by ID.
+     */
     @Test
     @DisplayName("API: DELETE /{sectionId} - Should delete section")
     void deleteSection_ShouldReturnNoContent() throws Exception {
@@ -197,6 +232,9 @@ public class SectionControllerTest {
                 .andExpect(status().isNoContent());
     }
 
+    /**
+     * Verifies that all sections for a specific resume can be removed in bulk.
+     */
     @Test
     @DisplayName("API: DELETE /resume/{resumeId}/all - Should delete all sections")
     void deleteAllSectionsByResume_ShouldReturnNoContent() throws Exception {
@@ -204,6 +242,9 @@ public class SectionControllerTest {
                 .andExpect(status().isNoContent());
     }
 
+    /**
+     * Verifies the total count of sections currently associated with a resume.
+     */
     @Test
     @DisplayName("API: GET /resume/{resumeId}/count - Should return count")
     void countSections_ShouldReturnCount() throws Exception {

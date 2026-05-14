@@ -10,6 +10,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.Map;
 
+/**
+ * Feign Client for internal communication with the Auth Service.
+ * Used to synchronize user subscription plans and trigger token refreshes
+ * after successful payment verification.
+ */
 @FeignClient(name = "AUTH-SERVICE")
 public interface AuthServiceClient {
 

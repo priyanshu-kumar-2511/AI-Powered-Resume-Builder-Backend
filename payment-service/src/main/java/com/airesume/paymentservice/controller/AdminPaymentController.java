@@ -14,6 +14,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Controller for Administrative Payment and Subscription Oversight.
+ * Provides endpoints for platform administrators to monitor revenue, 
+ * track active subscriptions, and view platform-wide payment statistics.
+ */
 @RestController
 @RequestMapping("/api/v1/admin/subscriptions")
 @RequiredArgsConstructor
@@ -22,6 +27,10 @@ public class AdminPaymentController {
 
     private final PaymentService paymentService;
 
+    /**
+     * Retrieves a paginated list of all subscriptions in the system.
+     * Restricted to ROLE_ADMIN.
+     */
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Get all subscriptions (Paginated)")
@@ -29,6 +38,10 @@ public class AdminPaymentController {
         return ResponseEntity.ok(paymentService.getSubscriptions(pageable));
     }
 
+    /**
+     * Aggregates platform-wide subscription statistics and estimated revenue.
+     * Restricted to ROLE_ADMIN.
+     */
     @GetMapping("/stats")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Get high-level subscription statistics and revenue")

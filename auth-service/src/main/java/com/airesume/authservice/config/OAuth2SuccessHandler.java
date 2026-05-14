@@ -17,6 +17,7 @@ import org.springframework.security.oauth2.client.authentication.OAuth2Authentic
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
@@ -41,6 +42,9 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final com.airesume.authservice.service.EmailService emailService;
+
+    @Value("${app.frontend.public-url:http://localhost:4200}")
+    private String frontendPublicUrl;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
@@ -85,7 +89,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             emailService.sendWelcomeLoginEmail(user.getEmail(), user.getFullName());
 
             // Redirect to /login?token=... — Angular LoginComponent picks up the token
-            String targetUrl = UriComponentsBuilder.fromUriString("http://localhost:4200/login")
+            String targetUrl = UriComponentsBuilder.fromUriString(resolveFrontendLoginUrl())
                     .queryParam("token", token)
                     .build().toUriString();
 
@@ -94,7 +98,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         } catch (Exception exception) {
             log.error("OAuth2 success handling failed: {}", exception.getMessage(), exception);
 
-            String targetUrl = UriComponentsBuilder.fromUriString("http://localhost:4200/login")
+            String targetUrl = UriComponentsBuilder.fromUriString(resolveFrontendLoginUrl())
                     .queryParam("oauthError", "true")
                     .queryParam("reason", exception.getMessage())
                     .build()
@@ -147,5 +151,12 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             if ("linkedin".equalsIgnoreCase(registrationId)) return ProviderType.LINKEDIN;
         }
         return ProviderType.OAUTH2;
+    }
+
+    private String resolveFrontendLoginUrl() {
+        String normalizedBase = frontendPublicUrl == null
+                ? "http://localhost:4200"
+                : frontendPublicUrl.replaceAll("/+$", "");
+        return normalizedBase + "/login";
     }
 }

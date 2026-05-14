@@ -14,7 +14,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Admin-only endpoints for user management.
+ * Controller for Administrative Operations.
+ * Restricted to users with ROLE_ADMIN. 
+ * Handles user governance: suspension, reactivation, role assignments, 
+ * subscription overrides, and platform-wide audit logging.
  * Gateway path: /api/v1/admin/**
  */
 @RestController

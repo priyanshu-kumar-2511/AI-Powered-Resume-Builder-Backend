@@ -19,6 +19,11 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
+/**
+ * Unit tests for the Admin User Client.
+ * Verifies inter-service REST communication for fetching user lists during
+ * bulk notification broadcasting.
+ */
 @ExtendWith(MockitoExtension.class)
 class AdminUserClientTest {
 
@@ -47,6 +52,9 @@ class AdminUserClientTest {
         ReflectionTestUtils.setField(adminUserClient, "adminBaseUrl", "http://localhost:8080/api/v1/admin");
     }
 
+    /**
+     * Verifies that the client returns an empty list when no authorization header is provided.
+     */
     @Test
     void testGetAllUsers_NullHeader() {
         List<AdminUserDto> result = adminUserClient.getAllUsers(null);
@@ -54,6 +62,9 @@ class AdminUserClientTest {
         verifyNoInteractions(restClientBuilder);
     }
 
+    /**
+     * Verifies that the client returns an empty list when a blank authorization header is provided.
+     */
     @Test
     void testGetAllUsers_BlankHeader() {
         List<AdminUserDto> result = adminUserClient.getAllUsers("   ");
@@ -61,6 +72,9 @@ class AdminUserClientTest {
         verifyNoInteractions(restClientBuilder);
     }
 
+    /**
+     * Verifies successful retrieval and parsing of administrative user data.
+     */
     @Test
     @SuppressWarnings("unchecked")
     void testGetAllUsers_Success() {

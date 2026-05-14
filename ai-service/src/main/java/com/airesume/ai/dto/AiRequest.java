@@ -8,6 +8,11 @@ import lombok.NoArgsConstructor;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Data Transfer Object for AI Generation Requests.
+ * Encapsulates the context needed for generating resume content, 
+ * optimizing bullets, or translating sections.
+ */
 @Data
 @Builder(toBuilder = true)
 @NoArgsConstructor

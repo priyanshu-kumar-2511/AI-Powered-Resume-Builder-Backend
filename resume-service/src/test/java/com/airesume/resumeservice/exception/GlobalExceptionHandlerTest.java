@@ -9,10 +9,18 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Unit tests for the Resume Service Global Exception Handler.
+ * Verifies that structured error responses are correctly generated for 
+ * standard Spring ResponseStatusExceptions.
+ */
 class GlobalExceptionHandlerTest {
 
     private final GlobalExceptionHandler handler = new GlobalExceptionHandler();
 
+    /**
+     * Verifies that ResponseStatusException is correctly mapped to a structured JSON response.
+     */
     @Test
     void handleResponseStatus_ShouldReturnStructuredResponse() {
         ResponseStatusException ex = new ResponseStatusException(HttpStatus.NOT_FOUND, "Resource not found");
@@ -26,6 +34,9 @@ class GlobalExceptionHandlerTest {
         assertTrue(response.getBody().containsKey("timestamp"));
     }
 
+    /**
+     * Ensures that a fallback message is provided when the exception reason is null.
+     */
     @Test
     void handleResponseStatus_ShouldFallbackToMessage_WhenReasonIsNull() {
         ResponseStatusException ex = new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);

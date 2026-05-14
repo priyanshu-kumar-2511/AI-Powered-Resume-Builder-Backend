@@ -24,6 +24,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/**
+ * Unit tests for the Resume Controller.
+ * Verifies resume creation, retrieval, duplication, and lifecycle status updates.
+ */
 @WebMvcTest(ResumeController.class)
 @ActiveProfiles("test")
 @AutoConfigureMockMvc(addFilters = false) // Disable security filters for simple controller tests
@@ -41,6 +45,9 @@ public class ResumeControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    /**
+     * Verifies that a new resume can be successfully created via the POST endpoint.
+     */
     @Test
     @DisplayName("API: POST / - Should create a resume")
     void createResume_ShouldReturnCreatedResume() throws Exception {
@@ -64,6 +71,9 @@ public class ResumeControllerTest {
                 .andExpect(jsonPath("$.title").value("My Resume"));
     }
 
+    /**
+     * Verifies the retrieval of a specific resume by its ID.
+     */
     @Test
     @DisplayName("API: GET /{resumeId} - Should return resume")
     void getResumeById_ShouldReturnResume() throws Exception {
@@ -80,6 +90,9 @@ public class ResumeControllerTest {
                 .andExpect(jsonPath("$.title").value("My Resume"));
     }
 
+    /**
+     * Verifies that all resumes belonging to a specific user can be retrieved.
+     */
     @Test
     @DisplayName("API: GET /user/{userId} - Should return user resumes")
     void getResumesByUser_ShouldReturnList() throws Exception {
@@ -90,6 +103,9 @@ public class ResumeControllerTest {
                 .andExpect(jsonPath("$.length()").value(1));
     }
 
+    /**
+     * Verifies the resume duplication/cloning functionality.
+     */
     @Test
     @DisplayName("API: POST /{resumeId}/duplicate - Should duplicate resume")
     void duplicateResume_ShouldReturnCreated() throws Exception {
@@ -99,6 +115,9 @@ public class ResumeControllerTest {
                 .andExpect(status().isCreated());
     }
 
+    /**
+     * Verifies retrieval of publicly shared resumes.
+     */
     @Test
     @DisplayName("API: GET /public - Should return public resumes")
     void getPublicResumes_ShouldReturnList() throws Exception {
@@ -108,6 +127,9 @@ public class ResumeControllerTest {
                 .andExpect(status().isOk());
     }
 
+    /**
+     * Verifies that administrators can retrieve the master list of all resumes.
+     */
     @Test
     @DisplayName("API: GET /admin/all - Should return all resumes for admin")
     void getAllResumes_ShouldReturnOk() throws Exception {
@@ -117,6 +139,9 @@ public class ResumeControllerTest {
                 .andExpect(status().isOk());
     }
 
+    /**
+     * Verifies filtering of resumes by their associated template ID.
+     */
     @Test
     @DisplayName("API: GET /template/{templateId} - Should return resumes by template")
     void getResumesByTemplate_ShouldReturnList() throws Exception {
@@ -127,6 +152,9 @@ public class ResumeControllerTest {
                 .andExpect(jsonPath("$.length()").value(1));
     }
 
+    /**
+     * Tests the update functionality for resume titles and metadata.
+     */
     @Test
     @DisplayName("API: PUT /{resumeId} - Should update resume")
     void updateResume_ShouldReturnUpdatedResume() throws Exception {
@@ -146,6 +174,9 @@ public class ResumeControllerTest {
                 .andExpect(jsonPath("$.title").value("Updated Title"));
     }
 
+    /**
+     * Verifies that the ATS score of a resume can be updated.
+     */
     @Test
     @DisplayName("API: PUT /{resumeId}/ats-score - Should update ATS score")
     void updateAtsScore_ShouldReturnUpdatedResume() throws Exception {
@@ -165,6 +196,9 @@ public class ResumeControllerTest {
                 .andExpect(jsonPath("$.atsScore").value(85));
     }
 
+    /**
+     * Verifies that a resume can be marked as public for sharing.
+     */
     @Test
     @DisplayName("API: PUT /{resumeId}/publish - Should publish resume")
     void publishResume_ShouldReturnUpdatedResume() throws Exception {
@@ -179,6 +213,9 @@ public class ResumeControllerTest {
                 .andExpect(jsonPath("$.public").value(true));
     }
 
+    /**
+     * Verifies that a previously public resume can be made private.
+     */
     @Test
     @DisplayName("API: PUT /{resumeId}/unpublish - Should unpublish resume")
     void unpublishResume_ShouldReturnUpdatedResume() throws Exception {
@@ -193,6 +230,9 @@ public class ResumeControllerTest {
                 .andExpect(jsonPath("$.public").value(false));
     }
 
+    /**
+     * Verifies that the view count for a resume can be incremented when accessed via public links.
+     */
     @Test
     @DisplayName("API: PUT /{resumeId}/view-count - Should increment view count")
     void incrementViewCount_ShouldReturnOk() throws Exception {
@@ -200,6 +240,9 @@ public class ResumeControllerTest {
                 .andExpect(status().isOk());
     }
 
+    /**
+     * Verifies that a resume can be deleted by its owner.
+     */
     @Test
     @DisplayName("API: DELETE /{resumeId} - Should delete resume")
     void deleteResume_ShouldReturnNoContent() throws Exception {
@@ -207,6 +250,9 @@ public class ResumeControllerTest {
                 .andExpect(status().isNoContent());
     }
 
+    /**
+     * Verifies that administrators can bypass standard checks and force delete any resume.
+     */
     @Test
     @DisplayName("API: DELETE /admin/{resumeId} - Should force delete resume")
     void forceDeleteResume_ShouldReturnNoContent() throws Exception {
@@ -214,6 +260,9 @@ public class ResumeControllerTest {
                 .andExpect(status().isNoContent());
     }
 
+    /**
+     * Verifies the count of resumes for a given user for administrative reporting.
+     */
     @Test
     @DisplayName("API: GET /admin/count/{userId} - Should return count")
     void countUserResumes_ShouldReturnCount() throws Exception {

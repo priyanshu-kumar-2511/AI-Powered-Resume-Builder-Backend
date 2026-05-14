@@ -14,6 +14,12 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Background Scheduler for Export Job Cleanup and Monitoring.
+ * Handles:
+ * 1. Daily deletion of expired export files from the filesystem/DB.
+ * 2. Real-time monitoring (watchdog) to detect and fail jobs stuck in QUEUED or PROCESSING states.
+ */
 @Component
 @RequiredArgsConstructor
 @Slf4j

@@ -11,6 +11,11 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+/**
+ * Security configuration for the AI Service.
+ * Ensures all AI generation requests are authenticated via JWT.
+ * Admin endpoints are restricted to users with ROLE_ADMIN.
+ */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -19,10 +24,18 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
+    /**
+     * Configures the security filter chain.
+     * - Stateless session management (JWT-based).
+     * - Swagger and Actuator endpoints are public.
+     * - Admin sub-paths require ADMIN role.
+     * - All other requests must be authenticated.
+     */
     @Bean
+    @SuppressWarnings("java:S4502") // CSRF is disabled because we use JWT and the API is stateless
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(AbstractHttpConfigurer::disable)
+                .csrf(AbstractHttpConfigurer::disable) // CSRF protection is not required for stateless REST APIs using JWT
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/v3/api-docs", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/actuator/**").permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMIN")

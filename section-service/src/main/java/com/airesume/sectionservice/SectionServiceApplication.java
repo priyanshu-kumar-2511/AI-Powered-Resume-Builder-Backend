@@ -9,12 +9,23 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.web.filter.RequestContextFilter;
 import org.springframework.cache.annotation.EnableCaching;
 
+/**
+ * Main application class for the Section Service.
+ * This service manages modular resume components (Personal Info, Experience, Education, etc.)
+ * and handles ownership verification via inter-service communication.
+ */
 @SpringBootApplication
 @EnableDiscoveryClient
 @EnableCaching
 @EnableFeignClients
 public class SectionServiceApplication {
 
+    /**
+     * Entry point for the Section Service.
+     * Bootstrap the application with environment variables and starts the context.
+     * 
+     * @param args command line arguments
+     */
 	public static void main(String[] args) {
 		// Load .env file from the project root
 		io.github.cdimascio.dotenv.Dotenv dotenv = io.github.cdimascio.dotenv.Dotenv.configure()

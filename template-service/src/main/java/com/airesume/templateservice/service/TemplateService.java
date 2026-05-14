@@ -60,4 +60,9 @@ public interface TemplateService {
      * Increment the usage count when a resume is created with this template.
      */
     void incrementUsage(Long templateId);
+
+    /**
+     * Permanently delete a template from the system (Admin only).
+     */
+    void deleteTemplate(Long templateId);
 }

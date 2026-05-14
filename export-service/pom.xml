@@ -31,6 +31,10 @@
 		<spring-cloud.version>2025.0.2</spring-cloud.version>
 		<jjwt.version>0.12.6</jjwt.version>
 		<openhtmltopdf.version>1.1.24</openhtmltopdf.version>
+		<!-- SonarQube Configuration -->
+		<sonar.projectKey>Ai-Resume-Builder-export-service</sonar.projectKey>
+		<sonar.projectName>Ai-Resume-Builder(export-service)</sonar.projectName>
+		<sonar.host.url>http://localhost:9000</sonar.host.url>
 	</properties>
 	<dependencies>
 		<!-- Web & Security -->
@@ -139,6 +143,16 @@
 			<artifactId>h2</artifactId>
 			<scope>test</scope>
 		</dependency>
+
+		<!-- Database Migration -->
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-core</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-mysql</artifactId>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
@@ -195,6 +209,29 @@
 						</goals>
 					</execution>
 				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>properties-maven-plugin</artifactId>
+				<version>1.2.1</version>
+				<executions>
+					<execution>
+						<phase>validate</phase>
+						<goals>
+							<goal>read-project-properties</goal>
+						</goals>
+						<configuration>
+							<files>
+								<file>${project.basedir}/../.env</file>
+							</files>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.sonarsource.scanner.maven</groupId>
+				<artifactId>sonar-maven-plugin</artifactId>
+				<version>4.0.0.4121</version>
 			</plugin>
 		</plugins>
 	</build>

@@ -12,7 +12,9 @@ import java.time.LocalDateTime;
  * Actual sections (like experience, education) are managed by Section-Service.
  */
 @Entity
-@Table(name = "resumes")
+@Table(name = "resumes", indexes = {
+    @Index(name = "idx_resume_userid", columnList = "userId")
+})
 @Getter
 @Setter
 @NoArgsConstructor

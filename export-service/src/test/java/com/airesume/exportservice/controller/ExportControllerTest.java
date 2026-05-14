@@ -26,6 +26,11 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+/**
+ * Unit tests for the Export Controller.
+ * Verifies the submission and retrieval of resume export jobs
+ * across different formats (PDF, DOCX, JSON).
+ */
 @WebMvcTest(ExportController.class)
 @AutoConfigureMockMvc(addFilters = false) // Disabling security filters for controller logic testing
 class ExportControllerTest {
@@ -59,6 +64,9 @@ class ExportControllerTest {
         when(currentUserService.requireUserId()).thenReturn(1L);
     }
 
+    /**
+     * Verifies that submitting a PDF export request returns 202 Accepted.
+     */
     @Test
     void testExportPdf() throws Exception {
         when(exportService.submitExportJob(eq(1L), eq(1L), eq(ExportFormat.PDF), any(), any())).thenReturn(job);
@@ -71,6 +79,9 @@ class ExportControllerTest {
                 .andExpect(jsonPath("$.jobId").value("job-123"));
     }
 
+    /**
+     * Verifies that submitting a DOCX export request returns 202 Accepted.
+     */
     @Test
     void testExportDocx() throws Exception {
         when(exportService.submitExportJob(eq(1L), eq(1L), eq(ExportFormat.DOCX), any(), any())).thenReturn(job);
@@ -81,6 +92,9 @@ class ExportControllerTest {
                 .andExpect(jsonPath("$.jobId").value("job-123"));
     }
 
+    /**
+     * Verifies that submitting a JSON export request returns 202 Accepted.
+     */
     @Test
     void testExportJson() throws Exception {
         when(exportService.submitExportJob(eq(1L), eq(1L), eq(ExportFormat.JSON), any(), any())).thenReturn(job);
@@ -91,6 +105,9 @@ class ExportControllerTest {
                 .andExpect(jsonPath("$.jobId").value("job-123"));
     }
 
+    /**
+     * Tests the retrieval of a background export job's current status.
+     */
     @Test
     void testGetJobStatus() throws Exception {
         when(exportService.getJobStatus("job-123")).thenReturn(job);
@@ -100,6 +117,9 @@ class ExportControllerTest {
                 .andExpect(jsonPath("$.jobId").value("job-123"));
     }
 
+    /**
+     * Verifies retrieval of all export jobs associated with the current user.
+     */
     @Test
     void testGetExportsByUser() throws Exception {
         when(exportService.getExportsByUser(1L)).thenReturn(List.of(job));
@@ -109,6 +129,9 @@ class ExportControllerTest {
                 .andExpect(jsonPath("$[0].jobId").value("job-123"));
     }
 
+    /**
+     * Verifies that generated export files can be downloaded with correct headers.
+     */
     @Test
     void testDownloadFile() throws Exception {
         when(exportService.getJobStatus("job-123")).thenReturn(job);
@@ -121,6 +144,9 @@ class ExportControllerTest {
                 .andExpect(content().bytes(new byte[]{1, 2, 3}));
     }
 
+    /**
+     * Verifies that an export job and its associated file can be deleted.
+     */
     @Test
     void testDeleteExport() throws Exception {
         mockMvc.perform(delete("/job-123"))
@@ -129,6 +155,9 @@ class ExportControllerTest {
         verify(exportService).deleteExport("job-123");
     }
 
+    /**
+     * Verifies retrieval of personal export statistics for a user.
+     */
     @Test
     void testGetStats() throws Exception {
         ExportStatsDTO stats = ExportStatsDTO.builder().userId(1L).totalExports(10L).build();
@@ -139,6 +168,9 @@ class ExportControllerTest {
                 .andExpect(jsonPath("$.totalExports").value(10));
     }
 
+    /**
+     * Verifies that administrators can manually trigger the cleanup of expired export files.
+     */
     @Test
     void testCleanup() throws Exception {
         mockMvc.perform(delete("/internal/cleanup-expired"))
@@ -147,6 +179,9 @@ class ExportControllerTest {
         verify(exportService).cleanupExpiredExports();
     }
 
+    /**
+     * Verifies that administrators can retrieve global export statistics across all users.
+     */
     @Test
     void testGetAdminStats() throws Exception {
         when(exportService.getAdminStats()).thenReturn(Map.of("PDF", 100L));
@@ -156,6 +191,9 @@ class ExportControllerTest {
                 .andExpect(jsonPath("$.PDF").value(100));
     }
 
+    /**
+     * Verifies the daily PDF export count for a specific user.
+     */
     @Test
     void testGetDailyCount() throws Exception {
         when(exportService.getDailyPdfCount(1L)).thenReturn(5L);
@@ -165,6 +203,9 @@ class ExportControllerTest {
                 .andExpect(content().string("5"));
     }
 
+    /**
+     * Verifies that users can retrieve their own export jobs even if IDs are mismatched (legacy check).
+     */
     @Test
     void testGetExportsByUser_DifferentUserId() throws Exception {
         // Current user is 1, but requesting stats/exports for user 2
@@ -175,6 +216,9 @@ class ExportControllerTest {
                 .andExpect(status().isOk());
     }
 
+    /**
+     * Verifies that non-PDF files (e.g., DOCX) are served with the correct octet-stream MIME type.
+     */
     @Test
     void testDownloadFile_NonPdf() throws Exception {
         job.setFormat(ExportFormat.DOCX); // non-PDF

@@ -9,6 +9,11 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
+/**
+ * Security configuration for the Spring Boot Admin Server.
+ * Configures login pages, asset permissions, and CSRF protection 
+ * for the admin dashboard.
+ */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
@@ -19,6 +24,15 @@ public class SecurityConfig {
         this.adminServer = adminServer;
     }
 
+    /**
+     * Configures the security filter chain.
+     * Allows public access to static assets and login page, while
+     * securing all other management endpoints.
+     * 
+     * @param http the HttpSecurity to configure
+     * @return the configured SecurityFilterChain
+     * @throws Exception if an error occurs during configuration
+     */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         SavedRequestAwareAuthenticationSuccessHandler successHandler = new SavedRequestAwareAuthenticationSuccessHandler();

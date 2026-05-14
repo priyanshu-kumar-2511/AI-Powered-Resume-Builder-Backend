@@ -20,6 +20,10 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/**
+ * Unit tests for the Administrative Payment Controller.
+ * Verifies global subscription management and revenue reporting for admin users.
+ */
 @WebMvcTest(AdminPaymentController.class)
 @AutoConfigureMockMvc(addFilters = false)
 class AdminPaymentControllerTest {
@@ -36,6 +40,9 @@ class AdminPaymentControllerTest {
     @MockBean
     private com.airesume.paymentservice.config.JwtAuthenticationFilter jwtAuthenticationFilter;
 
+    /**
+     * Verifies that admins can retrieve a paginated list of all system subscriptions.
+     */
     @Test
     void testGetAllSubscriptions() throws Exception {
         Page<com.airesume.paymentservice.dto.AdminSubscriptionResponse> page = new PageImpl<>(Collections.emptyList());
@@ -48,6 +55,9 @@ class AdminPaymentControllerTest {
                 .andExpect(status().isOk());
     }
 
+    /**
+     * Tests the retrieval of global subscription statistics and revenue data.
+     */
     @Test
     void testGetStats() throws Exception {
         SubscriptionStats stats = new SubscriptionStats();

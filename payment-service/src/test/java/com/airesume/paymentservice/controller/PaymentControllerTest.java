@@ -23,6 +23,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/**
+ * Unit tests for the Payment Controller.
+ * Verifies Razorpay order creation, payment signature verification,
+ * and subscription lifecycle management.
+ */
 @WebMvcTest(PaymentController.class)
 class PaymentControllerTest {
 
@@ -38,6 +43,9 @@ class PaymentControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    /**
+     * Verifies that a Razorpay order is correctly initiated for a given billing cycle.
+     */
     @Test
     @WithMockUser
     void testCreateOrder() throws Exception {
@@ -52,6 +60,9 @@ class PaymentControllerTest {
                 .andExpect(status().isOk());
     }
 
+    /**
+     * Verifies retrieval of the current user's payment and subscription status.
+     */
     @Test
     @WithMockUser
     void testGetStatus() throws Exception {
@@ -59,6 +70,9 @@ class PaymentControllerTest {
                 .andExpect(status().isOk());
     }
 
+    /**
+     * Verifies that the payment verification endpoint correctly handles signature validation.
+     */
     @Test
     @WithMockUser
     void testVerifyPayment() throws Exception {
@@ -78,6 +92,9 @@ class PaymentControllerTest {
                 .andExpect(status().isOk());
     }
 
+    /**
+     * Verifies the development-only endpoint for bypassing Razorpay and completing a simulated payment.
+     */
     @Test
     @WithMockUser
     void testCompleteDevPayment() throws Exception {
@@ -93,6 +110,9 @@ class PaymentControllerTest {
                 .andExpect(status().isOk());
     }
 
+    /**
+     * Tests the cancellation of an active subscription.
+     */
     @Test
     @WithMockUser
     void testCancelSubscription() throws Exception {

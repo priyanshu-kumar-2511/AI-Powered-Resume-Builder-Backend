@@ -24,6 +24,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+/**
+ * Unit tests for the Notification Controller.
+ * Verifies notification delivery, status management (read/unread),
+ * and bulk notification broadcasting.
+ */
 @WebMvcTest(NotificationController.class)
 class NotificationControllerTest {
 
@@ -39,6 +44,9 @@ class NotificationControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    /**
+     * Verifies that a user can retrieve their paginated notification list.
+     */
     @Test
     @WithMockUser
     void testGetNotifications() throws Exception {
@@ -48,6 +56,9 @@ class NotificationControllerTest {
                 .andExpect(status().isOk());
     }
 
+    /**
+     * Verifies the successful submission of a single notification request.
+     */
     @Test
     @WithMockUser
     void testSendNotification() throws Exception {
@@ -65,6 +76,9 @@ class NotificationControllerTest {
                 .andExpect(status().isOk());
     }
 
+    /**
+     * Verifies retrieval of unread notification count for a specific user.
+     */
     @Test
     @WithMockUser
     void testGetUnreadCount() throws Exception {
@@ -74,6 +88,9 @@ class NotificationControllerTest {
                 .andExpect(status().isOk());
     }
 
+    /**
+     * Verifies that a specific notification can be marked as read.
+     */
     @Test
     @WithMockUser
     void testMarkAsRead() throws Exception {
@@ -82,6 +99,9 @@ class NotificationControllerTest {
                 .andExpect(status().isNoContent());
     }
 
+    /**
+     * Verifies that all notifications for a user can be marked as read in bulk.
+     */
     @Test
     @WithMockUser
     void testMarkAllAsRead() throws Exception {
@@ -90,6 +110,9 @@ class NotificationControllerTest {
                 .andExpect(status().isNoContent());
     }
 
+    /**
+     * Verifies that a user can delete a specific notification.
+     */
     @Test
     @WithMockUser
     void testDeleteNotification() throws Exception {
@@ -98,6 +121,9 @@ class NotificationControllerTest {
                 .andExpect(status().isNoContent());
     }
 
+    /**
+     * Tests the bulk notification endpoint used for broadcasting messages to user tiers.
+     */
     @Test
     @WithMockUser
     void testSendBulk() throws Exception {
@@ -113,6 +139,9 @@ class NotificationControllerTest {
                 .andExpect(status().isAccepted());
     }
 
+    /**
+     * Verifies administrative retrieval of all notifications across the system.
+     */
     @Test
     @WithMockUser
     void testGetAll() throws Exception {

@@ -15,6 +15,10 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Unit tests for the JWT Service.
+ * Verifies token parsing, signature validation, and claim extraction (username/roles).
+ */
 class JwtServiceTest {
 
     private JwtService jwtService;
@@ -39,12 +43,18 @@ class JwtServiceTest {
                 .compact();
     }
 
+    /**
+     * Verifies that the username (subject) can be extracted from a valid token.
+     */
     @Test
     void testExtractUsername() {
         String token = generateToken("user1", Map.of(), 1000 * 60);
         assertEquals("user1", jwtService.extractUsername(token));
     }
 
+    /**
+     * Verifies that user roles are correctly extracted from the token's claims.
+     */
     @Test
     void testExtractRoles() {
         String token = generateToken("user1", Map.of("roles", List.of("ROLE_USER")), 1000 * 60);
@@ -53,18 +63,27 @@ class JwtServiceTest {
         assertEquals("ROLE_USER", roles.get(0));
     }
 
+    /**
+     * Verifies that a properly signed, non-expired token passes validation.
+     */
     @Test
     void testValidateToken_Success() {
         String token = generateToken("user1", Map.of(), 1000 * 60);
         assertTrue(jwtService.validateToken(token));
     }
 
+    /**
+     * Verifies that tokens are rejected once they have passed their expiration timestamp.
+     */
     @Test
     void testValidateToken_Expired() {
         String token = generateToken("user1", Map.of(), -1000);
         assertFalse(jwtService.validateToken(token));
     }
 
+    /**
+     * Verifies that malformed or non-JWT strings are rejected by the validator.
+     */
     @Test
     void testValidateToken_Invalid() {
         assertFalse(jwtService.validateToken("invalid.token.here"));

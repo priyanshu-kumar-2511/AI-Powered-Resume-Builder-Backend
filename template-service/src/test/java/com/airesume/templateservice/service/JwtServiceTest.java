@@ -14,6 +14,10 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Unit tests for JwtService in Template Service.
+ * Verifies claim extraction and basic token validation.
+ */
 class JwtServiceTest {
 
     private JwtService jwtService;
@@ -35,12 +39,18 @@ class JwtServiceTest {
                 .compact();
     }
 
+    /**
+     * Verifies that the username (subject) can be extracted from a valid token.
+     */
     @Test
     void testExtractUsername() {
         String token = createToken("testuser", Map.of());
         assertEquals("testuser", jwtService.extractUsername(token));
     }
 
+    /**
+     * Verifies that user roles are correctly extracted from the token's claims.
+     */
     @Test
     void testExtractRoles() {
         String token = createToken("testuser", Map.of("roles", List.of("ROLE_USER", "ROLE_ADMIN")));
@@ -49,12 +59,18 @@ class JwtServiceTest {
         assertTrue(roles.contains("ROLE_ADMIN"));
     }
 
+    /**
+     * Verifies that a valid token passes the validation check.
+     */
     @Test
     void testValidateToken_Success() {
         String token = createToken("testuser", Map.of());
         assertTrue(jwtService.validateToken(token));
     }
 
+    /**
+     * Verifies that malformed or non-JWT strings are rejected.
+     */
     @Test
     void testValidateToken_Failure() {
         assertFalse(jwtService.validateToken("invalid-token"));

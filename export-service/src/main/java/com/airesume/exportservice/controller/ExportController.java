@@ -48,6 +48,14 @@ public class ExportController {
         return new ResponseEntity<>(exportService.submitExportJob(userId, resumeId, ExportFormat.PDF, customizations, authorizationHeader), HttpStatus.ACCEPTED);
     }
 
+    /**
+     * Submits a request to export a resume as a DOCX document.
+     * 
+     * @param resumeId The ID of the resume to export
+     * @param customizations Optional JSON string for export styling/customizations
+     * @param authorizationHeader The JWT token for internal authentication
+     * @return The created ExportJob with status ACCEPTED
+     */
     @PostMapping("/docx/{resumeId}")
     @Operation(summary = "Submit a DOCX export job")
     public ResponseEntity<ExportJob> exportDocx(
@@ -59,6 +67,14 @@ public class ExportController {
         return new ResponseEntity<>(exportService.submitExportJob(userId, resumeId, ExportFormat.DOCX, customizations, authorizationHeader), HttpStatus.ACCEPTED);
     }
 
+    /**
+     * Submits a request to export a resume as a raw JSON file.
+     * 
+     * @param resumeId The ID of the resume to export
+     * @param customizations Optional JSON string for export styling/customizations
+     * @param authorizationHeader The JWT token for internal authentication
+     * @return The created ExportJob with status ACCEPTED
+     */
     @PostMapping("/json/{resumeId}")
     @Operation(summary = "Submit a JSON export job")
     public ResponseEntity<ExportJob> exportJson(
@@ -82,6 +98,12 @@ public class ExportController {
         return ResponseEntity.ok(exportService.getJobStatus(jobId));
     }
 
+    /**
+     * Retrieves all historical export jobs for a specific user.
+     * 
+     * @param userId the ID of the user
+     * @return a list of export jobs
+     */
     @GetMapping("/user/{userId}")
     @Operation(summary = "Get all export jobs for a user")
     public ResponseEntity<List<ExportJob>> getExportsByUser(@PathVariable Long userId) {
@@ -114,6 +136,12 @@ public class ExportController {
                 .body(content);
     }
 
+    /**
+     * Permanently deletes an export job record and its associated physical file.
+     * 
+     * @param jobId the unique ID of the job to delete
+     * @return a 204 No Content response on success
+     */
     @DeleteMapping("/{jobId}")
     @Operation(summary = "Delete an export job record and its file")
     public ResponseEntity<Void> deleteExport(@PathVariable String jobId) {
@@ -121,6 +149,12 @@ public class ExportController {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Fetches high-level export statistics for a user, such as total counts and format breakdowns.
+     * 
+     * @param userId the ID of the user
+     * @return a DTO containing user-specific export stats
+     */
     @GetMapping("/stats/{userId}")
     @Operation(summary = "Get export statistics for a user")
     public ResponseEntity<ExportStatsDTO> getStats(@PathVariable Long userId) {

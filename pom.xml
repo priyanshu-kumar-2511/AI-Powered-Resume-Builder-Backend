@@ -20,6 +20,10 @@
 	<properties>
 		<jacoco.version>0.8.11</jacoco.version>
 		<jacoco.minimum.line>0.80</jacoco.minimum.line>
+		<!-- SonarQube Configuration -->
+		<sonar.projectKey>Ai-Resume-Builder</sonar.projectKey>
+		<sonar.projectName>Ai-Resume-Builder</sonar.projectName>
+		<sonar.host.url>http://localhost:9000</sonar.host.url>
 	</properties>
 
 	<modules>
@@ -79,6 +83,29 @@
 						</configuration>
 					</execution>
 				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>properties-maven-plugin</artifactId>
+				<version>1.2.1</version>
+				<executions>
+					<execution>
+						<phase>validate</phase>
+						<goals>
+							<goal>read-project-properties</goal>
+						</goals>
+						<configuration>
+							<files>
+								<file>${session.executionRootDirectory}/.env</file>
+							</files>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.sonarsource.scanner.maven</groupId>
+				<artifactId>sonar-maven-plugin</artifactId>
+				<version>4.0.0.4121</version>
 			</plugin>
 		</plugins>
 	</build>

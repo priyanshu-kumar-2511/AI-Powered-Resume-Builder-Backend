@@ -4,8 +4,15 @@ import org.junit.jupiter.api.Test;
 import java.time.LocalDateTime;
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Unit tests for AI Service entities.
+ * Verifies basic property mapping and lifecycle attributes for persistence models.
+ */
 class EntityTest {
 
+    /**
+     * Verifies the AI history entity data mapping.
+     */
     @Test
     void testAiHistory() {
         AiHistory history = new AiHistory();
@@ -20,6 +27,9 @@ class EntityTest {
         assertEquals("test response", history.getResponseContent());
     }
 
+    /**
+     * Verifies the user quota management entity fields.
+     */
     @Test
     void testUserQuota() {
         UserQuota quota = new UserQuota();

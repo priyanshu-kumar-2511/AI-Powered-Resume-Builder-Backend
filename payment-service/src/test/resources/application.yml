@@ -6,6 +6,8 @@ spring:
     name: PAYMENT-SERVICE-TEST
 
   # Disable Cloud Config Server during tests
+  flyway:
+    enabled: false
   cloud:
     config:
       enabled: false

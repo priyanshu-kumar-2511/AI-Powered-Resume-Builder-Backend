@@ -1,3 +1,4 @@
+
 package com.airesume.authservice.service;
 
 import com.airesume.authservice.dto.*;
@@ -8,11 +9,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Service class handling core authentication, registration, and account recovery.
+ * Core Authentication and Account Management Service.
+ * Orchestrates user registration with OTP verification, JWT issuance,
+ * password recovery, and subscription plan synchronization across services.
  */
 @Service
 @RequiredArgsConstructor
@@ -22,7 +26,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final OtpRepository otpRepository;
-    
+
     // Core services for logic
     private final OtpService otpService;
     private final EmailService emailService;
@@ -31,15 +35,13 @@ public class AuthService {
     private final UserQuotaRepository quotaRepository;
 
     /**
-     * Registers a new user with the default ROLE_USER and FREE subscription plan.
-     * Also initializes their default AI quotas.
+     * Step 1 of User Registration.
+     * Checks for existing users, creates an inactive record, and sends
+     * a 6-digit verification OTP to the user's email.
+     * 
      * @param request the registration details provided by the user
      * @return a success message
      * @throws RuntimeException if username or email already exists
-     */
-    /**
-     * Initiates user registration (Step 1).
-     * Creates an inactive user and sends a 6-digit verification OTP.
      */
     @Transactional
     public String initiateRegistration(RegisterInitiateRequest request) {
@@ -80,7 +82,8 @@ public class AuthService {
     }
 
     /**
-     * Verifies the registration OTP (Step 2).
+     * Step 2 of User Registration.
+     * Validates the provided OTP for the given email session.
      */
     public String verifyRegistrationOtp(String email, String otp) {
         User user = userRepository.findByEmail(email)
@@ -102,7 +105,8 @@ public class AuthService {
     @Transactional
     public String register(RegisterRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("Registration session not found. Please complete Step 1 first."));
+                .orElseThrow(
+                        () -> new RuntimeException("Registration session not found. Please complete Step 1 first."));
 
         if (user.isActive()) {
             throw new RuntimeException("Email is already registered and verified");
@@ -139,9 +143,11 @@ public class AuthService {
      * Authenticates a user based on their credentials.
      * Checks password validity and account status. If successful, generates a JWT
      * and sends a welcome or admin alert email.
+     * 
      * @param request the login credentials
      * @return a valid JWT token
-     * @throws RuntimeException if user not found, incorrect password, or account is suspended
+     * @throws RuntimeException if user not found, incorrect password, or account is
+     *                          suspended
      */
     public String login(LoginRequest request) {
         User user = userRepository.findByUsername(request.getUsername())
@@ -168,13 +174,10 @@ public class AuthService {
         return token;
     }
 
-    /**
-     * Internal method to build claims for JWT token.
-     * Includes roles, userId, and current subscription plan.
-     */
 
     /**
      * Initiates the username recovery flow by generating and emailing an OTP.
+     * 
      * @param request the email and password of the account
      * @return a confirmation message that the OTP was sent
      */
@@ -192,7 +195,9 @@ public class AuthService {
     }
 
     /**
-     * Verifies the provided OTP for username recovery. If valid, emails the username to the user.
+     * Verifies the provided OTP for username recovery. If valid, emails the
+     * username to the user.
+     * 
      * @param request the email and OTP
      * @return a success message
      */
@@ -223,7 +228,9 @@ public class AuthService {
     }
 
     /**
-     * Completes the password reset process by verifying the OTP and saving the new password.
+     * Completes the password reset process by verifying the OTP and saving the new
+     * password.
+     * 
      * @param request the identifier (email), OTP, and new password
      * @return a success message
      */
@@ -243,8 +250,9 @@ public class AuthService {
 
     /**
      * Updates the basic profile information of an existing user.
+     * 
      * @param username the username of the user
-     * @param request the updated profile fields
+     * @param request  the updated profile fields
      * @return a success message
      */
     @Transactional
@@ -262,8 +270,9 @@ public class AuthService {
 
     /**
      * Changes a user's password if the current password provided is correct.
+     * 
      * @param username the username of the user
-     * @param request the old and new passwords
+     * @param request  the old and new passwords
      * @return a success message
      */
     @Transactional
@@ -282,15 +291,15 @@ public class AuthService {
 
     /**
      * Updates the subscription plan for a specific user.
+     * 
      * @param username the username of the user
-     * @param plan the new subscription plan
+     * @param plan     the new subscription plan
      * @return a success message
      */
     @Transactional
     public String updateSubscription(String username, PlanType plan) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-
         user.setSubscriptionPlan(plan);
         userRepository.save(user);
         return "Subscription updated to " + plan;
@@ -298,6 +307,7 @@ public class AuthService {
 
     /**
      * Deactivates a user's account. This prevents them from logging in.
+     * 
      * @param username the username of the user to deactivate
      * @return a success message
      */
@@ -313,6 +323,7 @@ public class AuthService {
 
     /**
      * Retrieves the profile information for a specific user.
+     * 
      * @param username the username of the user
      * @return a DTO containing the user's profile details
      */
@@ -341,6 +352,7 @@ public class AuthService {
 
     /**
      * Retrieves a list of all users. Typically used by Admins.
+     * 
      * @return a list of user profiles
      */
     public List<UserProfileResponse> getAllUsers() {
@@ -422,13 +434,17 @@ public class AuthService {
                 .roles(user.getRoles().stream().map(Role::getName).collect(Collectors.toSet()))
                 .subscriptionPlan(user.getSubscriptionPlan())
                 .isActive(user.isActive())
+                .createdAt(user.getCreatedAt())
+                .premiumExpiresAt(user.getPremiumExpiresAt())
                 .build();
     }
 
     // ── Admin: userId-based methods ───────────────────────────────────────────
 
     /**
-     * Suspends a user by their ID, preventing them from logging in, and sends an email notification.
+     * Suspends a user by their ID, preventing them from logging in, and sends an
+     * email notification.
+     * 
      * @param userId the ID of the user
      * @param reason the reason for suspension provided by the admin
      * @return a success message
@@ -445,6 +461,7 @@ public class AuthService {
 
     /**
      * Reactivates a suspended user and sends them an email notification.
+     * 
      * @param userId the ID of the user
      * @return a success message
      */
@@ -460,9 +477,7 @@ public class AuthService {
 
     /**
      * Updates a user's subscription plan by their username.
-     * @param username the username of the user
-     * @param plan the new subscription plan
-     * @return a success message
+     * Triggers email notifications for Premium activation/cancellation.
      */
     @Transactional
     public String updateSubscriptionByUsername(String username, PlanType plan) {
@@ -481,9 +496,11 @@ public class AuthService {
     }
 
     /**
-     * Updates a user's subscription plan by their ID. If upgraded to PREMIUM, sends an email notification.
+     * Updates a user's subscription plan by their unique ID.
+     * Automatically calculates premium expiry (30 days) if upgraded.
+     * 
      * @param userId the ID of the user
-     * @param plan the new subscription plan
+     * @param plan   the new subscription plan
      * @return a success message
      */
     @Transactional
@@ -491,18 +508,22 @@ public class AuthService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found: " + userId));
         user.setSubscriptionPlan(plan);
-        userRepository.save(user);
-
         if (plan == PlanType.PREMIUM) {
+            user.setPremiumExpiresAt(LocalDateTime.now().plusDays(30));
             emailService.sendPremiumActivationEmail(user.getEmail(), user.getFullName());
+        } else {
+            user.setPremiumExpiresAt(null);
         }
+        userRepository.save(user);
 
         return "User " + user.getUsername() + " plan updated to " + plan.name();
     }
 
     /**
-     * Updates a user's role by their ID. If promoted to ADMIN, sends an email notification.
-     * @param userId the ID of the user
+     * Updates a user's role by their ID. If promoted to ADMIN, sends an email
+     * notification.
+     * 
+     * @param userId   the ID of the user
      * @param roleName the new role
      * @return a success message
      */
@@ -534,17 +555,17 @@ public class AuthService {
         return userRepository.findAll().stream()
                 .map(u -> {
                     Map<String, Object> entry = new HashMap<>();
-                    entry.put("logId",       u.getId());
-                    entry.put("actorId",     u.getId());
-                    entry.put("actorEmail",  u.getEmail());
-                    entry.put("actorName",   u.getFullName());
-                    entry.put("actionType",  u.isActive() ? "USER_REGISTERED" : "USER_SUSPENDED");
-                    entry.put("entityType",  "USER");
-                    entry.put("entityId",    String.valueOf(u.getId()));
+                    entry.put("logId", u.getId());
+                    entry.put("actorId", u.getId());
+                    entry.put("actorEmail", u.getEmail());
+                    entry.put("actorName", u.getFullName());
+                    entry.put("actionType", u.isActive() ? "USER_REGISTERED" : "USER_SUSPENDED");
+                    entry.put("entityType", "USER");
+                    entry.put("entityId", String.valueOf(u.getId()));
                     entry.put("beforeState", null);
-                    entry.put("afterState",  null);
-                    entry.put("ipAddress",   "—");
-                    entry.put("timestamp",   u.getCreatedAt() != null ? u.getCreatedAt().toString() : null);
+                    entry.put("afterState", null);
+                    entry.put("ipAddress", "—");
+                    entry.put("timestamp", u.getCreatedAt() != null ? u.getCreatedAt().toString() : null);
                     return entry;
                 })
                 .collect(Collectors.toList());

@@ -13,7 +13,13 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 @EnableDiscoveryClient
 public class ApiGatewayApplication {
 
-	public static void main(String[] args) {
+    /**
+     * Entry point for the API Gateway.
+     * Configures environment variables and starts the reactive Netty server.
+     * 
+     * @param args command line arguments
+     */
+    public static void main(String[] args) {
 		io.github.cdimascio.dotenv.Dotenv dotenv = io.github.cdimascio.dotenv.Dotenv.configure()
 				.directory("../")
 				.ignoreIfMissing()
