@@ -156,7 +156,15 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     private String resolveFrontendLoginUrl() {
         String normalizedBase = frontendPublicUrl == null
                 ? "http://localhost:4200"
-                : frontendPublicUrl.replaceAll("/+$", "");
+                : stripTrailingSlashes(frontendPublicUrl);
         return normalizedBase + "/login";
+    }
+
+    private String stripTrailingSlashes(String value) {
+        int end = value.length();
+        while (end > 0 && value.charAt(end - 1) == '/') {
+            end--;
+        }
+        return value.substring(0, end);
     }
 }

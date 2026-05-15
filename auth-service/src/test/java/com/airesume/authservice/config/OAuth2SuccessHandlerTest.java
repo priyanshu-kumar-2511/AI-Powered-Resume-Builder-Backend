@@ -22,6 +22,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.RedirectStrategy;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -73,6 +74,7 @@ class OAuth2SuccessHandlerTest {
 
     @Test
     void onAuthenticationSuccess_ExistingUser_Google() throws Exception {
+        ReflectionTestUtils.setField(oAuth2SuccessHandler, "frontendPublicUrl", "http://localhost:4200///");
         OAuth2AuthenticationToken authToken = mock(OAuth2AuthenticationToken.class);
         when(authToken.getPrincipal()).thenReturn(oAuth2User);
         when(authToken.getAuthorizedClientRegistrationId()).thenReturn("google");
@@ -85,6 +87,7 @@ class OAuth2SuccessHandlerTest {
 
         oAuth2SuccessHandler.onAuthenticationSuccess(request, response, authToken);
 
+        verify(redirectStrategy).sendRedirect(eq(request), eq(response), contains("http://localhost:4200/login"));
         verify(redirectStrategy).sendRedirect(eq(request), eq(response), contains("token=mockToken"));
     }
 
@@ -187,5 +190,26 @@ class OAuth2SuccessHandlerTest {
         oAuth2SuccessHandler.onAuthenticationSuccess(request, response, authToken);
 
         verify(redirectStrategy).sendRedirect(eq(request), eq(response), anyString());
+    }
+
+    @Test
+    void onAuthenticationSuccess_UsesFrontendUrlWithoutChangingSafeBehavior() throws Exception {
+        ReflectionTestUtils.setField(oAuth2SuccessHandler, "frontendPublicUrl", "https://resumeai.example.com/app/");
+
+        OAuth2AuthenticationToken authToken = mock(OAuth2AuthenticationToken.class);
+        when(authToken.getPrincipal()).thenReturn(oAuth2User);
+        when(authToken.getAuthorizedClientRegistrationId()).thenReturn("google");
+        when(oAuth2User.getAttribute("email")).thenReturn("test@example.com");
+        when(oAuth2User.getAttribute("name")).thenReturn("Test User");
+        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(existingUser));
+        when(jwtService.generateToken(anyString(), any())).thenReturn("mockToken");
+
+        oAuth2SuccessHandler.onAuthenticationSuccess(request, response, authToken);
+
+        verify(redirectStrategy).sendRedirect(
+                eq(request),
+                eq(response),
+                contains("https://resumeai.example.com/app/login")
+        );
     }
 }

@@ -85,3 +85,5 @@ springdoc:
 app:
   jwt:
     secret: ${JWT_SECRET}
+  templates:
+    seed-on-empty: true
