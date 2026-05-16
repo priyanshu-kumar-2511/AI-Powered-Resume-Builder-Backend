@@ -1,0 +1,159 @@
+version: '3.8'
+
+services:
+  # Infrastructure Services
+  mysql:
+    image: mysql:8.0
+    container_name: airesume-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: airesume
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: airesume-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  redis:
+    image: redis:latest
+    container_name: airesume-redis
+    ports:
+      - "6379:6379"
+
+  zipkin:
+    image: openzipkin/zipkin
+    container_name: airesume-zipkin
+    ports:
+      - "9411:9411"
+
+  # Microservices (Using Docker Hub Images)
+  config-server:
+    image: priyanshu2511/airesume-config-server:latest
+    container_name: config-server
+    ports:
+      - "8888:8888"
+    environment:
+      - SPRING_PROFILES_ACTIVE=native
+    depends_on:
+      - rabbitmq
+
+  eureka-server:
+    image: priyanshu2511/airesume-eureka-server:latest
+    container_name: eureka-server
+    ports:
+      - "8761:8761"
+    environment:
+      - CONFIG_SERVER_URL=http://config-server:8888
+    depends_on:
+      - config-server
+
+  api-gateway:
+    image: priyanshu2511/airesume-api-gateway:latest
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+    depends_on:
+      - eureka-server
+
+  auth-service:
+    image: priyanshu2511/airesume-auth-service:latest
+    container_name: auth-service
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/airesume
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+    depends_on:
+      - mysql
+      - eureka-server
+
+  ai-service:
+    image: priyanshu2511/airesume-ai-service:latest
+    container_name: ai-service
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+    depends_on:
+      - eureka-server
+
+  resume-service:
+    image: priyanshu2511/airesume-resume-service:latest
+    container_name: resume-service
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/airesume
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+    depends_on:
+      - mysql
+      - eureka-server
+
+  section-service:
+    image: priyanshu2511/airesume-section-service:latest
+    container_name: section-service
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+    depends_on:
+      - eureka-server
+
+  template-service:
+    image: priyanshu2511/airesume-template-service:latest
+    container_name: template-service
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+    depends_on:
+      - eureka-server
+
+  payment-service:
+    image: priyanshu2511/airesume-payment-service:latest
+    container_name: payment-service
+    environment:
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+    depends_on:
+      - eureka-server
+
+  notification-service:
+    image: priyanshu2511/airesume-notification-service:latest
+    container_name: notification-service
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+    depends_on:
+      - eureka-server
+      - rabbitmq
+
+  export-service:
+    image: priyanshu2511/airesume-export-service:latest
+    container_name: export-service
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+    depends_on:
+      - eureka-server
+
+  admin-server:
+    image: priyanshu2511/airesume-admin-server:latest
+    container_name: admin-server
+    ports:
+      - "9090:9090"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+    depends_on:
+      - eureka-server
+
+  # Frontend
+  frontend:
+    image: priyanshu2511/airesume-frontend:latest
+    container_name: airesume-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - api-gateway
+
+volumes:
+  mysql_data:
