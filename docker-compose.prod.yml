@@ -13,6 +13,8 @@ services:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+    networks:
+      - airesume-network
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -21,6 +23,8 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
+    networks:
+      - airesume-network
 
   redis:
     image: redis:latest
@@ -28,6 +32,8 @@ services:
     restart: unless-stopped
     ports:
       - "6379:6379"
+    networks:
+      - airesume-network
 
   zipkin:
     image: openzipkin/zipkin
@@ -35,8 +41,20 @@ services:
     restart: unless-stopped
     ports:
       - "9411:9411"
+    networks:
+      - airesume-network
 
-  # Microservices (Using Docker Hub Images)
+  # Core Services
+  eureka-server:
+    image: priyanshu2511/airesume-eureka-server:latest
+    container_name: eureka-server
+    restart: unless-stopped
+    ports:
+      - "8761:8761"
+    env_file: .env
+    networks:
+      - airesume-network
+
   config-server:
     image: priyanshu2511/airesume-config-server:latest
     container_name: config-server
@@ -45,21 +63,13 @@ services:
       - "8888:8888"
     environment:
       - SPRING_PROFILES_ACTIVE=native
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
     env_file: .env
     depends_on:
       - rabbitmq
-
-  eureka-server:
-    image: priyanshu2511/airesume-eureka-server:latest
-    container_name: eureka-server
-    restart: unless-stopped
-    ports:
-      - "8761:8761"
-    environment:
-      - CONFIG_SERVER_URL=http://config-server:8888
-    env_file: .env
-    depends_on:
-      - config-server
+      - eureka-server
+    networks:
+      - airesume-network
 
   api-gateway:
     image: priyanshu2511/airesume-api-gateway:latest
@@ -69,34 +79,44 @@ services:
       - "8080:8080"
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
     env_file: .env
     depends_on:
       - eureka-server
+      - config-server
+    networks:
+      - airesume-network
 
+  # Microservices
   auth-service:
     image: priyanshu2511/airesume-auth-service:latest
     container_name: auth-service
     restart: unless-stopped
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/airesume
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD}
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
     env_file: .env
     depends_on:
       - mysql
       - eureka-server
+      - config-server
+    networks:
+      - airesume-network
 
   ai-service:
     image: priyanshu2511/airesume-ai-service:latest
     container_name: ai-service
     restart: unless-stopped
     environment:
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
     env_file: .env
     depends_on:
       - eureka-server
+      - config-server
+    networks:
+      - airesume-network
 
   resume-service:
     image: priyanshu2511/airesume-resume-service:latest
@@ -105,52 +125,30 @@ services:
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/airesume
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
     env_file: .env
     depends_on:
       - mysql
       - eureka-server
-
-  section-service:
-    image: priyanshu2511/airesume-section-service:latest
-    container_name: section-service
-    restart: unless-stopped
-    environment:
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
-    env_file: .env
-    depends_on:
-      - eureka-server
+      - config-server
+    networks:
+      - airesume-network
 
   template-service:
     image: priyanshu2511/airesume-template-service:latest
     container_name: template-service
     restart: unless-stopped
     environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/airesume
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
     env_file: .env
     depends_on:
+      - mysql
       - eureka-server
-
-  payment-service:
-    image: priyanshu2511/airesume-payment-service:latest
-    container_name: payment-service
-    restart: unless-stopped
-    environment:
-      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
-    env_file: .env
-    depends_on:
-      - eureka-server
-
-  notification-service:
-    image: priyanshu2511/airesume-notification-service:latest
-    container_name: notification-service
-    restart: unless-stopped
-    environment:
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
-    env_file: .env
-    depends_on:
-      - eureka-server
-      - rabbitmq
+      - config-server
+    networks:
+      - airesume-network
 
   export-service:
     image: priyanshu2511/airesume-export-service:latest
@@ -158,9 +156,57 @@ services:
     restart: unless-stopped
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
     env_file: .env
     depends_on:
       - eureka-server
+      - config-server
+    networks:
+      - airesume-network
+
+  notification-service:
+    image: priyanshu2511/airesume-notification-service:latest
+    container_name: notification-service
+    restart: unless-stopped
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
+    env_file: .env
+    depends_on:
+      - eureka-server
+      - config-server
+    networks:
+      - airesume-network
+
+  payment-service:
+    image: priyanshu2511/airesume-payment-service:latest
+    container_name: payment-service
+    restart: unless-stopped
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
+    env_file: .env
+    depends_on:
+      - eureka-server
+      - config-server
+    networks:
+      - airesume-network
+
+  section-service:
+    image: priyanshu2511/airesume-section-service:latest
+    container_name: section-service
+    restart: unless-stopped
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/airesume
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
+    env_file: .env
+    depends_on:
+      - mysql
+      - eureka-server
+      - config-server
+    networks:
+      - airesume-network
 
   admin-server:
     image: priyanshu2511/airesume-admin-server:latest
@@ -170,11 +216,15 @@ services:
       - "9090:9090"
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
     env_file: .env
     depends_on:
       - eureka-server
+      - config-server
+    networks:
+      - airesume-network
 
-  # Frontend
+  # Frontend Service
   frontend:
     image: priyanshu2511/airesume-frontend:latest
     container_name: airesume-frontend
@@ -184,10 +234,12 @@ services:
     env_file: .env
     depends_on:
       - api-gateway
+    networks:
+      - airesume-network
+
+networks:
+  airesume-network:
+    driver: bridge
 
 volumes:
   mysql_data:
-
-networks:
-  default:
-    name: airesume-network
