@@ -3,6 +3,7 @@ package com.airesume.authservice.config;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -46,6 +47,9 @@ public class SecurityConfig {
     private final ClientRegistrationRepository clientRegistrationRepository;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
+    @Value("${app.frontend.public-url:http://localhost:4200}")
+    private String frontendPublicUrl;
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -79,7 +83,7 @@ public class SecurityConfig {
                 .failureHandler((request, response, exception) -> {
                     log.error("OAuth2 login failed: {}", exception.getMessage(), exception);
 
-                    String targetUrl = UriComponentsBuilder.fromUriString("http://localhost:4200/login")
+                    String targetUrl = UriComponentsBuilder.fromUriString(resolveFrontendLoginUrl())
                             .queryParam("oauthError", "true")
                             .queryParam("reason", exception.getMessage())
                             .build()
@@ -162,5 +166,17 @@ public class SecurityConfig {
     boolean isGoogleRequest(OAuth2AuthorizationRequest authorizationRequest) {
         String uri = authorizationRequest.getAuthorizationUri();
         return uri != null && uri.contains("accounts.google.com");
+    }
+
+    private String resolveFrontendLoginUrl() {
+        return stripTrailingSlashes(frontendPublicUrl) + "/login";
+    }
+
+    private String stripTrailingSlashes(String value) {
+        int end = value == null ? 0 : value.length();
+        while (end > 0 && value.charAt(end - 1) == '/') {
+            end--;
+        }
+        return end == 0 ? "http://localhost:4200" : value.substring(0, end);
     }
 }

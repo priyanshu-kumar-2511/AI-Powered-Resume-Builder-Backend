@@ -5,6 +5,7 @@ import com.airesume.authservice.dto.EmailMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 /**
@@ -18,6 +19,9 @@ public class EmailService {
 
     private final RabbitTemplate rabbitTemplate;
     private static final String DEAR = "Dear ";
+
+    @Value("${app.frontend.public-url:http://localhost:4200}")
+    private String frontendPublicUrl;
 
     /**
      * Publishes email message payload to RabbitMQ.
@@ -114,7 +118,7 @@ public class EmailService {
                 "  • 🎨  <span class='highlight'>Visual Templates:</span> Access our curated library of premium designs.<br>" +
                 "  • 🎯  <span class='highlight'>ATS Optimization:</span> Match your profile against top-tier opportunities.<br><br>" +
                 "If this activity was unauthorized, please secure your account immediately by resetting your password:<br>" +
-                "<div style='text-align: center;'><a href='http://localhost:4200/forgot-password' class='button'>Secure My Account</a></div><br><br>" +
+                "<div style='text-align: center;'><a href='" + frontendUrl("/forgot-password") + "' class='button'>Secure My Account</a></div><br><br>" +
                 "Best regards,<br>The ResumeAI Administration";
         publishEmail(to, subject, body);
     }
@@ -141,7 +145,7 @@ public class EmailService {
         String body = DEAR + fullName + ",<br><br>" +
                 "Following a review of your account status, we are pleased to inform you that your ResumeAI access has been fully restored.<br><br>" +
                 "You may resume all platform activities by logging into your dashboard:<br>" +
-                "<div style='text-align: center;'><a href='http://localhost:4200/login' class='button'>Return to Dashboard</a></div><br><br>" +
+                "<div style='text-align: center;'><a href='" + frontendUrl("/login") + "' class='button'>Return to Dashboard</a></div><br><br>" +
                 "We appreciate your patience and look forward to your continued use of our services.<br><br>Best regards,<br>ResumeAI Administration";
         publishEmail(to, subject, body);
     }
@@ -154,7 +158,7 @@ public class EmailService {
         String body = DEAR + fullName + ",<br><br>" +
                 "We are pleased to announce that you have been provisioned with Administrative privileges on the ResumeAI platform.<br><br>" +
                 "Your new role grants you access to specialized tools for user management, template curation, and platform-wide analytics. You may access your management console here:<br>" +
-                "<div style='text-align: center;'><a href='http://localhost:4200/admin' class='button'>Enter Management Console</a></div><br><br>" +
+                "<div style='text-align: center;'><a href='" + frontendUrl("/admin") + "' class='button'>Enter Management Console</a></div><br><br>" +
                 "Please ensure all administrative actions align with our internal governance policies.<br><br>Regards,<br>ResumeAI Operations Team";
         publishEmail(to, subject, body);
     }
@@ -182,7 +186,7 @@ public class EmailService {
                 "  🚀  <span class='highlight'>Unrestricted AI Iterations:</span> Generate resumes without volume limitations.<br>" +
                 "  📊  <span class='highlight'>Deep-Level ATS Analysis:</span> Access granular matching data for targeted applications.<br>" +
                 "  🎨  <span class='highlight'>Elite Template Library:</span> Deploy your profile using our most exclusive designs.<br><br>" +
-                "<div style='text-align: center;'><a href='http://localhost:4200/login' class='button'>Launch Premium Workspace</a></div><br><br>" +
+                "<div style='text-align: center;'><a href='" + frontendUrl("/login") + "' class='button'>Launch Premium Workspace</a></div><br><br>" +
                 "Thank you for choosing ResumeAI as your career partner.<br><br>Best regards,<br>The ResumeAI Success Team";
         publishEmail(to, subject, body);
     }
@@ -195,7 +199,7 @@ public class EmailService {
         String body = DEAR + fullName + ",<br><br>" +
                 "This email confirms that your ResumeAI Premium subscription has been successfully cancelled as per your request.<br><br>" +
                 "Your account has been transitioned to the standard Free tier. You may re-subscribe at any time to regain access to advanced analytics and unlimited exports:<br>" +
-                "<div style='text-align: center;'><a href='http://localhost:4200/pricing' class='button'>Review Membership Plans</a></div><br><br>" +
+                "<div style='text-align: center;'><a href='" + frontendUrl("/pricing") + "' class='button'>Review Membership Plans</a></div><br><br>" +
                 "Regards,<br>The ResumeAI Support Team";
         publishEmail(to, subject, body);
     }
@@ -214,5 +218,17 @@ public class EmailService {
                 "If you did not authorize this login, please initiate an immediate security protocol by resetting your credentials and contacting the IT Safety Department.<br><br>" +
                 "Sincerely,<br>ResumeAI Security Infrastructure";
         publishEmail(to, subject, body);
+    }
+
+    private String frontendUrl(String path) {
+        return stripTrailingSlashes(frontendPublicUrl) + path;
+    }
+
+    private String stripTrailingSlashes(String value) {
+        int end = value == null ? 0 : value.length();
+        while (end > 0 && value.charAt(end - 1) == '/') {
+            end--;
+        }
+        return end == 0 ? "http://localhost:4200" : value.substring(0, end);
     }
 }

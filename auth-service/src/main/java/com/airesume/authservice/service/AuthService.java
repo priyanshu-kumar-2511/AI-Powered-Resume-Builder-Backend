@@ -327,6 +327,7 @@ public class AuthService {
      * @param username the username of the user
      * @return a DTO containing the user's profile details
      */
+    @Transactional(readOnly = true)
     public UserProfileResponse getUserProfile(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -355,6 +356,7 @@ public class AuthService {
      * 
      * @return a list of user profiles
      */
+    @Transactional(readOnly = true)
     public List<UserProfileResponse> getAllUsers() {
         return userRepository.findAll().stream()
                 .map(this::toUserProfileResponse)
@@ -383,12 +385,14 @@ public class AuthService {
         return "User role updated successfully";
     }
 
+    @Transactional(readOnly = true)
     public List<UserProfileResponse> getUsersByRole(String roleName) {
         return userRepository.findAllByRoles_Name(roleName).stream()
                 .map(this::toUserProfileResponse)
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<UserProfileResponse> getUsersByPlan(PlanType plan) {
         return userRepository.findBySubscriptionPlan(plan).stream()
                 .map(this::toUserProfileResponse)
