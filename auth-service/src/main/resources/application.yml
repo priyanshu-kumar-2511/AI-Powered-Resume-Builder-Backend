@@ -147,6 +147,8 @@ springdoc:
 
 # Security Secret
 app:
+  frontend:
+    public-url: ${FRONTEND_PUBLIC_URL:http://localhost:4200}
   jwt:
     secret: ${JWT_SECRET}
     expiration: ${JWT_EXPIRATION:86400000} # 24 hours
