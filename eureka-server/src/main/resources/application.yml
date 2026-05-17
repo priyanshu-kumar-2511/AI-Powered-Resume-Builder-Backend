@@ -19,9 +19,9 @@ eureka:
     hostname: localhost
     appname: EUREKA-SERVER
   client:
-    # Eureka server must not register itself as a client
-    register-with-eureka: false
-    fetch-registry: false
+    # Eureka server registers with itself to show up in Admin Dashboard
+    register-with-eureka: true
+    fetch-registry: true
     service-url:
       defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka/}
   server:
