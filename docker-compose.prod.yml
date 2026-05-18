@@ -80,6 +80,7 @@ services:
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
+      - SERVER_MAX_HTTP_REQUEST_HEADER_SIZE=65536
     env_file: .env
     depends_on:
       - eureka-server
@@ -96,6 +97,7 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/airesume_auth?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&autoReconnect=true
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
+      - SERVER_MAX_HTTP_REQUEST_HEADER_SIZE=65536
     env_file: .env
     depends_on:
       - mysql

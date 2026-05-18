@@ -43,7 +43,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         // 2. Extract Token and Validate
         String token = authHeader.substring(7);
-        if (SecurityContextHolder.getContext().getAuthentication() == null && jwtService.validateToken(token)) {
+        if (jwtService.validateToken(token)) {
             String username = jwtService.extractUsername(token);
 
             // Extract roles from JWT — may be null for OAuth-generated tokens
