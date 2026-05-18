@@ -148,7 +148,11 @@ public class AuthController {
     @Operation(summary = "Get user profile")
     public ResponseEntity<UserProfileResponse> getUserProfile() {
         String username = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
-        return ResponseEntity.ok(authService.getUserProfile(username));
+        return ResponseEntity.ok()
+                .header("Cache-Control", "no-cache, no-store, must-revalidate")
+                .header("Pragma", "no-cache")
+                .header("Expires", "0")
+                .body(authService.getUserProfile(username));
     }
 
     /**
