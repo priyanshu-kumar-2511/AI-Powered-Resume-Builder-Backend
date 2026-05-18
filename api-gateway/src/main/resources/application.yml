@@ -10,6 +10,7 @@ spring:
       - optional:file:../.env
   cloud:
     gateway:
+      preserve-host-header: true
       server:
         webflux:
           globalcors:
@@ -35,7 +36,6 @@ spring:
                 - Path=/api/v1/auth/v3/api-docs, /api/v1/auth/v3/api-docs/**
               filters:
                 - RewritePath=/api/v1/auth/(?<segment>.*), /${segment}
-                - SetRequestHeader=X-Forwarded-Prefix, /api/v1/auth
 
             # Route for Authentication and Admin (AUTH-SERVICE)
             - id: auth-api-route
